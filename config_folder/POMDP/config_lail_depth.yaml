@@ -1,7 +1,7 @@
 defaults:
   - _self_
-  - replay_buffer@_global_: numpy
-  - replay_buffer_expert@_global_: numpy
+  - replay_buffer@_global_: numpy_depth
+  - replay_buffer_expert@_global_: numpy_depth
   - task@_global_: walker_walk
   - agent@_global_: lail
   - expert@_global_: ddpg
@@ -48,15 +48,12 @@ spectral_norm_bool: false
 GAN_loss: bce
 from_dem: false
 
-#bisim
-transition_model_type: deterministic
-
-# Depth
-from_depth: false
+# DA
+from_depth: true
 check_every_steps: 5000
 
-# multi envs
-num_aug_envs: 10
+#bisim
+transition_model_type: deterministic
 
 hydra:
   run:

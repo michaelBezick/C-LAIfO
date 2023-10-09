@@ -55,6 +55,7 @@ class Workspace:
         utils.set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
         self.setup()
+        self.generate_envs_for_aug()
 
         self.agent = make_agent(self.train_env.observation_spec(),
                                 self.train_env.action_spec(),
@@ -70,11 +71,11 @@ class Workspace:
         # create target envs and agent
         self.train_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
-                                            self.cfg.image_height, self.cfg.image_width)
+                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width)
                                                 
         self.eval_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
-                                            self.cfg.image_height, self.cfg.image_width)
+                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width)
 
         # create replay buffer
         data_specs = (self.train_env.observation_spec(),
@@ -97,6 +98,16 @@ class Workspace:
 
         self.video_recorder = VideoRecorder(self.work_dir if self.cfg.save_video else None)
         self.train_video_recorder = TrainVideoRecorder(self.work_dir if self.cfg.save_train_video else None)
+
+    def generate_envs_for_aug(self):
+        self.train_envs_list = []
+        for _ in range(self.cfg.num_aug_envs):
+            visual_seed = np.random.randint(9999)
+            env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
+                                     self.cfg.action_repeat, self.cfg.seed, visual_seed,
+                                     self.cfg.vary, self.cfg.image_height, self.cfg.image_width)
+            
+            self.train_envs_list.append(env) 
 
     @property
     def global_step(self):
@@ -168,6 +179,16 @@ class Workspace:
             log('episode', self.global_episode)
             log('step', self.global_step)
 
+    def select_train_env(self):
+        env_ID = np.random.randint(self.cfg.num_aug_envs)
+
+        if env_ID == self.cfg.num_aug_envs:
+            env = self.train_env
+        else:
+            env = self.train_envs_list[env_ID]
+
+        return env
+
     def train(self):
         # predicates
         train_until_step = utils.Until(self.cfg.num_train_frames,
@@ -178,7 +199,8 @@ class Workspace:
                                       self.cfg.action_repeat)
 
         episode_step, episode_reward = 0, 0
-        time_step = self.train_env.reset()
+        env = self.select_train_env()
+        time_step = env.reset()
         self.replay_buffer.add(time_step)
         self.train_video_recorder.init(time_step.observation)
         metrics = None
@@ -202,7 +224,8 @@ class Workspace:
                         log('step', self.global_step)
 
                 # reset env
-                time_step = self.train_env.reset()
+                env = self.select_train_env()
+                time_step = env.reset()
                 self.replay_buffer.add(time_step)
                 self.train_video_recorder.init(time_step.observation)
                 episode_step = 0
@@ -229,7 +252,7 @@ class Workspace:
                 self.logger.log_metrics(metrics, self.global_frame, ty='train')
 
             # take env step
-            time_step = self.train_env.step(action)
+            time_step = env.step(action)
             episode_reward += time_step.reward
             self.replay_buffer.add(time_step)
             self.train_video_recorder.record(time_step.observation)
@@ -257,7 +280,7 @@ class Workspace:
 
 @hydra.main(config_path='config_folder/POMDP', config_name='config_lail')
 def main(cfg):
-    from train_LAIL import Workspace as W
+    from train_LAIL_multi_envs import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)
     parent_dir = root_dir.parents[3]

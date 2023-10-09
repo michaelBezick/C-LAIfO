@@ -251,12 +251,12 @@ def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84
     env = ExtendedTimeStepWrapper(env)
     return env
 
-def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, image_height=84, image_width=84):
+def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, image_height=84, image_width=84):
     domain, task = name.split('_', 1)
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
     
-    env = DMC_Remastered_Env(ALL_ENVS[domain][task], visual_seed, seed)
+    env = DMC_Remastered_Env(ALL_ENVS[domain][task], visual_seed, seed, vary)
     pixels_key = 'pixels'
         
     env = ActionDTypeWrapper(env, np.float32)

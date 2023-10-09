@@ -191,8 +191,7 @@ class Workspace:
                     # log stats
                     elapsed_time, total_time = self.timer.reset()
                     episode_frame = episode_step * self.cfg.action_repeat
-                    with self.logger.log_and_dump_ctx(self.global_frame,
-                                                      ty='train') as log:
+                    with self.logger.log_and_dump_ctx(self.global_frame, ty='train') as log:
                         log('fps', episode_frame / elapsed_time)
                         log('total_time', total_time)
                         log('episode_reward', episode_reward)
@@ -255,9 +254,9 @@ class Workspace:
             payload = torch.load(f)
         self.expert = payload['agent']
 
-@hydra.main(config_path='config_folder/POMDP', config_name='config_lail')
+@hydra.main(config_path='config_folder/POMDP', config_name='config_lail_depth')
 def main(cfg):
-    from train_LAIL import Workspace as W
+    from train_LAIL_depth import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)
     parent_dir = root_dir.parents[3]

@@ -20,4 +20,6 @@ agent:
   spectral_norm_bool: ${spectral_norm_bool}
   GAN_loss: ${GAN_loss}
   from_dem: ${from_dem}
+  check_every_steps: ${check_every_steps}
+  from_depth: ${from_depth}
 

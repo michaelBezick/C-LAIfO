@@ -1,4 +1,4 @@
-name: AdvIL_from_videos
+name: AIL_w_DA
 channels:
   - pytorch
   - nvidia
@@ -25,8 +25,8 @@ dependencies:
   - brunsli=0.1=h2531618_0
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.18.1=h7f8727e_0
-  - ca-certificates=2022.9.24=ha878542_0
-  - certifi=2022.9.24=pyhd8ed1ab_0
+  - ca-certificates=2022.12.7=ha878542_0
+  - certifi=2022.12.7=pyhd8ed1ab_0
   - cffi=1.15.1=py39h74dc2b5_0
   - cfitsio=3.470=h5893167_7
   - charls=2.2.0=h2531618_0
@@ -71,6 +71,7 @@ dependencies:
   - jupyterlab_server=2.12.0=py39h06a4308_0
   - jxrlib=1.1=h7b6447c_2
   - kiwisolver=1.4.2=py39h295c915_0
+  - kornia=0.6.11=pyhd8ed1ab_0
   - krb5=1.19.2=hac12032_0
   - lame=3.100=h7b6447c_0
   - lcms2=2.12=h3be6417_0
@@ -126,7 +127,7 @@ dependencies:
   - numpy-base=1.21.5=py39ha15fc14_3
   - openh264=2.1.1=h4ff587b_0
   - openjpeg=2.4.0=h3ad879b_0
-  - openssl=1.1.1q=h7f8727e_0
+  - openssl=1.1.1t=h7f8727e_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandocfilters=1.5.0=pyhd3eb1b0_0
   - parso=0.8.3=pyhd3eb1b0_0
@@ -193,13 +194,16 @@ dependencies:
   - zlib=1.2.12=h5eee18b_3
   - zstd=1.4.9=haebb681_0
   - pip:
+    - accelerate==0.23.0
     - antlr4-python3-runtime==4.8
     - cachetools==5.2.0
     - cython==0.29.32
+    - diffusers==0.21.4
     - dm-control==0.0.425341097
     - dm-env==1.5
     - dm-tree==0.1.7
     - fasteners==0.17.3
+    - filelock==3.12.4
     - future==0.18.2
     - glfw==2.5.5
     - google-auth==2.11.0
@@ -208,6 +212,7 @@ dependencies:
     - gym==0.26.0
     - gym-notices==0.0.8
     - h5py==3.7.0
+    - huggingface-hub==0.16.4
     - hydra-core==1.1.0
     - hydra-joblib-launcher==1.2.0
     - hydra-submitit-launcher==1.1.5
@@ -231,8 +236,10 @@ dependencies:
     - pyasn1-modules==0.2.8
     - pyopengl==3.1.6
     - pyopengl-accelerate==3.1.6
+    - regex==2023.10.3
     - requests-oauthlib==1.3.1
     - rsa==4.9
+    - safetensors==0.3.3
     - scikit-learn==1.1.2
     - sklearn==0.0
     - submitit==1.4.5
@@ -241,8 +248,12 @@ dependencies:
     - tensorboard-plugin-wit==1.8.1
     - termcolor==1.1.0
     - threadpoolctl==3.1.0
+    - timm==0.9.7
+    - tokenizers==0.14.0
     - toml==0.10.2
     - tqdm==4.64.1
+    - transformers==4.34.0
     - werkzeug==2.2.2
     - yapf==0.31.0
     - zipp==3.8.1
+prefix: /home/vittoriogiammarino/anaconda3/envs/AIL_w_DA

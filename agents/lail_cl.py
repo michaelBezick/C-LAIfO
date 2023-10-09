@@ -6,9 +6,12 @@ import torch.nn.functional as F
 from torch import distributions as torchd
 from torch import autograd
 from torch.nn.utils import spectral_norm 
+from torchvision.utils import save_image
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
+
+import os
 
 class RandomShiftsAug(nn.Module):
     def __init__(self, pad):
@@ -63,17 +66,17 @@ class CL(nn.Module):
         return logits
 
 class Encoder(nn.Module):
-    def __init__(self, obs_shape, feature_dim):
+    def __init__(self, obs_shape, feature_dim, from_depth):
         super().__init__()
 
         assert len(obs_shape) == 3
-        self.repr_dim = 32 * 35 * 35
 
         if obs_shape[-1]==84:
             self.repr_dim = 32 * 35 * 35
         elif obs_shape[-1]==64:
             self.repr_dim = 32 * 25 * 25
 
+        self.from_depth = from_depth
         self.convnet = nn.Sequential(nn.Conv2d(obs_shape[0], 32, 3, stride=2),
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
@@ -86,7 +89,11 @@ class Encoder(nn.Module):
         self.apply(utils.weight_init)
 
     def forward(self, obs):
-        obs = obs / 255.0 - 0.5
+        
+        # we do not use this normalization step when from depth as images come out of the buffer already normalized
+        if not self.from_depth:
+            obs = obs / 255.0 - 0.5
+
         h = self.convnet(obs)
         h = h.view(h.shape[0], -1)
         z = self.trunk(h)
@@ -170,8 +177,8 @@ class LailClAgent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps,
                  update_every_steps, stddev_schedule, stddev_clip, use_tb, 
-                 reward_d_coef, discriminator_lr, spectral_norm_bool, GAN_loss='bce',
-                 from_dem=False):
+                 reward_d_coef, discriminator_lr, spectral_norm_bool, check_every_steps,
+                 GAN_loss='bce', from_dem=False, from_depth=False):
         
         self.device = device
         self.critic_target_tau = critic_target_tau
@@ -182,8 +189,16 @@ class LailClAgent:
         self.stddev_clip = stddev_clip
         self.GAN_loss = GAN_loss
         self.from_dem = from_dem
+        self.from_depth = from_depth
+        self.check_every_steps = check_every_steps
 
-        self.encoder = Encoder(obs_shape, feature_dim).to(device)
+        if from_depth:
+            self.midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small").to(self.device).eval()
+            self.encoder = Encoder((obs_shape[0]//3,) + tuple(obs_shape[-2:]), feature_dim, from_depth).to(device)
+
+        else:
+            self.encoder = Encoder(obs_shape, feature_dim, from_depth).to(device)
+
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
         self.critic_target = Critic(action_shape, feature_dim, hidden_dim).to(device)
@@ -234,7 +249,32 @@ class LailClAgent:
         self.discriminator.train(training)
         self.CL.train(training)
 
+    def normalize(self, obs):
+        obs = (obs-obs.mean())/obs.std()
+        return obs
+
+    def process(self, obs):
+
+        frame_stack = obs.shape[0] // 3
+        output_list = []
+        for i in range(frame_stack):
+            frame = obs[i*frame_stack:(i+1)*frame_stack, :, :]
+            frame = torch.FloatTensor(self.normalize(frame))
+            input_batch = torch.nn.functional.interpolate(frame.unsqueeze(0), size=(256, 256), mode="bicubic", align_corners=False).to(self.device)
+            with torch.no_grad():
+                prediction = self.midas(input_batch)
+                prediction = torch.nn.functional.interpolate(prediction.unsqueeze(1), size=obs.shape[-2:], mode="bicubic", align_corners=False).squeeze(0)
+
+            output_list.append(self.normalize(prediction.cpu().numpy()))
+
+        output = np.concatenate(output_list, axis=0)
+        return output
+
     def act(self, obs, step, eval_mode):
+
+        if self.from_depth:
+            obs = self.process(obs)
+
         obs = torch.as_tensor(obs, device=self.device)
         obs = self.encoder(obs.unsqueeze(0))
         stddev = utils.schedule(self.stddev_schedule, step)
@@ -444,6 +484,10 @@ class LailClAgent:
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
 
         metrics.update(self.update_CL(obs))
+
+        if self.from_depth:
+            if step % self.check_every_steps == 0:
+                self.check_aug(obs.float(), next_obs.float(), obs_e_raw.float(), next_obs_e_raw.float(), step)
         
         obs_e = self.aug(obs_e_raw.float())
         next_obs_e = self.aug(next_obs_e_raw.float())
@@ -487,3 +531,25 @@ class LailClAgent:
         utils.soft_update_params(self.critic, self.critic_target, self.critic_target_tau)
 
         return metrics
+    
+    def check_aug(self, obs, next_obs, obs_e, next_obs_e, step):
+
+        if not os.path.exists('checkimages'):
+            os.makedirs("checkimages")
+
+        obs = self.normalize(obs) # -> [0, 1]
+        next_obs = self.normalize(next_obs) # -> [0, 1]
+
+        obs_e = self.normalize(obs_e) # -> [0, 1]
+        next_obs_e = self.normalize(next_obs_e) # -> [0, 1]
+
+        obs = torch.cat([obs, next_obs], dim=0)
+        obs_e = torch.cat([obs_e, next_obs_e])
+        rand_idx = torch.randperm(obs.shape[0])
+        imgs1 = obs[rand_idx[:9]]
+        imgs2 = obs[rand_idx[-9:]]
+        imgs3 = obs_e[rand_idx[9:18]]
+        imgs4 = obs_e[rand_idx[-18:-9]]
+                
+        saved_imgs = torch.cat([imgs1[:,:3,:,:], imgs2[:,:3,:,:], imgs3[:,:3,:,:], imgs4[:,:3,:,:]], dim=0)
+        save_image(saved_imgs, "./checkimages/%d.png" % (step), nrow=9)
