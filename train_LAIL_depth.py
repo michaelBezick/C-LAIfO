@@ -70,11 +70,11 @@ class Workspace:
         # create target envs and agent
         self.train_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
-                                            self.cfg.image_height, self.cfg.image_width)
+                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width)
                                                 
         self.eval_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
-                                            self.cfg.image_height, self.cfg.image_width)
+                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width)
 
         # create replay buffer
         data_specs = (self.train_env.observation_spec(),
