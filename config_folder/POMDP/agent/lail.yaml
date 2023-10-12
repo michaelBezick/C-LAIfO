@@ -22,4 +22,5 @@ agent:
   from_dem: ${from_dem}
   check_every_steps: ${check_every_steps}
   from_depth: ${from_depth}
+  midas_size: ${midas_size}
 

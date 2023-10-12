@@ -40,7 +40,10 @@ def make_env_expert(cfg):
                                                  camera_id=0,
                                                  frame_skip=1,
                                                  num_frames = cfg.frame_stack,
-                                                 vary = cfg.vary)
+                                                 vary = cfg.vary,
+                                                 depth_flag = cfg.depth_flag,
+                                                 segm_flag = cfg.segm_flag,
+                                                )
     env.seed(cfg.seed)
     assert env.action_space.low.min() >= -1
     assert env.action_space.high.max() <= 1
@@ -70,11 +73,13 @@ class Workspace:
         # create target envs and agent
         self.train_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
-                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width)
+                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width,
+                                            self.cfg.depth_flag, self.cfg.segm_flag)
                                                 
         self.eval_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
-                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width)
+                                            self.cfg.vary, self.cfg.image_height, self.cfg.image_width,
+                                            self.cfg.depth_flag, self.cfg.segm_flag)
 
         # create replay buffer
         data_specs = (self.train_env.observation_spec(),

@@ -4,15 +4,12 @@ from typing import Any, NamedTuple
 import dm_env
 import numpy as np
 from dm_control import manipulation, suite
-from dm_control.suite.wrappers import action_scale, pixels
+from dm_control.suite.wrappers import action_scale
+from DeepMind_control import pixels
 from dm_env import StepType, specs
 
 from dmc_remastered import ALL_ENVS
 from dmc_remastered import DMCR_VARY
-
-
-
-
 
 class DMC_Remastered_Env(dm_env.Environment):
     def __init__(self, 
@@ -104,25 +101,39 @@ class ActionRepeatWrapper(dm_env.Environment):
         return getattr(self._env, name)
 
 class FrameStackWrapper(dm_env.Environment):
-    def __init__(self, env, num_frames, pixels_key='pixels'):
+    def __init__(self, env, num_frames, pixels_key='pixels', depth_flag=False, segm_flag=False):
         self._env = env
         self._num_frames = num_frames
         self._frames = deque([], maxlen=num_frames)
         self._pixels_key = pixels_key
+        self._depth_flag = depth_flag
+        self._segm_flag = segm_flag
 
         wrapped_obs_spec = env.observation_spec()
         assert pixels_key in wrapped_obs_spec
 
         pixels_shape = wrapped_obs_spec[pixels_key].shape
-        # remove batch dim
-        if len(pixels_shape) == 4:
-            pixels_shape = pixels_shape[1:]
-        self._obs_spec = specs.BoundedArray(shape=np.concatenate(
-            [[pixels_shape[2] * num_frames], pixels_shape[:2]], axis=0),
-                                            dtype=np.uint8,
-                                            minimum=0,
-                                            maximum=255,
-                                            name='observation')
+
+        if self._depth_flag:
+            self._obs_spec = specs.BoundedArray(shape=np.concatenate(
+            [[1 * num_frames], pixels_shape[:2]], axis=0),
+            dtype=np.uint8, minimum=0, maximum=255, name='observation')
+
+        elif self._segm_flag:
+            self._obs_spec = specs.BoundedArray(shape=np.concatenate(
+            [[1 * num_frames], pixels_shape[:2]], axis=0),
+            dtype=np.uint8, minimum=0, maximum=255, name='observation')
+
+        else:
+            # remove batch dim
+            if len(pixels_shape) == 4:
+                pixels_shape = pixels_shape[1:]
+            self._obs_spec = specs.BoundedArray(shape=np.concatenate(
+                [[pixels_shape[2] * num_frames], pixels_shape[:2]], axis=0),
+                                                dtype=np.uint8,
+                                                minimum=0,
+                                                maximum=255,
+                                                name='observation')
 
     def _transform_observation(self, time_step):
         assert len(self._frames) == self._num_frames
@@ -130,11 +141,34 @@ class FrameStackWrapper(dm_env.Environment):
         return time_step._replace(observation=obs)
 
     def _extract_pixels(self, time_step):
-        pixels = time_step.observation[self._pixels_key]
+        obs = time_step.observation[self._pixels_key]
+
         # remove batch dim
-        if len(pixels.shape) == 4:
-            pixels = pixels[0]
-        return pixels.transpose(2, 0, 1).copy()
+        if len(obs.shape) == 4:
+            obs = obs[0]
+
+        if self._depth_flag:
+            # Shift nearest values to the origin.
+            obs -= obs.min()
+            # Scale by 2 mean distances of near rays.
+            obs /= 2*obs[obs <= 1].mean()
+            # Scale to [0, 255]
+            obs = 255*np.clip(obs, 0, 1).astype(np.uint8)
+            obs = obs.reshape((1,)+obs.shape).copy()
+
+        elif self._segm_flag:
+            obs = obs[:, :, 0]
+            # Infinity is mapped to -1
+            obs = obs.astype(np.float64) + 1
+            # Scale to [0, 1]
+            obs = obs / obs.max()
+            obs = (255*obs).astype(np.uint8)
+            obs = obs.reshape((1,)+obs.shape).copy()
+
+        else:
+            obs = obs.transpose(2, 0, 1).copy()
+
+        return obs
 
     def reset(self):
         time_step = self._env.reset()
@@ -251,7 +285,8 @@ def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84
     env = ExtendedTimeStepWrapper(env)
     return env
 
-def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, image_height=84, image_width=84):
+def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, image_height=84, image_width=84, 
+                    depth_flag=False, segm_flag=False):
     domain, task = name.split('_', 1)
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
@@ -268,8 +303,13 @@ def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, i
             camera_id = 2
         else:
             camera_id = 0
+
+        if depth_flag:
+            segm_flag=False
                 
-        render_kwargs = dict(height=image_height, width=image_width, camera_id=camera_id)
+        render_kwargs = dict(height=image_height, width=image_width, camera_id=camera_id,
+                             depth=depth_flag, segmentation=segm_flag)
+        
         env = pixels.Wrapper(env,
                              pixels_only=True,
                              render_kwargs=render_kwargs)
@@ -277,6 +317,6 @@ def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, i
         raise NotImplementedError
         
     # stack several frames
-    env = FrameStackWrapper(env, frame_stack, pixels_key)
+    env = FrameStackWrapper(env, frame_stack, pixels_key, depth_flag, segm_flag)
     env = ExtendedTimeStepWrapper(env)
     return env

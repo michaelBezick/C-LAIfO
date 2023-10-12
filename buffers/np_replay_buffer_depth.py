@@ -4,7 +4,7 @@ from buffers.replay_buffer import AbstractReplayBuffer
 import torch
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
-    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, data_specs=None):
+    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, midas_size="small", data_specs=None):
         self.buffer_size = buffer_size
         self.data_dict = {}
         self.index = -1
@@ -21,7 +21,13 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.next_dis = discount**nstep
 
         self.device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-        self.midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small").to(self.device).eval()
+
+        if midas_size == 'small':
+            self.midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small").to(self.device).eval()
+        elif midas_size == 'medium':
+            self.midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid").to(self.device).eval()
+        elif midas_size == 'large':
+            self.midas = torch.hub.load("intel-isl/MiDaS", "DPT_Large").to(self.device).eval()
 
     def _initial_setup(self, time_step):
         self.index = 0

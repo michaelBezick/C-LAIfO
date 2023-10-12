@@ -33,7 +33,7 @@ save_train_video: false
 use_tb: false
 visual_seed_target: 0
 visual_seed_source: 9577
-vary: ["target", "reflectance", "camera", "light", "body"] #["bg", "floor", "body", "target", "reflectance", "camera", "light"]
+vary: ["target", "reflectance", "camera", "light", "bg", "floor"] #["bg", "floor", "body", "target", "reflectance", "camera", "light"]
 # experiment
 experiment: exp
 # agent
@@ -53,7 +53,13 @@ transition_model_type: deterministic
 
 # Depth
 from_depth: false
+midas_size: small
+
+# other
 check_every_steps: 5000
+depth_flag: false
+segm_flag: false
+add_aug: false
 
 # multi envs
 num_aug_envs: 10

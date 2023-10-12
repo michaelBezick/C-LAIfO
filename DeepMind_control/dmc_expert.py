@@ -70,7 +70,9 @@ class DMC_Remastered_Wrapper(core.Env):
                  frame_skip=1,
                  num_frames = 3,
                  max_episode_steps = 1000,
-                 vary=DMCR_VARY):
+                 vary=DMCR_VARY,
+                 depth_flag=False,
+                 segm_flag=False):
         
         self._task_builder = task_builder
         self._env_seed = env_seed
@@ -86,6 +88,8 @@ class DMC_Remastered_Wrapper(core.Env):
         
         self._env = self._task_builder(dynamics_seed=0, visual_seed=0, vary=vary)
         self._vary = vary
+        self._depth_flag = depth_flag
+        self._segm_flag = segm_flag
         
         self.make_new_env()
         
@@ -131,7 +135,28 @@ class DMC_Remastered_Wrapper(core.Env):
     
     def _extract_pixels(self):
         obs = self.render(height=self._height, width=self._width, camera_id=self._camera_id)
-        obs = obs.transpose(2, 0, 1).copy()
+
+        if self._depth_flag:
+            # Shift nearest values to the origin.
+            obs -= obs.min()
+            # Scale by 2 mean distances of near rays.
+            obs /= 2*obs[obs <= 1].mean()
+            # Scale to [0, 255]
+            obs = 255*np.clip(obs, 0, 1).astype(np.uint8)
+            obs = obs.reshape((1,)+obs.shape).copy()
+
+        elif self._segm_flag:
+            obs = obs[:, :, 0]
+
+            # Infinity is mapped to -1
+            obs = obs.astype(np.float64) + 1
+            # Scale to [0, 1]
+            obs = obs / obs.max()
+            obs = (255*obs).astype(np.uint8)
+            obs = obs.reshape((1,)+obs.shape).copy()
+
+        else:
+            obs = obs.transpose(2, 0, 1).copy()
         return obs
 
     @property
@@ -193,7 +218,11 @@ class DMC_Remastered_Wrapper(core.Env):
         height = height or self._height
         width = width or self._width
         camera_id = camera_id or self._camera_id
-        return self._env.physics.render(height=height, width=width, camera_id=camera_id)
+
+        if self._depth_flag:
+            self._segm_flag=False
+
+        return self._env.physics.render(height=height, width=width, camera_id=camera_id, depth=self._depth_flag, segmentation=self._segm_flag)
     
     def step_learn_from_pixels(self, time_step, action=None):
         pixels = self._extract_pixels()
@@ -221,7 +250,9 @@ def make_remastered_states_only(domain_name,
                                 frame_skip=1,
                                 num_frames = 3,
                                 max_episode_steps = 1000,
-                                vary=DMCR_VARY
+                                vary=DMCR_VARY,
+                                depth_flag = False,
+                                segm_flag = False
                                 ):
 
     if domain_name == 'quadruped':
@@ -238,7 +269,9 @@ def make_remastered_states_only(domain_name,
                                  frame_skip = frame_skip,
                                  num_frames = num_frames,
                                  max_episode_steps=max_episode_steps,
-                                 vary = vary)
+                                 vary = vary,
+                                 depth_flag=depth_flag,
+                                 segm_flag=segm_flag)
 
     return env
 

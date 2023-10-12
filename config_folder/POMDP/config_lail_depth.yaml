@@ -50,7 +50,13 @@ from_dem: false
 
 # DA
 from_depth: true
+midas_size: small
+add_aug: false
+
+# other
 check_every_steps: 5000
+depth_flag: false
+segm_flag: false
 
 #bisim
 transition_model_type: deterministic

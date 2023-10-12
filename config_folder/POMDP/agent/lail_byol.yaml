@@ -1,8 +1,8 @@
 
-agent_name: lail_cl
+agent_name: lail_byol
 
 agent:
-  _target_: agents.lail_cl.LailClAgent
+  _target_: agents.lail_byol.LailByolAgent
   obs_shape: ??? # to be specified later
   action_shape: ??? # to be specified later
   device: ${device}

@@ -158,7 +158,7 @@ class LailAgent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps, update_every_steps, stddev_schedule, stddev_clip, use_tb, 
                  reward_d_coef, discriminator_lr, spectral_norm_bool, check_every_steps,
-                 GAN_loss='bce', from_dem=False, from_depth=False):
+                 GAN_loss='bce', from_dem=False, from_depth=False, midas_size='small'):
         
         self.device = device
         self.critic_target_tau = critic_target_tau
@@ -173,7 +173,13 @@ class LailAgent:
         self.check_every_steps = check_every_steps
 
         if from_depth:
-            self.midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small").to(self.device).eval()
+            if midas_size == 'small':
+                self.midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small").to(self.device).eval()
+            elif midas_size == 'medium':
+                self.midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid").to(self.device).eval()
+            elif midas_size == 'large':
+                self.midas = torch.hub.load("intel-isl/MiDaS", "DPT_Large").to(self.device).eval()
+
             self.encoder = Encoder((obs_shape[0]//3,) + tuple(obs_shape[-2:]), feature_dim, from_depth).to(device)
 
         else:
@@ -432,15 +438,14 @@ class LailAgent:
         
         batch_expert = next(replay_iter_expert)
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
-
-        if self.from_depth:
-            if step % self.check_every_steps == 0:
-                self.check_aug(obs.float(), next_obs.float(), obs_e_raw.float(), next_obs_e_raw.float(), step)
         
         obs_e = self.aug(obs_e_raw.float())
         next_obs_e = self.aug(next_obs_e_raw.float())
         obs_a = self.aug(obs.float())
         next_obs_a = self.aug(next_obs.float())
+
+        if step % self.check_every_steps == 0:
+            self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, step)
 
         with torch.no_grad():
             obs_e = self.encoder(obs_e)
@@ -485,11 +490,17 @@ class LailAgent:
         if not os.path.exists('checkimages'):
             os.makedirs("checkimages")
 
-        obs = self.normalize(obs) # -> [0, 1]
-        next_obs = self.normalize(next_obs) # -> [0, 1]
+        if self.from_depth:
+            obs = self.normalize(obs) # -> [0, 1]
+            next_obs = self.normalize(next_obs) # -> [0, 1]
+            obs_e = self.normalize(obs_e) # -> [0, 1]
+            next_obs_e = self.normalize(next_obs_e) # -> [0, 1]
 
-        obs_e = self.normalize(obs_e) # -> [0, 1]
-        next_obs_e = self.normalize(next_obs_e) # -> [0, 1]
+        else:
+            obs = obs/255
+            next_obs = next_obs/255
+            obs_e = obs_e/255
+            next_obs_e = next_obs_e/255
 
         obs = torch.cat([obs, next_obs], dim=0)
         obs_e = torch.cat([obs_e, next_obs_e])

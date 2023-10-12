@@ -11,7 +11,8 @@ from torchvision import transforms as T
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
-from utils_folder.byol_pytorch import default, RandomApply
+
+from utils_folder.byol_pytorch import BYOL, default, RandomApply
 
 import os
 
@@ -47,25 +48,6 @@ class RandomShiftsAug(nn.Module):
                              grid,
                              padding_mode='zeros',
                              align_corners=False)
-    
-class CL(nn.Module):
-    """Contrastive learning for the encoder"""
-    def __init__(self, feature_dim):
-        super().__init__()
-        self.W = nn.Parameter(torch.rand(feature_dim, feature_dim))
-
-    def compute_logits(self, z_a, z_pos):
-        """
-        Uses logits trick for CURL:
-        - compute (B,B) matrix z_a (W z_pos.T)
-        - positives are all diagonal elements
-        - negatives are all other elements
-        - to compute loss use multiclass cross entropy with identity matrix for labels
-        """
-        Wz = torch.matmul(self.W, z_pos.T) #(feat_dim, B)
-        logits = torch.matmul(z_a, Wz) #(B, B)
-        logits = logits - torch.max(logits, 1)[0][:, None]
-        return logits
 
 class Encoder(nn.Module):
     def __init__(self, obs_shape, feature_dim, from_depth):
@@ -91,7 +73,7 @@ class Encoder(nn.Module):
         self.apply(utils.weight_init)
 
     def forward(self, obs):
-        
+
         # we do not use this normalization step when from depth as images come out of the buffer already normalized
         if not self.from_depth:
             obs = obs / 255.0 - 0.5
@@ -175,12 +157,12 @@ class Critic(nn.Module):
 
         return q1, q2
 
-class LailClAgent:
+class LailByolAgent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
-                 hidden_dim, critic_target_tau, num_expl_steps,
+                 hidden_dim, critic_target_tau, num_expl_steps, 
                  update_every_steps, stddev_schedule, stddev_clip, use_tb, 
                  reward_d_coef, discriminator_lr, spectral_norm_bool, check_every_steps,
-                 GAN_loss='bce', from_dem=False, from_depth=False, midas_size='small',
+                 GAN_loss='bce', from_dem=False, from_depth=False, midas_size='small', 
                  add_aug=False, depth_flag=False, segm_flag=False):
         
         self.device = device
@@ -199,7 +181,7 @@ class LailClAgent:
         # data augmentation
         self.aug = RandomShiftsAug(pad=4)
 
-        # add augmentation for CL
+        # add augmentation for BYOL
         DEFAULT_AUG = torch.nn.Sequential(
             RandomApply(T.ColorJitter(0.8, 0.8, 0.8, 0.2), p = 0.3),
             T.RandomGrayscale(p=0.2),
@@ -227,16 +209,20 @@ class LailClAgent:
 
             self.encoder = Encoder((obs_shape[0]//3,) + tuple(obs_shape[-2:]), feature_dim, from_depth).to(device)
 
+            self.byol = BYOL(self.encoder, (obs_shape[0]//3,) + tuple(obs_shape[-2:]), 
+                             self.aug, self.augment1, self.augment2, self.add_aug, 
+                             projection_size=(feature_dim//2)).to(device)
+
         else:
             self.encoder = Encoder(obs_shape, feature_dim, from_depth).to(device)
-
+        
+            self.byol = BYOL(self.encoder, obs_shape, self.aug, self.augment1, self.augment2,
+                            self.add_aug, projection_size=(feature_dim//2)).to(device)
+        
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
         self.critic_target = Critic(action_shape, feature_dim, hidden_dim).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
-
-        self.CL = CL(feature_dim).to(device) 
-        self.cross_entropy_loss = nn.CrossEntropyLoss()
         
         # added model
         if from_dem:
@@ -260,22 +246,20 @@ class LailClAgent:
                 NotImplementedError
 
         # optimizers
-        self.encoder_opt = torch.optim.Adam(self.encoder.parameters(), lr=lr)
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=lr)
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=lr)
         self.discriminator_opt = torch.optim.Adam(self.discriminator.parameters(), lr=discriminator_lr)
-        self.CL_opt = torch.optim.Adam(self.CL.parameters(), lr=lr)
+        self.byol_opt = torch.optim.Adam(self.byol.parameters(), lr=lr)
 
         self.train()
         self.critic_target.train()
 
     def train(self, training=True):
         self.training = training
-        self.encoder.train(training)
+        self.byol.train(training)
         self.actor.train(training)
         self.critic.train(training)
         self.discriminator.train(training)
-        self.CL.train(training)
 
     def normalize(self, obs):
         obs = (obs-obs.mean())/obs.std()
@@ -304,7 +288,7 @@ class LailClAgent:
             obs = self.process(obs)
 
         obs = torch.as_tensor(obs, device=self.device)
-        obs = self.encoder(obs.unsqueeze(0))
+        obs = self.byol.online_encoder(obs.unsqueeze(0), return_projection=False)
         stddev = utils.schedule(self.stddev_schedule, step)
         dist = self.actor(obs, stddev)
         if eval_mode:
@@ -336,11 +320,11 @@ class LailClAgent:
             metrics['critic_loss'] = critic_loss.item()
 
         # optimize encoder and critic
-        self.encoder_opt.zero_grad(set_to_none=True)
+        self.byol_opt.zero_grad(set_to_none=True)
         self.critic_opt.zero_grad(set_to_none=True)
         critic_loss.backward()
         self.critic_opt.step()
-        self.encoder_opt.step()
+        self.byol_opt.step()
 
         return metrics
 
@@ -367,59 +351,6 @@ class LailClAgent:
             metrics['actor_ent'] = dist.entropy().sum(dim=-1).mean().item()
 
         return metrics
-
-    def augment(self, obs):
-
-        b, c, h, w = obs.size()
-        assert h == w 
-
-        num_frames = c // 3
-        image_one = []
-        image_two = []
-        for i in range(num_frames):
-            frame = obs[:, 3*i:3*i+3, :, :]
-            frame_one = self.augment1(frame)
-            frame_two = self.augment2(frame)
-            image_one.append(frame_one)
-            image_two.append(frame_two)
-
-        image_one = torch.cat(image_one, dim=1)
-        image_two = torch.cat(image_two, dim=1)
-
-        return image_one, image_two
-    
-    def update_CL(self, obs, check_every_steps, step):
-        metrics = dict()
-
-        if self.add_aug:
-            image_one, image_two = self.augment(obs)
-
-            if step % check_every_steps == 0:
-                self.check_aug_CL(image_one.float(), image_two.float(), step)
-
-            z_anchor = self.encoder(image_one.float())
-            with torch.no_grad():
-                z_pos = self.encoder(image_two.float())
-
-        else:
-            z_anchor = self.encoder(self.aug(obs.float()))
-            with torch.no_grad():
-                z_pos = self.encoder(self.aug(obs.float()))
-
-        logits = self.CL.compute_logits(z_anchor, z_pos)
-        labels = torch.arange(logits.shape[0]).long().to(self.device)
-        loss = self.cross_entropy_loss(logits, labels)
-
-        self.encoder_opt.zero_grad()
-        self.CL_opt.zero_grad()
-        loss.backward()
-        self.encoder_opt.step()
-        self.CL_opt.step()
-
-        if self.use_tb:
-            metrics['CL_loss'] = loss.item()
-
-        return metrics
     
     def compute_reward(self, obs_a, next_a):
         metrics = dict()
@@ -434,10 +365,10 @@ class LailClAgent:
         # encode
         with torch.no_grad():
             if self.from_dem:
-                obs_a = self.encoder(obs_a)
+                obs_a = self.byol.online_encoder(obs_a, return_projection=False)
             else:
-                obs_a = self.encoder(obs_a)
-                next_a = self.encoder(next_a)
+                obs_a = self.byol.online_encoder(obs_a, return_projection=False)
+                next_a = self.byol.online_encoder(next_a, return_projection=False)
         
             self.discriminator.eval()
             transition_a = torch.cat([obs_a, next_a], dim = -1)
@@ -525,7 +456,23 @@ class LailClAgent:
             metrics['discriminator_loss'] = loss.item()
             metrics['discriminator_grad_pen'] = grad_pen_loss.item()
         
-        return metrics        
+        return metrics     
+
+    def update_BYOL(self, obs, check_every_steps, step):
+        metrics = dict()
+
+        loss = self.byol(obs, check_every_steps, step)
+
+        self.byol_opt.zero_grad(set_to_none=True)
+        loss.backward()
+        self.byol_opt.step()
+
+        self.byol.update_moving_average()
+
+        if self.use_tb:
+            metrics['BYOL_loss'] = loss.item()
+
+        return metrics
 
     def update(self, replay_iter, replay_iter_expert, step):
         metrics = dict()
@@ -539,7 +486,7 @@ class LailClAgent:
         batch_expert = next(replay_iter_expert)
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
 
-        metrics.update(self.update_CL(obs, self.check_every_steps, step))
+        metrics.update(self.update_BYOL(obs, self.check_every_steps, step))
         
         obs_e = self.aug(obs_e_raw.float())
         next_obs_e = self.aug(next_obs_e_raw.float())
@@ -550,10 +497,10 @@ class LailClAgent:
             self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, step)
 
         with torch.no_grad():
-            obs_e = self.encoder(obs_e)
-            next_obs_e = self.encoder(next_obs_e)
-            obs_a = self.encoder(obs_a)
-            next_obs_a = self.encoder(next_obs_a)
+            obs_e = self.byol.online_encoder(obs_e, return_projection=False)
+            next_obs_e = self.byol.online_encoder(next_obs_e, return_projection=False)
+            obs_a = self.byol.online_encoder(obs_a, return_projection=False)
+            next_obs_a = self.byol.online_encoder(next_obs_a, return_projection=False)
 
         # update critic
         if self.from_dem:
@@ -569,9 +516,9 @@ class LailClAgent:
         obs = self.aug(obs.float())
         next_obs = self.aug(next_obs.float())
         # encode
-        obs = self.encoder(obs)
+        obs = self.byol.online_encoder(obs, return_projection=False)
         with torch.no_grad():
-            next_obs = self.encoder(next_obs)
+            next_obs = self.byol.online_encoder(next_obs, return_projection=False)
 
         if self.use_tb:
             metrics['batch_reward'] = reward_a.mean().item()
@@ -614,22 +561,3 @@ class LailClAgent:
                 
         saved_imgs = torch.cat([imgs1[:,:3,:,:], imgs2[:,:3,:,:], imgs3[:,:3,:,:], imgs4[:,:3,:,:]], dim=0)
         save_image(saved_imgs, "./checkimages/%d.png" % (step), nrow=9)
-
-    def check_aug_CL(self, img1, img2, step):
-
-        if not os.path.exists('checkaugs'):
-            os.makedirs("checkaugs")
-
-        img1 = img1/255 # -> [0, 1]
-        img2 = img2/255 # -> [0, 1]
-
-        rand_idx = torch.randperm(img1.shape[0])
-
-        imgs1 = img1[rand_idx[:9]]
-        imgs2 = img2[rand_idx[:9]]
-
-        imgs3 = img1[rand_idx[-9:]]
-        imgs4 = img2[rand_idx[-9:]]
-                
-        saved_imgs = torch.cat([imgs1[:,:3,:,:], imgs2[:,:3,:,:], imgs3[:,:3,:,:], imgs4[:,:3,:,:]], dim=0)
-        save_image(saved_imgs, "./checkaugs/%d.png" % (step), nrow=9)
