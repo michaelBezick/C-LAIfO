@@ -1,0 +1,3 @@
+visual_seed_target: 0
+visual_seed_source: 9577
+vary: ["target", "reflectance", "camera", "light", "floor"] #["bg", "floor", "body", "target", "reflectance", "camera", "light"]

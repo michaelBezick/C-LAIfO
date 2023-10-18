@@ -5,6 +5,7 @@ defaults:
   - task@_global_: walker_walk
   - agent@_global_: lail
   - expert@_global_: ddpg
+  - difficulty@_global_: no_mismatch
   - override hydra/launcher: submitit_local
 
 # task settings
@@ -31,9 +32,7 @@ device: cuda
 save_video: false
 save_train_video: false
 use_tb: false
-visual_seed_target: 0
-visual_seed_source: 9577
-vary: ["target", "reflectance", "camera", "light", "bg", "floor"] #["bg", "floor", "body", "target", "reflectance", "camera", "light"]
+
 # experiment
 experiment: exp
 # agent
@@ -52,14 +51,14 @@ from_dem: false
 transition_model_type: deterministic
 
 # Depth
-from_depth: false
+from_depth: false # Enables the estimated Depth using Midas model (quite slow)
 midas_size: small
 
 # other
 check_every_steps: 5000
-depth_flag: false
-segm_flag: false
-add_aug: false
+depth_flag: false # Enables learning from perfect depth
+segm_flag: false # Enables learning from perfect segmentation
+add_aug: false # adds additional augmentations to BYOL and CL agents
 
 # multi envs
 num_aug_envs: 10
@@ -67,9 +66,9 @@ aug: true
 
 hydra:
   run:
-    dir: ./experiments/exp_${agent_name}/${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
+    dir: ./experiments/exp_difficulty_${difficulty}_depth_${depth_flag}_segm_${segm_flag}/${agent_name}_add_aug_${add_false}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
   sweep:
-    dir: ./experiments/exp_multirun_${agent_name}_${task_name}_num_expert_episodes_${num_expert_episodes}/from_depth_${from_depth}_aug_${aug}/
+    dir: ./experiments/exp_multirun_${difficulty}_depth_${depth_flag}_segm_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_false}_from_depth_${from_depth}/
     subdir: ${now:%Y.%m.%d}_${now:%H%M}_${hydra.job.override_dirname}
   launcher:
     timeout_min: 18000000
@@ -78,4 +77,4 @@ hydra:
     tasks_per_node: 1
     mem_gb: 160
     nodes: 1
-    submitit_folder: ./experiments/exp_multirun_${agent_name}_${task_name}_num_expert_episodes_${num_expert_episodes}/from_depth_${from_depth}_aug_${aug}/${now:%Y.%m.%d}_${now:%H%M}
+    submitit_folder: ./experiments/exp_multirun_${difficulty}_depth_${depth_flag}_segm_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_false}_from_depth_${from_depth}/
