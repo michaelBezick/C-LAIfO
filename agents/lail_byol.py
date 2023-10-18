@@ -11,7 +11,6 @@ from torchvision import transforms as T
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
-
 from utils_folder.byol_pytorch import BYOL, default, RandomApply
 
 import os
