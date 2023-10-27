@@ -79,11 +79,21 @@ class Encoder(nn.Module):
         return h
     
 class Encoder_head(nn.Module):
-    def __init__(self, repr_dim, feature_dim):
+    def __init__(self, repr_dim, feature_dim, hidden_dim, deeper_head=False):
         super().__init__()
 
-        self.trunk = nn.Sequential(nn.Linear(repr_dim, feature_dim),
-                        nn.LayerNorm(feature_dim), nn.Tanh())
+        if deeper_head:
+            self.trunk = nn.Sequential(nn.Linear(repr_dim, hidden_dim),
+                                       nn.ReLU(inplace=True),
+                                       nn.Linear(hidden_dim, hidden_dim),
+                                       nn.ReLU(inplace=True),
+                                       nn.Linear(hidden_dim, feature_dim),
+                                       nn.LayerNorm(feature_dim), 
+                                       nn.Tanh())
+
+        else:
+            self.trunk = nn.Sequential(nn.Linear(repr_dim, feature_dim),
+                            nn.LayerNorm(feature_dim), nn.Tanh())
         
         self.apply(utils.weight_init)
         
@@ -170,7 +180,7 @@ class LailByolAgent:
                  update_every_steps, stddev_schedule, stddev_clip, use_tb, 
                  reward_d_coef, discriminator_lr, spectral_norm_bool, check_every_steps,
                  GAN_loss='bce', from_dem=False, from_depth=False, midas_size='small', 
-                 add_aug=False, depth_flag=False, segm_flag=False):
+                 add_aug=False, depth_flag=False, segm_flag=False, deeper_head=False):
         
         self.device = device
         self.critic_target_tau = critic_target_tau
@@ -226,7 +236,7 @@ class LailByolAgent:
             self.byol = BYOL(self.encoder, obs_shape, self.aug, self.augment1, self.augment2,
                             self.add_aug, projection_size=feature_dim).to(device)
         
-        self.encoder_head = Encoder_head(self.encoder.repr_dim, feature_dim).to(device)
+        self.encoder_head = Encoder_head(self.encoder.repr_dim, feature_dim, hidden_dim, deeper_head).to(device)
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
         self.critic_target = Critic(action_shape, feature_dim, hidden_dim).to(device)

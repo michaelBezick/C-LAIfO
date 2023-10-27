@@ -26,4 +26,5 @@ agent:
   add_aug: ${add_aug}
   depth_flag: ${depth_flag}
   segm_flag: ${segm_flag}
+  deeper_head: ${deeper_head}
 
