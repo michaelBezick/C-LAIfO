@@ -50,6 +50,10 @@ from_dem: false
 #bisim
 transition_model_type: deterministic
 
+# PatchAIL_config
+reward_type: 'airl'
+reward_scale: 1.0
+
 # Depth
 from_depth: false # Enables the estimated Depth using Midas model (quite slow)
 midas_size: small
