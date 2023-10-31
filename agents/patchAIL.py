@@ -5,8 +5,11 @@ from torch import autograd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.utils import save_image
 
 from utils_folder import utils
+
+import os
 
 def compute_gradient_penalty(discriminator, expert_data, policy_data, grad_pen_weight=10.0):
     if len(expert_data.shape) == 2:
@@ -175,7 +178,7 @@ class Critic(nn.Module):
 class PatchAilAgent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps, update_every_steps, stddev_schedule, stddev_clip, 
-                 use_tb, reward_type="airl", sim_type="weight", reward_scale=1.0, grad_pen_weight=10.0, 
+                 use_tb, check_every_steps, reward_type="airl", sim_type="weight", reward_scale=1.0, grad_pen_weight=10.0, 
                  disc_lr=None, use_simreg=False, sim_rate=1.5):
         
         self.device = device
@@ -186,6 +189,7 @@ class PatchAilAgent:
         self.num_expl_steps = num_expl_steps
         self.stddev_schedule = stddev_schedule
         self.stddev_clip = stddev_clip
+        self.check_every_steps = check_every_steps
 
         self.sim_rate = sim_rate
         self.use_simreg = use_simreg
@@ -449,6 +453,9 @@ class PatchAilAgent:
         disc_next_obs = self.disc_aug(next_obs_before_aug)
         disc_expert_obs = self.disc_aug(expert_obs_before_aug)
         disc_expert_next_obs = self.disc_aug(expert_next_obs_before_aug)
+
+        if step % self.check_every_steps == 0:
+            self.check_aug(disc_obs, disc_next_obs, disc_expert_obs, disc_expert_next_obs, step)
         
         results = self.update_discriminator(disc_obs, disc_expert_obs, disc_next_obs, disc_expert_next_obs)
         metrics.update(results)
@@ -487,4 +494,25 @@ class PatchAilAgent:
         metrics.update(self.record_grad_norm(self.encoder, "encoder"))
 
         return metrics
+    
+    def check_aug(self, obs, next_obs, obs_e, next_obs_e, step):
+
+        if not os.path.exists('checkimages'):
+            os.makedirs("checkimages")
+
+        obs = obs/255
+        next_obs = next_obs/255
+        obs_e = obs_e/255
+        next_obs_e = next_obs_e/255
+
+        obs = torch.cat([obs, next_obs], dim=0)
+        obs_e = torch.cat([obs_e, next_obs_e])
+        rand_idx = torch.randperm(obs.shape[0])
+        imgs1 = obs[rand_idx[:9]]
+        imgs2 = obs[rand_idx[-9:]]
+        imgs3 = obs_e[rand_idx[9:18]]
+        imgs4 = obs_e[rand_idx[-18:-9]]
+                
+        saved_imgs = torch.cat([imgs1[:,:3,:,:], imgs2[:,:3,:,:], imgs3[:,:3,:,:], imgs4[:,:3,:,:]], dim=0)
+        save_image(saved_imgs, "./checkimages/%d.png" % (step), nrow=9)
 
