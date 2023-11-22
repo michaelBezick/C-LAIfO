@@ -44,7 +44,6 @@ class DiagGaussianActor(nn.Module):
             if type(m) == nn.Linear:
                 logger.log_param(f'train_actor/fc{i}', m, step)
 
-
 class DoubleQCritic(nn.Module):
     """Critic network, employes double Q-learning."""
     def __init__(self, obs_dim, action_dim, hidden_dim, hidden_depth):

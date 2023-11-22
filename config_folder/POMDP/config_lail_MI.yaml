@@ -1,9 +1,9 @@
 defaults:
   - _self_
-  - replay_buffer@_global_: numpy_depth
-  - replay_buffer_expert@_global_: numpy_depth
+  - replay_buffer@_global_: numpy
+  - replay_buffer_expert@_global_: numpy
   - task@_global_: walker_walk
-  - agent@_global_: lail
+  - agent@_global_: lail_mi
   - expert@_global_: ddpg
   - difficulty@_global_: no_mismatch
   - override hydra/launcher: submitit_local
@@ -16,6 +16,7 @@ image_height: 64
 image_width: 64
 # train settings
 num_seed_frames: 4000
+num_expl_frames: 10000
 # eval
 eval_every_frames: 10000
 num_eval_episodes: 10
@@ -43,23 +44,31 @@ num_expert_episodes: 100
 frame_skip: 1
 expert_replay_buffer_size: 100000
 #discriminator feat
-discriminator_lr: 4e-4
+discriminator_lr: 1e-4
 spectral_norm_bool: false
 GAN_loss: bce
 from_dem: false
 
-# DA
-from_depth: true
-midas_size: small
-add_aug: false
+# MI
+dual_mi_constant: 1.0
+dual_min_mi_constant: 1e-3
+max_mi: 0.99
+min_mi: 0.495
+min_mi_constant: 1e-4
+max_mi_constant: 5.0
+mi_constant: 0.5
+unbiased_mi_decay: 0.99
 
 # other
 check_every_steps: 5000
-depth_flag: false
-segm_flag: false
+depth_flag: false # Enables learning from perfect depth
+segm_flag: false # Enables learning from perfect segmentation
+add_aug: false # adds additional augmentations to BYOL and CL agents
+deeper_head: false # in the projected setting it makes the encoder head deeper
 
-#bisim
-transition_model_type: deterministic
+# multi envs
+num_aug_envs: 10
+aug: true
 
 hydra:
   run:

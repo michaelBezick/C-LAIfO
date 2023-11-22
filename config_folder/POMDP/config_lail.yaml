@@ -41,6 +41,7 @@ feature_dim: 50
 # expert data
 num_expert_episodes: 100
 frame_skip: 1
+expert_replay_buffer_size: 100000
 #discriminator feat
 discriminator_lr: 4e-4
 spectral_norm_bool: false
