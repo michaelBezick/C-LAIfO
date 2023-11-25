@@ -74,7 +74,7 @@ hydra:
   run:
     dir: ./experiments/exp_difficulty_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}/${agent_name}_add_aug_${add_aug}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
   sweep:
-    dir: ./experiments/exp_multirun_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_aug}_from_depth_${from_depth}/
+    dir: ./experiments/exp_multirun_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_aug}/
     subdir: ${now:%Y.%m.%d}_${now:%H%M}_${hydra.job.override_dirname}
   launcher:
     timeout_min: 18000000
@@ -83,4 +83,4 @@ hydra:
     tasks_per_node: 1
     mem_gb: 160
     nodes: 1
-    submitit_folder: ./experiments/exp_multirun_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_aug}_from_depth_${from_depth}/
+    submitit_folder: ./experiments/exp_multirun_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_aug}/
