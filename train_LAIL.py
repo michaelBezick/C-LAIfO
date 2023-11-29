@@ -243,7 +243,7 @@ class Workspace:
 
     def save_snapshot(self):
         snapshot = self.work_dir / f'snapshot_{self.cfg.task_name}.pt'
-        keys_to_save = ['agent', 'timer', '_global_step', '_global_episode']
+        keys_to_save = ['agent', 'replay_buffer', 'replay_buffer_expert', 'timer', '_global_step', '_global_episode']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f)
