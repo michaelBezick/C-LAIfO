@@ -51,6 +51,7 @@ from_dem: false
 
 # MI
 dual_mi_constant: 1.0
+dual_max_mi: 0.001
 dual_min_mi_constant: 1e-3
 max_mi: 0.99
 min_mi: 0.495

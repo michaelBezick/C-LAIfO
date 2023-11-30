@@ -22,6 +22,7 @@ agent:
   GAN_loss: ${GAN_loss}
   check_every_steps: ${check_every_steps}
   dual_mi_constant: ${dual_mi_constant}
+  dual_max_mi: ${dual_max_mi}
   dual_min_mi_constant: ${dual_min_mi_constant}
   max_mi: ${max_mi}
   min_mi: ${min_mi}

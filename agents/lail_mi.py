@@ -225,6 +225,7 @@ class LailMiAgent:
                  stddev_clip, 
                  use_tb, 
                  dual_mi_constant, 
+                 dual_max_mi,
                  dual_min_mi_constant, 
                  max_mi, 
                  min_mi, 
@@ -260,6 +261,7 @@ class LailMiAgent:
         self.log_mi_constant = torch.tensor(np.log(dual_mi_constant)).to(device)
         self.log_mi_constant.requires_grad = True
         self.log_min_mi_constant = torch.tensor(np.log(dual_min_mi_constant)).to(device)
+        self.dual_max_mi = dual_max_mi
         self.max_mi = max_mi
         self.min_mi = min_mi 
         self.max_mi_constant = max_mi_constant
@@ -454,7 +456,7 @@ class LailMiAgent:
     def update_dual_penalty(self, mi_loss):
         metrics = dict()
 
-        mi_diff = self.max_mi - mi_loss
+        mi_diff = self.dual_max_mi - mi_loss
         self.log_mi_constant_opt.zero_grad(set_to_none=True)
         mi_dual_loss = self.log_mi_constant * mi_diff.detach()
         mi_dual_loss.backward()
