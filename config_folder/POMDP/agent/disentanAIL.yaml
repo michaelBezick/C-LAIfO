@@ -1,20 +1,28 @@
 
-agent_name: lail_mi
+agent_name: disentanAIL
 
 agent:
-  _target_: agents.mutual_information.lail.LailAgent
+  _target_: agents.disentanAIL.DisentanAILAgent
   obs_shape: ??? # to be specified later
   action_shape: ??? # to be specified later
   device: ${device}
   lr: ${lr}
-  feature_dim: ${feature_dim}
-  hidden_dim: 1024
+  log_std_bounds: [-5, 2]
   critic_target_tau: 0.01
-  num_expl_steps: 2000
   update_every_steps: 2
+  use_tb: ${use_tb}
+  num_expl_steps: ${num_expl_frames}
+  hidden_dim: 1024
+  feature_dim: ${feature_dim}
   stddev_schedule: ${stddev_schedule}
   stddev_clip: 0.3
-  use_tb: ${use_tb}
+  reward_d_coef: 2.0
+  discriminator_lr: ${discriminator_lr}
+  spectral_norm_bool: ${spectral_norm_bool}
+  GAN_loss: ${GAN_loss}
+  stochastic_encoder: ${stochastic_encoder}
+  stochastic_preprocessor: ${stochastic_preprocessor}
+  check_every_steps: ${check_every_steps}
   dual_mi_constant: ${dual_mi_constant}
   dual_max_mi: ${dual_max_mi}
   dual_min_mi_constant: ${dual_min_mi_constant}
@@ -24,11 +32,5 @@ agent:
   max_mi_constant: ${max_mi_constant}
   mi_constant: ${mi_constant}
   unbiased_mi_decay: ${unbiased_mi_decay}
-  reward_d_coef: 2.0
-  discriminator_lr: ${discriminator_lr}
-  spectral_norm_bool: ${spectral_norm_bool}
-  check_every_steps: ${check_every_steps}
-  log_std_bounds: [-5, 2]
-  GAN_loss: ${GAN_loss}
-  stochastic_encoder: ${stochastic_encoder}
-  from_dem: ${from_dem}
+
+

@@ -31,6 +31,22 @@ Alternatively, download the policies [here](https://figshare.com/s/22de566de2229
 
 ### Train imitation from experts
 
+#### easy setting
+
+**Mutual Information**
+```shell
+python train_LAIL_MI.py seed=0 task=walker_walk agent=lail_byol_mi difficulty=easy
+```
+```shell
+python train_LAIL_MI.py seed=0 task=walker_walk agent=lail_cl_mi difficulty=easy
+```
+```shell
+python train_LAIL_MI.py seed=0 task=walker_walk agent=lail_mi difficulty=easy
+```
+```shell
+python train_LAIL_MI.py seed=0 task=walker_walk agent=disentanAIL difficulty=easy
+```
+
 **DAC**
 ```shell
 python train_w_expert_MDP.py task=walker_walk seed=0 GAN_loss=bce from_dem=true

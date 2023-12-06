@@ -7,9 +7,11 @@ from torch import distributions as torchd
 from torch import autograd
 from torch.nn.utils import spectral_norm 
 from torchvision.utils import save_image
+from torchvision import transforms as T
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
+from utils_folder.byol_pytorch import BYOL, default, RandomApply
 
 import os
 
@@ -47,39 +49,11 @@ class RandomShiftsAug(nn.Module):
                              align_corners=False)
 
 class Encoder(nn.Module):
-    def __init__(self, obs_shape, feature_dim):
+    def __init__(self, obs_shape, feature_dim, stochastic, log_std_bounds):
         super().__init__()
 
         assert len(obs_shape) == 3
-
-        if obs_shape[-1]==84:
-            self.repr_dim = 32 * 35 * 35
-        elif obs_shape[-1]==64:
-            self.repr_dim = 32 * 25 * 25
-
-        self.convnet = nn.Sequential(nn.Conv2d(obs_shape[0], 32, 3, stride=2),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU())
-        
-        self.trunk = nn.Sequential(nn.Linear(self.repr_dim, feature_dim),
-                                nn.LayerNorm(feature_dim), nn.Tanh())
-
-        self.apply(utils.weight_init)
-
-    def forward(self, obs):
-        obs = obs / 255.0 - 0.5
-        h = self.convnet(obs)
-        h = h.view(h.shape[0], -1)
-        z = self.trunk(h)
-        return z
-    
-class Preprocessor(nn.Module):
-    def __init__(self, obs_shape, feature_dim, log_std_bounds):
-        super().__init__()
-
-        assert len(obs_shape) == 3
+        self.stochastic = stochastic
         self.log_std_bounds = log_std_bounds
 
         if obs_shape[-1]==84:
@@ -93,25 +67,32 @@ class Preprocessor(nn.Module):
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
                                      nn.ReLU())
         
-        self.trunk = nn.Sequential(nn.Linear(self.repr_dim, 2 * feature_dim),
-                                nn.LayerNorm(2 * feature_dim), nn.Tanh())
+        if self.stochastic:
+            self.trunk = nn.Sequential(nn.Linear(self.repr_dim, 2 * feature_dim),
+                                    nn.LayerNorm(2 * feature_dim), nn.Tanh())
+        else:
+            self.trunk = nn.Sequential(nn.Linear(self.repr_dim, feature_dim),
+                                    nn.LayerNorm(feature_dim), nn.Tanh())
 
         self.apply(utils.weight_init)
 
     def forward(self, obs):
+
         obs = obs / 255.0 - 0.5
         h = self.convnet(obs)
         h = h.view(h.shape[0], -1)
-
         z = self.trunk(h)
-        mu, log_std = z.chunk(2, dim=-1)
-        log_std = torch.tanh(log_std)
-        log_std_min, log_std_max = self.log_std_bounds
-        log_std = log_std_min + 0.5 * (log_std_max - log_std_min) * (log_std + 1)
-        std = log_std.exp()
 
-        dist = torchd.Normal(mu, std)
-        return dist
+        if self.stochastic:
+            mu, log_std = z.chunk(2, dim=-1)
+            log_std = torch.tanh(log_std)
+            log_std_min, log_std_max = self.log_std_bounds
+            log_std = log_std_min + 0.5 * (log_std_max - log_std_min) * (log_std + 1)
+            std = log_std.exp()
+            dist = torchd.Normal(mu, std) 
+            z = dist.sample()
+
+        return z
         
 class Discriminator(nn.Module):
     def __init__(self, input_net_dim, hidden_dim, spectral_norm_bool=False, dist=None):
@@ -209,14 +190,13 @@ class Critic(nn.Module):
 
         return q1, q2
 
-class LailMiAgent:
+class LailByolAgent:
     def __init__(self, 
                  obs_shape, 
                  action_shape, 
                  device, 
                  lr, 
-                 feature_dim, 
-                 log_std_bounds,
+                 feature_dim,
                  hidden_dim, 
                  critic_target_tau, 
                  num_expl_steps, 
@@ -224,20 +204,26 @@ class LailMiAgent:
                  stddev_schedule, 
                  stddev_clip, 
                  use_tb, 
-                 dual_mi_constant, 
-                 dual_max_mi,
-                 dual_min_mi_constant, 
-                 max_mi, 
-                 min_mi, 
-                 min_mi_constant, 
-                 max_mi_constant, 
-                 mi_constant,
-                 unbiased_mi_decay, 
+                 dual_mi_constant, # lagrangian variable used for the prior data MI loss
+                 dual_max_mi, # max MI for the prior data MI loss (\approx 0)
+                 dual_min_mi_constant, # minimal value of the lagrangian variable for the prior data MI loss
+                 max_mi, # max value of MI to update the lagrangian variable for the actual data MI loss 
+                 min_mi, # min value of MI to update the lagrangian variable for the actual data MI loss
+                 min_mi_constant, # min value of the lagrangian variable for the actual data MI loss
+                 max_mi_constant, # max value of the lagrangian variable for the actual data MI loss
+                 mi_constant, # initial value of the lagrangian variable for the actual data MI loss
+                 unbiased_mi_decay, # rate of decay for the unbiased MI estimator loss
                  reward_d_coef, 
                  discriminator_lr, 
                  spectral_norm_bool, 
                  check_every_steps, 
-                 GAN_loss='bce'):
+                 log_std_bounds,
+                 GAN_loss='bce', 
+                 stochastic_encoder=False, 
+                 from_dem=False, 
+                 add_aug=False, 
+                 depth_flag=False, 
+                 segm_flag=False):
         
         self.device = device
         self.critic_target_tau = critic_target_tau
@@ -246,17 +232,39 @@ class LailMiAgent:
         self.num_expl_steps = num_expl_steps
         self.stddev_schedule = stddev_schedule
         self.stddev_clip = stddev_clip
-        self.log_std_bounds = log_std_bounds
         self.GAN_loss = GAN_loss
+        self.from_dem = from_dem
         self.check_every_steps = check_every_steps
+        self.add_aug = add_aug
 
-        self.encoder = Encoder(obs_shape, feature_dim).to(device)  
+        # data augmentation
+        self.aug = RandomShiftsAug(pad=4)
+
+        # add augmentation for BYOL
+        DEFAULT_AUG = torch.nn.Sequential(
+            RandomApply(T.ColorJitter(0.8, 0.8, 0.8, 0.2), p = 0.3),
+            T.RandomGrayscale(p=0.2),
+            T.RandomHorizontalFlip(),
+            RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.2),
+            T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]))
+        )
+
+        self.augment1 = default(None, DEFAULT_AUG)
+        self.augment2 = default(None, self.augment1)
+
+        if depth_flag or segm_flag:
+            self.add_aug = False
+
+        self.encoder = Encoder(obs_shape, feature_dim, stochastic_encoder, log_std_bounds).to(device)
+    
+        self.byol = BYOL(self.encoder, obs_shape, self.aug, self.augment1, self.augment2,
+                        self.add_aug, projection_size=(feature_dim//2)).to(device)
+        
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
         self.critic_target = Critic(action_shape, feature_dim, hidden_dim).to(device)
         self.critic_target.load_state_dict(self.critic.state_dict())
 
-        self.preprocessor = Preprocessor(obs_shape, feature_dim, log_std_bounds).to(device)
         self.mi_estimator = MIEstimator(feature_dim, hidden_dim, labels_dim=1).to(device)
         self.log_mi_constant = torch.tensor(np.log(dual_mi_constant)).to(device)
         self.log_mi_constant.requires_grad = True
@@ -268,40 +276,47 @@ class LailMiAgent:
         self.min_mi_constant = min_mi_constant
         self.adaptive_penalty = torch.tensor(mi_constant).to(device)
         self.unbiased_mi_decay = unbiased_mi_decay
-        self.unbiased_mi_ma1 = torch.tensor(1.0).to(device)
-        self.unbiased_mi_ma2 = torch.tensor(1.0).to(device)
+        self.unbiased_mi_ma1 = torch.tensor(1.0).to(device) # initial value of the MI for the unbiased estimator loss 
+        self.unbiased_mi_ma2 = torch.tensor(1.0).to(device) # initial value of the MI for the unbiased estimator loss
+        
+        # added model
+        if from_dem:
+            if self.GAN_loss == 'least-square':
+                self.discriminator = Discriminator(feature_dim+action_shape[0], hidden_dim, spectral_norm_bool).to(device)
+                self.reward_d_coef = reward_d_coef
 
-        if self.GAN_loss == 'least-square':
-            self.discriminator = Discriminator(2*feature_dim, hidden_dim, spectral_norm_bool).to(device)
-            self.reward_d_coef = reward_d_coef
+            elif self.GAN_loss == 'bce':
+                self.discriminator = Discriminator(feature_dim+action_shape[0], hidden_dim, spectral_norm_bool, dist='binary').to(device)
+            else:
+                NotImplementedError
 
-        elif self.GAN_loss == 'bce':
-            self.discriminator = Discriminator(2*feature_dim, hidden_dim, spectral_norm_bool, dist='binary').to(device)
         else:
-            NotImplementedError
+            if self.GAN_loss == 'least-square':
+                self.discriminator = Discriminator(2*feature_dim, hidden_dim, spectral_norm_bool).to(device)
+                self.reward_d_coef = reward_d_coef
+
+            elif self.GAN_loss == 'bce':
+                self.discriminator = Discriminator(2*feature_dim, hidden_dim, spectral_norm_bool, dist='binary').to(device)
+            else:
+                NotImplementedError
 
         # optimizers
-        self.encoder_opt = torch.optim.Adam(self.encoder.parameters(), lr=lr)
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=lr)
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=lr)
         self.discriminator_opt = torch.optim.Adam(self.discriminator.parameters(), lr=discriminator_lr)
-        self.preprocessor_opt = torch.optim.Adam(self.preprocessor.parameters(), lr=lr)
+        self.byol_opt = torch.optim.Adam(self.byol.parameters(), lr=lr)
         self.mi_estimator_opt = torch.optim.Adam(self.mi_estimator.parameters(), lr=lr)
         self.log_mi_constant_opt = torch.optim.Adam([self.log_mi_constant], lr=lr)
-
-        # data augmentation
-        self.aug = RandomShiftsAug(pad=4)
 
         self.train()
         self.critic_target.train()
 
     def train(self, training=True):
         self.training = training
-        self.encoder.train(training)
+        self.byol.train(training)
         self.actor.train(training)
         self.critic.train(training)
         self.discriminator.train(training)
-        self.preprocessor.train(training)
         self.mi_estimator.train(training)
 
     @property
@@ -310,7 +325,7 @@ class LailMiAgent:
 
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
-        obs = self.encoder(obs.unsqueeze(0))
+        obs = self.byol.online_encoder(obs.unsqueeze(0), return_projection=False)
         stddev = utils.schedule(self.stddev_schedule, step)
         dist = self.actor(obs, stddev)
         if eval_mode:
@@ -342,11 +357,11 @@ class LailMiAgent:
             metrics['critic_loss'] = critic_loss.item()
 
         # optimize encoder and critic
-        self.encoder_opt.zero_grad(set_to_none=True)
+        self.byol_opt.zero_grad(set_to_none=True)
         self.critic_opt.zero_grad(set_to_none=True)
         critic_loss.backward()
         self.critic_opt.step()
-        self.encoder_opt.step()
+        self.byol_opt.step()
 
         return metrics
 
@@ -378,16 +393,22 @@ class LailMiAgent:
         metrics = dict()
 
         # augment
-        obs_a = self.aug(obs_a.float())
-        next_a = self.aug(next_a.float())
+        if self.from_dem:
+            obs_a = self.aug(obs_a.float())
+        else:
+            obs_a = self.aug(obs_a.float())
+            next_a = self.aug(next_a.float())
         
         # encode
         with torch.no_grad():
-            obs_a = self.preprocessor(obs_a).sample()
-            next_a = self.preprocessor(next_a).sample()
+            if self.from_dem:
+                z_a = self.byol.online_encoder(obs_a, return_projection=False)
+            else:
+                z_a = self.byol.online_encoder(obs_a, return_projection=False)
+                next_a = self.byol.online_encoder(next_a, return_projection=False)
         
             self.discriminator.eval()
-            transition_a = torch.cat([obs_a, next_a], dim = -1)
+            transition_a = torch.cat([z_a, next_a], dim = -1)
 
             d = self.discriminator(transition_a)
 
@@ -406,9 +427,9 @@ class LailMiAgent:
             
         return reward, metrics
     
-    def compute_discriminator_grad_penalty_LS(self, obs_e, next_e, lambda_=10):
+    def compute_discriminator_grad_penalty_LS(self, z_e, next_e, lambda_=10):
         
-        expert_data = torch.cat([obs_e, next_e], dim=-1)
+        expert_data = torch.cat([z_e, next_e], dim=-1)
         expert_data.requires_grad = True
         
         d = self.discriminator(expert_data)
@@ -420,11 +441,11 @@ class LailMiAgent:
         grad_pen = lambda_ * (grad.norm(2, dim=1) - 0).pow(2).mean()
         return grad_pen
 
-    def compute_discriminator_grad_penalty_bce(self, obs_a, next_a, obs_e, next_e, lambda_=10):
+    def compute_discriminator_grad_penalty_bce(self, z_a, next_a, z_e, next_e, lambda_=10):
 
-        agent_feat = torch.cat([obs_a, next_a], dim=-1)
+        agent_feat = torch.cat([z_a, next_a], dim=-1)
         alpha = torch.rand(agent_feat.shape[:1]).unsqueeze(-1).to(self.device)
-        expert_data = torch.cat([obs_e, next_e], dim=-1)
+        expert_data = torch.cat([z_e, next_e], dim=-1)
         disc_penalty_input = alpha*agent_feat + (1-alpha)*expert_data
 
         disc_penalty_input.requires_grad = True
@@ -437,7 +458,43 @@ class LailMiAgent:
         
         grad_pen = lambda_ * (grad.norm(2, dim=1) - 1).pow(2).mean()
         return grad_pen
-    
+        
+    def update_discriminator(self, z_a, next_a, z_e, next_e):
+        metrics = dict()
+
+        transition_a = torch.cat([z_a, next_a], dim=-1)
+        transition_e = torch.cat([z_e, next_e], dim=-1)
+        
+        agent_d = self.discriminator(transition_a)
+        expert_d = self.discriminator(transition_e)
+
+        if self.GAN_loss == 'least-square':
+            expert_labels = 1.0
+            agent_labels = -1.0
+
+            expert_loss = F.mse_loss(expert_d, expert_labels*torch.ones(expert_d.size(), device=self.device))
+            agent_loss = F.mse_loss(agent_d, agent_labels*torch.ones(agent_d.size(), device=self.device))
+            grad_pen_loss = self.compute_discriminator_grad_penalty_LS(z_e.detach(), next_e.detach())
+            loss = 0.5*(expert_loss + agent_loss) + grad_pen_loss
+        
+        elif self.GAN_loss == 'bce':
+            expert_loss = (expert_d.log_prob(torch.ones_like(expert_d.mode()).to(self.device))).mean()
+            agent_loss = (agent_d.log_prob(torch.zeros_like(agent_d.mode()).to(self.device))).mean()
+            grad_pen_loss = self.compute_discriminator_grad_penalty_bce(z_a.detach(), next_a.detach(), z_e.detach(), next_e.detach())
+            loss = -(expert_loss+agent_loss) + grad_pen_loss
+
+        self.discriminator_opt.zero_grad(set_to_none=True)
+        loss.backward()
+        self.discriminator_opt.step()
+        
+        if self.use_tb:
+            metrics['discriminator_expert_loss'] = expert_loss.item()
+            metrics['discriminator_agent_loss'] = agent_loss.item()
+            metrics['discriminator_loss'] = loss.item()
+            metrics['discriminator_grad_pen'] = grad_pen_loss.item()
+        
+        return metrics   
+
     def update_adaptive_penalty(self, mi_loss):
         metrics = dict()
 
@@ -466,64 +523,37 @@ class LailMiAgent:
             metrics['mi_dual_loss'] = mi_dual_loss.item()
             metrics['mi_dual_constant_value'] = self.mi_constant
 
-        return metrics
-    
-    def update_discriminator(self, z_a, next_z_a, z_e, next_z_e, z_a_random, next_z_a_random, z_e_random, next_z_e_random):
+        return metrics  
+
+    def update_BYOL(self, obs, z_a, next_z_a, z_e, next_z_e, z_a_random, next_z_a_random, z_e_random, next_z_e_random, check_every_steps, step):
         metrics = dict()
 
-        #transition_a = torch.cat([z_a, next_z_a, z_a_random, next_z_a_random, z_e_random, next_z_e_random], dim=-1) This is a possibility
-        # reduce batch size in case
-
-        transition_a = torch.cat([z_a, next_z_a], dim=-1)
-        transition_e = torch.cat([z_e, next_z_e], dim=-1)
-        
-        agent_d = self.discriminator(transition_a)
-        expert_d = self.discriminator(transition_e)
-
-        if self.GAN_loss == 'least-square':
-            expert_labels = 1.0
-            agent_labels = -1.0
-
-            expert_loss = F.mse_loss(expert_d, expert_labels*torch.ones(expert_d.size(), device=self.device))
-            agent_loss = F.mse_loss(agent_d, agent_labels*torch.ones(agent_d.size(), device=self.device))
-            grad_pen_loss = self.compute_discriminator_grad_penalty_LS(z_e.detach(), next_z_e.detach())
-            loss = 0.5*(expert_loss + agent_loss) + grad_pen_loss
-        
-        elif self.GAN_loss == 'bce':
-            expert_loss = (expert_d.log_prob(torch.ones_like(expert_d.mode()).to(self.device))).mean()
-            agent_loss = (agent_d.log_prob(torch.zeros_like(agent_d.mode()).to(self.device))).mean()
-            grad_pen_loss = self.compute_discriminator_grad_penalty_bce(z_a.detach(), next_z_a.detach(), z_e.detach(), next_z_e.detach())
-            loss = -(expert_loss+agent_loss) + grad_pen_loss
+        loss = self.byol(obs, check_every_steps, step)
 
         _, _, m1_loss, m2_loss = self.compute_mi_loss(z_a, next_z_a, z_e, next_z_e)
         mi_est = torch.maximum(m1_loss, m2_loss)
-        mi_loss = -1*torch.clamp(mi_est, min=0.0)
+        mi_loss = torch.clamp(mi_est, min=0.0)
 
         _, _, m1_random_loss, m2_random_loss = self.compute_mi_loss(z_a_random, next_z_a_random, z_e_random, next_z_e_random)
         mi_random_est = torch.maximum(m1_random_loss, m2_random_loss)
-        mi_random_loss = -1*torch.clamp(mi_random_est, min=0.0)
+        mi_random_loss = torch.clamp(mi_random_est, min=0.0)
 
         metrics.update(self.update_adaptive_penalty(torch.clamp(mi_est, min=0.0, max=1.0))) # refers to the penalty for mi_loss
         metrics.update(self.update_dual_penalty(torch.clamp(mi_random_est, min=0.0, max=1.0))) # refers to the penalty for mi_random_loss
 
         loss = loss + self.adaptive_penalty * mi_loss + self.mi_constant * mi_random_loss
 
-        self.discriminator_opt.zero_grad(set_to_none=True)
+        self.byol_opt.zero_grad(set_to_none=True)
         loss.backward()
-        self.discriminator_opt.step()
-        
-        if self.use_tb:
-            metrics['discriminator_expert_loss'] = expert_loss.item()
-            metrics['discriminator_agent_loss'] = agent_loss.item()
-            metrics['discriminator_loss'] = loss.item()
-            metrics['discriminator_grad_pen'] = grad_pen_loss.item()
-            metrics['m1_loss_expert_data'] = m1_loss.item()
-            metrics['m2_loss_expert_data'] = m2_loss.item()
-            metrics['m1_loss_random_data'] = m1_random_loss.item()
-            metrics['m2_loss_random_data'] = m2_random_loss.item()
-        
-        return metrics  
+        self.byol_opt.step()
 
+        self.byol.update_moving_average()
+
+        if self.use_tb:
+            metrics['BYOL_loss'] = loss.item()
+
+        return metrics
+    
     def compute_mi_loss(self, z_a, next_z_a, z_e, next_z_e):
 
         agent_z = torch.cat([z_a, next_z_a], dim=0)
@@ -550,10 +580,10 @@ class LailMiAgent:
 
         return unbiased_m1_loss, unbiased_m2_loss, m1_loss, m2_loss    
 
-    def update_mi_estimator(self, obs_a, next_a, obs_e, next_e):
+    def update_mi_estimator(self, z_a, next_z_a, z_e, next_z_e):
         metrics = dict()
 
-        unbiased_m1_loss, unbiased_m2_loss, _, _ = self.compute_mi_loss(obs_a, next_a, obs_e, next_e)
+        unbiased_m1_loss, unbiased_m2_loss, _, _ = self.compute_mi_loss(z_a, next_z_a, z_e, next_z_e)
         loss = -1*(unbiased_m1_loss + unbiased_m2_loss)
 
         self.mi_estimator_opt.zero_grad(set_to_none=True)
@@ -577,8 +607,8 @@ class LailMiAgent:
         obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
         
         batch_expert = next(replay_iter_expert)
-        obs_e_raw, _, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
-
+        obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
+        
         obs_e = self.aug(obs_e_raw.float())
         next_obs_e = self.aug(next_obs_e_raw.float())
         obs_a = self.aug(obs.float())
@@ -586,14 +616,6 @@ class LailMiAgent:
 
         if step % self.check_every_steps == 0:
             self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step)
-
-        with torch.no_grad():
-            z_e = self.preprocessor(obs_e).sample()
-            next_z_e = self.preprocessor(next_obs_e).sample()
-            z_a = self.preprocessor(obs_a).sample()
-            next_z_a = self.preprocessor(next_obs_a).sample()
-
-        metrics.update(self.update_mi_estimator(z_a, next_z_a, z_e, next_z_e)) #Mutual information estimator update estimator
 
         # sample random data
         batch_agent_random = next(replay_iter_random)
@@ -610,32 +632,55 @@ class LailMiAgent:
         if step % self.check_every_steps == 0:
             self.check_aug(obs_a_random, next_obs_a_random, obs_e_random, next_obs_e_random, "random_buffer", step)
 
-        z_e = self.preprocessor(obs_e).sample()
-        next_z_e = self.preprocessor(next_obs_e).sample()
+        z_e = self.byol.online_encoder(obs_e, return_projection=False)
+        next_z_e = self.byol.online_encoder(next_obs_e, return_projection=False)
 
-        z_a = self.preprocessor(obs_a).sample()
-        next_z_a = self.preprocessor(next_obs_a).sample()
+        z_a = self.byol.online_encoder(obs_a, return_projection=False)
+        next_z_a = self.byol.online_encoder(next_obs_a, return_projection=False)
 
-        z_e_random = self.preprocessor(obs_e_random).sample()
-        next_z_e_random = self.preprocessor(next_obs_e_random).sample()
+        z_e_random = self.byol.online_encoder(obs_e_random, return_projection=False)
+        next_z_e_random = self.byol.online_encoder(next_obs_e_random, return_projection=False)
 
-        z_a_random = self.preprocessor(obs_a_random).sample()
-        next_z_a_random = self.preprocessor(next_obs_a_random).sample()
+        z_a_random = self.byol.online_encoder(obs_a_random, return_projection=False)
+        next_z_a_random = self.byol.online_encoder(next_obs_a_random, return_projection=False)
 
-        metrics.update(self.update_discriminator(z_a, next_z_a, z_e, next_z_e, z_a_random, next_z_a_random, z_e_random, next_z_e_random))
-        reward, metrics_r = self.compute_reward(obs, next_obs)
+        metrics.update(self.update_BYOL(obs, 
+                                        z_a, 
+                                        next_z_a, 
+                                        z_e, 
+                                        next_z_e, 
+                                        z_a_random, 
+                                        next_z_a_random, 
+                                        z_e_random, 
+                                        next_z_e_random, 
+                                        self.check_every_steps, 
+                                        step))
+
+        with torch.no_grad():
+            z_e = self.byol.online_encoder(obs_e, return_projection=False)
+            next_z_e = self.byol.online_encoder(next_obs_e, return_projection=False)
+            z_a = self.byol.online_encoder(obs_a, return_projection=False)
+            next_z_a = self.byol.online_encoder(next_obs_a, return_projection=False)
+
+        metrics.update(self.update_mi_estimator(z_a, next_z_a, z_e, next_z_e)) #Mutual information estimator update estimator
+        
+        # update critic
+        if self.from_dem:
+            metrics.update(self.update_discriminator(z_a, action, z_e, action_e))
+            reward, metrics_r = self.compute_reward(obs, action)
+        else:
+            metrics.update(self.update_discriminator(z_a, next_z_a, z_e, next_z_e))
+            reward, metrics_r = self.compute_reward(obs, next_obs)
 
         metrics.update(metrics_r)
-
-        # RL step start
 
         # augment
         obs = self.aug(obs.float())
         next_obs = self.aug(next_obs.float())
         # encode
-        obs = self.encoder(obs)
+        obs = self.byol.online_encoder(obs, return_projection=False)
         with torch.no_grad():
-            next_obs = self.encoder(next_obs)
+            next_obs = self.byol.online_encoder(next_obs, return_projection=False)
 
         if self.use_tb:
             metrics['batch_reward'] = reward_a.mean().item()

@@ -1,8 +1,8 @@
 
-agent_name: lail_mi
+agent_name: lail_cl_mi
 
 agent:
-  _target_: agents.mutual_information.lail.LailAgent
+  _target_: agents.mutual_information.lail_cl.LailClAgent
   obs_shape: ??? # to be specified later
   action_shape: ??? # to be specified later
   device: ${device}
@@ -32,3 +32,7 @@ agent:
   GAN_loss: ${GAN_loss}
   stochastic_encoder: ${stochastic_encoder}
   from_dem: ${from_dem}
+  add_aug: ${add_aug}
+  depth_flag: ${depth_flag}
+  segm_flag: ${segm_flag}
+

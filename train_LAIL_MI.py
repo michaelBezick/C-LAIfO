@@ -267,6 +267,10 @@ class Workspace:
                 if self.cfg.save_snapshot:
                     self.save_snapshot()
 
+                if self.cfg.save_replay_buffers:
+                    self.save_buffer_random()
+                    self.save_buffer()
+
             # sample action
             with torch.no_grad(), utils.eval_mode(self.agent):
                 action = self.agent.act(time_step.observation,
@@ -300,7 +304,35 @@ class Workspace:
         keys_to_save = ['agent', 'timer', '_global_step', '_global_episode']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
-            torch.save(payload, f)
+            torch.save(payload, f, pickle_protocol=4)
+
+    def save_buffer(self):
+        snapshot = self.work_dir / f'replay_buffer_{self.cfg.task_name}.pt'
+        keys_to_save = ['replay_buffer']
+        payload = {k: self.__dict__[k] for k in keys_to_save}
+        with snapshot.open('wb') as f:
+            torch.save(payload, f, pickle_protocol=4)
+
+    def save_buffer_random(self):
+        snapshot = self.work_dir / f'replay_buffer_random_{self.cfg.task_name}.pt'
+        keys_to_save = ['replay_buffer_random']
+        payload = {k: self.__dict__[k] for k in keys_to_save}
+        with snapshot.open('wb') as f:
+            torch.save(payload, f, pickle_protocol=4)
+
+    def save_expert_buffer(self):
+        snapshot = self.work_dir / f'replay_buffer_expert_{self.cfg.task_name}.pt'
+        keys_to_save = ['replay_buffer_expert']
+        payload = {k: self.__dict__[k] for k in keys_to_save}
+        with snapshot.open('wb') as f:
+            torch.save(payload, f, pickle_protocol=4)
+
+    def save_expert_buffer_random(self):
+        snapshot = self.work_dir / f'replay_buffer_expert_random_{self.cfg.task_name}.pt'
+        keys_to_save = ['replay_buffer_random_expert']
+        payload = {k: self.__dict__[k] for k in keys_to_save}
+        with snapshot.open('wb') as f:
+            torch.save(payload, f, pickle_protocol=4)
 
     def load_snapshot(self):
         snapshot = self.work_dir / f'snapshot_{self.cfg.task_name}.pt'
@@ -326,6 +358,11 @@ def main(cfg):
     workspace.load_expert(snapshot)
     workspace.store_expert_transitions()
     workspace.store_random_expert_transitions()
+
+    if cfg.save_replay_buffers:
+        workspace.save_expert_buffer()
+        workspace.save_expert_buffer_random()
+
     workspace.train()
 
 if __name__ == '__main__':

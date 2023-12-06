@@ -222,6 +222,9 @@ class Workspace:
                 if self.cfg.save_snapshot:
                     self.save_snapshot()
 
+                if self.cfg.save_replay_buffers:
+                    self.save_buffer()
+
             # sample action
             with torch.no_grad(), utils.eval_mode(self.agent):
                 action = self.agent.act(time_step.observation,
@@ -243,7 +246,21 @@ class Workspace:
 
     def save_snapshot(self):
         snapshot = self.work_dir / f'snapshot_{self.cfg.task_name}.pt'
-        keys_to_save = ['agent', 'replay_buffer', 'replay_buffer_expert', 'timer', '_global_step', '_global_episode']
+        keys_to_save = ['agent', 'timer', '_global_step', '_global_episode']
+        payload = {k: self.__dict__[k] for k in keys_to_save}
+        with snapshot.open('wb') as f:
+            torch.save(payload, f, pickle_protocol=4)
+
+    def save_buffer(self):
+        snapshot = self.work_dir / f'replay_buffer_{self.cfg.task_name}.pt'
+        keys_to_save = ['replay_buffer']
+        payload = {k: self.__dict__[k] for k in keys_to_save}
+        with snapshot.open('wb') as f:
+            torch.save(payload, f, pickle_protocol=4)
+
+    def save_expert_buffer(self):
+        snapshot = self.work_dir / f'replay_buffer_expert_{self.cfg.task_name}.pt'
+        keys_to_save = ['replay_buffer_expert']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f, pickle_protocol=4)
@@ -271,6 +288,10 @@ def main(cfg):
     print(f'loading expert target: {snapshot}')
     workspace.load_expert(snapshot)
     workspace.store_expert_transitions()
+
+    if cfg.save_replay_buffers:
+        workspace.save_expert_buffer()
+
     workspace.train()
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ agent:
   action_shape: ??? # to be specified later
   device: ${device}
   lr: ${lr}
+  log_std_bounds: [-5, 2]
   critic_target_tau: 0.01
   update_every_steps: 2
   use_tb: ${use_tb}
@@ -19,6 +20,7 @@ agent:
   discriminator_lr: ${discriminator_lr}
   spectral_norm_bool: ${spectral_norm_bool}
   GAN_loss: ${GAN_loss}
+  stochastic_encoder: ${stochastic_encoder}
   from_dem: ${from_dem}
   check_every_steps: ${check_every_steps}
   from_depth: ${from_depth}

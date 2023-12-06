@@ -68,7 +68,7 @@ class CL(nn.Module):
         return logits
 
 class Encoder(nn.Module):
-    def __init__(self, obs_shape, feature_dim, from_depth, stochastic, log_std_bounds):
+    def __init__(self, obs_shape, feature_dim, stochastic, log_std_bounds):
         super().__init__()
 
         assert len(obs_shape) == 3
@@ -80,7 +80,6 @@ class Encoder(nn.Module):
         elif obs_shape[-1]==64:
             self.repr_dim = 32 * 25 * 25
 
-        self.from_depth = from_depth
         self.convnet = nn.Sequential(nn.Conv2d(obs_shape[0], 32, 3, stride=2),
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
@@ -97,11 +96,8 @@ class Encoder(nn.Module):
         self.apply(utils.weight_init)
 
     def forward(self, obs):
-
-        # we do not use this normalization step when from depth as images come out of the buffer already normalized
-        if not self.from_depth:
-            obs = obs / 255.0 - 0.5
-
+            
+        obs = obs / 255.0 - 0.5
         h = self.convnet(obs)
         h = h.view(h.shape[0], -1)
         z = self.trunk(h)
@@ -147,6 +143,28 @@ class Discriminator(nn.Module):
             return Bernoulli(torchd.independent.Independent(torchd.bernoulli.Bernoulli(logits=d), len(self._shape)))
         else:
             return d 
+        
+class MIEstimator(nn.Module):
+    def __init__(self, feature_dim, hidden_dim, labels_dim = 1):
+        super().__init__()
+
+        self.M1 = nn.Sequential(
+            nn.Linear(feature_dim+labels_dim, hidden_dim),
+            nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
+
+        self.M2 = nn.Sequential(
+            nn.Linear(feature_dim+labels_dim, hidden_dim),
+            nn.ReLU(inplace=True), nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(inplace=True), nn.Linear(hidden_dim, 1))
+
+        self.apply(utils.weight_init)
+
+    def forward(self, z):
+        m1 = self.M1(z)
+        m2 = self.M2(z)
+
+        return m1, m2
 
 class Actor(nn.Module):
     def __init__(self, action_shape, feature_dim, hidden_dim):
@@ -192,12 +210,39 @@ class Critic(nn.Module):
         return q1, q2
 
 class LailClAgent:
-    def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
-                 hidden_dim, critic_target_tau, num_expl_steps,
-                 update_every_steps, stddev_schedule, stddev_clip, use_tb, 
-                 reward_d_coef, discriminator_lr, spectral_norm_bool, check_every_steps, log_std_bounds,
-                 GAN_loss='bce', stochastic_encoder=False, from_dem=False, from_depth=False, midas_size='small',
-                 add_aug=False, depth_flag=False, segm_flag=False):
+    def __init__(self, 
+                 obs_shape, 
+                 action_shape, 
+                 device, 
+                 lr, 
+                 feature_dim,
+                 hidden_dim, 
+                 critic_target_tau, 
+                 num_expl_steps,
+                 update_every_steps, 
+                 stddev_schedule, 
+                 stddev_clip, 
+                 use_tb,
+                 dual_mi_constant, # lagrangian variable used for the prior data MI loss
+                 dual_max_mi, # max MI for the prior data MI loss (\approx 0)
+                 dual_min_mi_constant, # minimal value of the lagrangian variable for the prior data MI loss
+                 max_mi, # max value of MI to update the lagrangian variable for the actual data MI loss 
+                 min_mi, # min value of MI to update the lagrangian variable for the actual data MI loss
+                 min_mi_constant, # min value of the lagrangian variable for the actual data MI loss
+                 max_mi_constant, # max value of the lagrangian variable for the actual data MI loss
+                 mi_constant, # initial value of the lagrangian variable for the actual data MI loss
+                 unbiased_mi_decay, # rate of decay for the unbiased MI estimator loss
+                 reward_d_coef, 
+                 discriminator_lr, 
+                 spectral_norm_bool, 
+                 check_every_steps, 
+                 log_std_bounds,
+                 GAN_loss='bce', 
+                 stochastic_encoder=False, 
+                 from_dem=False, 
+                 add_aug=False, 
+                 depth_flag=False, 
+                 segm_flag=False):
         
         self.device = device
         self.critic_target_tau = critic_target_tau
@@ -208,10 +253,8 @@ class LailClAgent:
         self.stddev_clip = stddev_clip
         self.GAN_loss = GAN_loss
         self.from_dem = from_dem
-        self.from_depth = from_depth
         self.check_every_steps = check_every_steps
         self.add_aug = add_aug
-        self.stochastic_encoder = stochastic_encoder
 
         # data augmentation
         self.aug = RandomShiftsAug(pad=4)
@@ -231,22 +274,7 @@ class LailClAgent:
         if depth_flag or segm_flag:
             self.add_aug = False
 
-        if from_depth:
-
-            self.add_aug = False # Depth and additional augmentation are not compatible
-
-            if midas_size == 'small':
-                self.midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small").to(self.device).eval()
-            elif midas_size == 'medium':
-                self.midas = torch.hub.load("intel-isl/MiDaS", "DPT_Hybrid").to(self.device).eval()
-            elif midas_size == 'large':
-                self.midas = torch.hub.load("intel-isl/MiDaS", "DPT_Large").to(self.device).eval()
-
-            self.encoder = Encoder((obs_shape[0]//3,) + tuple(obs_shape[-2:]), 
-                                   feature_dim, from_depth, stochastic_encoder, log_std_bounds).to(device)
-
-        else:
-            self.encoder = Encoder(obs_shape, feature_dim, from_depth, stochastic_encoder, log_std_bounds).to(device)
+        self.encoder = Encoder(obs_shape, feature_dim, stochastic_encoder, log_std_bounds).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
@@ -255,6 +283,20 @@ class LailClAgent:
 
         self.CL = CL(feature_dim).to(device) 
         self.cross_entropy_loss = nn.CrossEntropyLoss()
+
+        self.mi_estimator = MIEstimator(feature_dim, hidden_dim, labels_dim=1).to(device)
+        self.log_mi_constant = torch.tensor(np.log(dual_mi_constant)).to(device)
+        self.log_mi_constant.requires_grad = True
+        self.log_min_mi_constant = torch.tensor(np.log(dual_min_mi_constant)).to(device)
+        self.dual_max_mi = dual_max_mi
+        self.max_mi = max_mi
+        self.min_mi = min_mi 
+        self.max_mi_constant = max_mi_constant
+        self.min_mi_constant = min_mi_constant
+        self.adaptive_penalty = torch.tensor(mi_constant).to(device)
+        self.unbiased_mi_decay = unbiased_mi_decay
+        self.unbiased_mi_ma1 = torch.tensor(1.0).to(device) # initial value of the MI for the unbiased estimator loss 
+        self.unbiased_mi_ma2 = torch.tensor(1.0).to(device) # initial value of the MI for the unbiased estimator loss
         
         # added model
         if from_dem:
@@ -283,6 +325,8 @@ class LailClAgent:
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=lr)
         self.discriminator_opt = torch.optim.Adam(self.discriminator.parameters(), lr=discriminator_lr)
         self.CL_opt = torch.optim.Adam(self.CL.parameters(), lr=lr)
+        self.mi_estimator_opt = torch.optim.Adam(self.mi_estimator.parameters(), lr=lr)
+        self.log_mi_constant_opt = torch.optim.Adam([self.log_mi_constant], lr=lr)
 
         self.train()
         self.critic_target.train()
@@ -294,33 +338,13 @@ class LailClAgent:
         self.critic.train(training)
         self.discriminator.train(training)
         self.CL.train(training)
+        self.mi_estimator.train(training)
 
-    def normalize(self, obs):
-        obs = (obs-obs.mean())/obs.std()
-        return obs
-
-    def process(self, obs):
-
-        frame_stack = obs.shape[0] // 3
-        output_list = []
-        for i in range(frame_stack):
-            frame = obs[i*frame_stack:(i+1)*frame_stack, :, :]
-            frame = torch.FloatTensor(self.normalize(frame))
-            input_batch = torch.nn.functional.interpolate(frame.unsqueeze(0), size=(256, 256), mode="bicubic", align_corners=False).to(self.device)
-            with torch.no_grad():
-                prediction = self.midas(input_batch)
-                prediction = torch.nn.functional.interpolate(prediction.unsqueeze(1), size=obs.shape[-2:], mode="bicubic", align_corners=False).squeeze(0)
-
-            output_list.append(self.normalize(prediction.cpu().numpy()))
-
-        output = np.concatenate(output_list, axis=0)
-        return output
+    @property
+    def mi_constant(self):
+        return torch.maximum(self.log_mi_constant, self.log_min_mi_constant).exp()
 
     def act(self, obs, step, eval_mode):
-
-        if self.from_depth:
-            obs = self.process(obs)
-
         obs = torch.as_tensor(obs, device=self.device)
         obs = self.encoder(obs.unsqueeze(0))
         stddev = utils.schedule(self.stddev_schedule, step)
@@ -383,59 +407,6 @@ class LailClAgent:
             metrics['actor_loss'] = actor_loss.item()
             metrics['actor_logprob'] = log_prob.mean().item()
             metrics['actor_ent'] = dist.entropy().sum(dim=-1).mean().item()
-
-        return metrics
-
-    def augment(self, obs):
-
-        b, c, h, w = obs.size()
-        assert h == w 
-
-        num_frames = c // 3
-        image_one = []
-        image_two = []
-        for i in range(num_frames):
-            frame = obs[:, 3*i:3*i+3, :, :]
-            frame_one = self.augment1(frame)
-            frame_two = self.augment2(frame)
-            image_one.append(frame_one)
-            image_two.append(frame_two)
-
-        image_one = torch.cat(image_one, dim=1)
-        image_two = torch.cat(image_two, dim=1)
-
-        return image_one, image_two
-    
-    def update_CL(self, obs, check_every_steps, step):
-        metrics = dict()
-
-        if self.add_aug:
-            image_one, image_two = self.augment(obs)
-
-            if step % check_every_steps == 0:
-                self.check_aug_CL(image_one.float(), image_two.float(), step)
-
-            z_anchor = self.encoder(image_one.float())
-            with torch.no_grad():
-                z_pos = self.encoder(image_two.float())
-
-        else:
-            z_anchor = self.encoder(self.aug(obs.float()))
-            with torch.no_grad():
-                z_pos = self.encoder(self.aug(obs.float()))
-
-        logits = self.CL.compute_logits(z_anchor, z_pos)
-        labels = torch.arange(logits.shape[0]).long().to(self.device)
-        loss = self.cross_entropy_loss(logits, labels)
-
-        self.encoder_opt.zero_grad()
-        self.CL_opt.zero_grad()
-        loss.backward()
-        self.encoder_opt.step()
-        self.CL_opt.step()
-
-        if self.use_tb:
-            metrics['CL_loss'] = loss.item()
 
         return metrics
     
@@ -543,9 +514,147 @@ class LailClAgent:
             metrics['discriminator_loss'] = loss.item()
             metrics['discriminator_grad_pen'] = grad_pen_loss.item()
         
-        return metrics        
+        return metrics    
+    
+    def update_adaptive_penalty(self, mi_loss):
+        metrics = dict()
 
-    def update(self, replay_iter, replay_iter_expert, step):
+        if mi_loss > self.max_mi:
+            self.adaptive_penalty = self.adaptive_penalty * 1.5
+        elif mi_loss < self.min_mi:
+            self.adaptive_penalty = self.adaptive_penalty / 1.5
+
+        self.adaptive_penalty = torch.clip(self.adaptive_penalty, self.min_mi_constant, self.max_mi_constant)
+
+        if self.use_tb:
+            metrics['adaptive_penalty'] = self.adaptive_penalty
+
+        return metrics
+
+    def update_dual_penalty(self, mi_loss):
+        metrics = dict()
+
+        mi_diff = self.dual_max_mi - mi_loss
+        self.log_mi_constant_opt.zero_grad(set_to_none=True)
+        mi_dual_loss = self.log_mi_constant * mi_diff.detach()
+        mi_dual_loss.backward()
+        self.log_mi_constant_opt.step()
+
+        if self.use_tb:
+            metrics['mi_dual_loss'] = mi_dual_loss.item()
+            metrics['mi_dual_constant_value'] = self.mi_constant
+
+        return metrics  
+
+    def augment(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+        image_one = []
+        image_two = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_one = self.augment1(frame)
+            frame_two = self.augment2(frame)
+            image_one.append(frame_one)
+            image_two.append(frame_two)
+
+        image_one = torch.cat(image_one, dim=1)
+        image_two = torch.cat(image_two, dim=1)
+
+        return image_one, image_two
+    
+    def update_CL(self, obs, z_a, next_z_a, z_e, next_z_e, z_a_random, next_z_a_random, z_e_random, next_z_e_random, check_every_steps, step):
+        metrics = dict()
+
+        if self.add_aug:
+            image_one, image_two = self.augment(obs)
+
+            if step % check_every_steps == 0:
+                self.check_aug_CL(image_one.float(), image_two.float(), step)
+
+            z_anchor = self.encoder(image_one.float())
+            with torch.no_grad():
+                z_pos = self.encoder(image_two.float())
+
+        else:
+            z_anchor = self.encoder(self.aug(obs.float()))
+            with torch.no_grad():
+                z_pos = self.encoder(self.aug(obs.float()))
+
+        logits = self.CL.compute_logits(z_anchor, z_pos)
+        labels = torch.arange(logits.shape[0]).long().to(self.device)
+        loss = self.cross_entropy_loss(logits, labels)
+
+        _, _, m1_loss, m2_loss = self.compute_mi_loss(z_a, next_z_a, z_e, next_z_e)
+        mi_est = torch.maximum(m1_loss, m2_loss)
+        mi_loss = torch.clamp(mi_est, min=0.0)
+
+        _, _, m1_random_loss, m2_random_loss = self.compute_mi_loss(z_a_random, next_z_a_random, z_e_random, next_z_e_random)
+        mi_random_est = torch.maximum(m1_random_loss, m2_random_loss)
+        mi_random_loss = torch.clamp(mi_random_est, min=0.0)
+
+        metrics.update(self.update_adaptive_penalty(torch.clamp(mi_est, min=0.0, max=1.0))) # refers to the penalty for mi_loss
+        metrics.update(self.update_dual_penalty(torch.clamp(mi_random_est, min=0.0, max=1.0))) # refers to the penalty for mi_random_loss
+
+        loss = loss + self.adaptive_penalty * mi_loss + self.mi_constant * mi_random_loss
+
+        self.encoder_opt.zero_grad()
+        self.CL_opt.zero_grad()
+        loss.backward()
+        self.encoder_opt.step()
+        self.CL_opt.step()
+
+        if self.use_tb:
+            metrics['CL_loss'] = loss.item()
+
+        return metrics    
+    
+    def compute_mi_loss(self, z_a, next_z_a, z_e, next_z_e):
+
+        agent_z = torch.cat([z_a, next_z_a], dim=0)
+        expert_z = torch.cat([z_e, next_z_e], dim=0)
+        data_dim = agent_z.shape[0]
+        domain_labels = torch.cat([torch.zeros([data_dim, 1]), torch.ones([data_dim, 1])], dim=0).to(self.device)
+        data = torch.cat([agent_z, expert_z], dim=0)
+        rand_idx = torch.randperm(domain_labels.shape[0])
+        shuffled_domain_labels = domain_labels[rand_idx]
+        positive = torch.cat([data, domain_labels], dim=1)
+        negative = torch.cat([data, shuffled_domain_labels], dim=1)
+
+        m1_positive, m2_positive = self.mi_estimator(positive)
+        m1_negative, m2_negative = self.mi_estimator(negative) 
+
+        self.unbiased_mi_ma1 = (self.unbiased_mi_decay*self.unbiased_mi_ma1 + (1 - self.unbiased_mi_decay)*torch.mean(torch.exp(m1_negative))).detach()
+        self.unbiased_mi_ma2 = (self.unbiased_mi_decay*self.unbiased_mi_ma2 + (1 - self.unbiased_mi_decay)*torch.mean(torch.exp(m2_negative))).detach()
+
+        m1_loss = torch.mean(m1_positive) - torch.log(torch.mean(torch.exp(m1_negative)))
+        m2_loss = torch.mean(m2_positive) - torch.log(torch.mean(torch.exp(m2_negative))) 
+
+        unbiased_m1_loss = torch.mean(m1_positive) - torch.mean(torch.exp(m1_negative))/self.unbiased_mi_ma1
+        unbiased_m2_loss = torch.mean(m2_positive) - torch.mean(torch.exp(m2_negative))/self.unbiased_mi_ma2
+
+        return unbiased_m1_loss, unbiased_m2_loss, m1_loss, m2_loss    
+
+    def update_mi_estimator(self, z_a, next_z_a, z_e, next_z_e):
+        metrics = dict()
+
+        unbiased_m1_loss, unbiased_m2_loss, _, _ = self.compute_mi_loss(z_a, next_z_a, z_e, next_z_e)
+        loss = -1*(unbiased_m1_loss + unbiased_m2_loss)
+
+        self.mi_estimator_opt.zero_grad(set_to_none=True)
+        loss.backward()
+        self.mi_estimator_opt.step()
+
+        if self.use_tb:
+            metrics['mi_estimator_loss'] = loss.item()
+            metrics['unbiased_MI_MA1'] = self.unbiased_mi_ma1.item()
+            metrics['unbiased_MI_MA2'] = self.unbiased_mi_ma2.item()
+
+        return metrics
+
+    def update(self, replay_iter, replay_iter_expert, replay_iter_random, replay_iter_expert_random, step):
         metrics = dict()
 
         if step % self.update_every_steps != 0:
@@ -556,8 +665,6 @@ class LailClAgent:
         
         batch_expert = next(replay_iter_expert)
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
-
-        metrics.update(self.update_CL(obs, self.check_every_steps, step))
         
         obs_e = self.aug(obs_e_raw.float())
         next_obs_e = self.aug(next_obs_e_raw.float())
@@ -565,20 +672,61 @@ class LailClAgent:
         next_obs_a = self.aug(next_obs.float())
 
         if step % self.check_every_steps == 0:
-            self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, step)
+            self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step)
+
+        # sample random data
+        batch_agent_random = next(replay_iter_random)
+        obs_random, _, _, _, next_obs_random = utils.to_torch(batch_agent_random, self.device)
+
+        batch_expert_random = next(replay_iter_expert_random)
+        obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(batch_expert_random, self.device)
+
+        obs_e_random = self.aug(obs_e_raw_random.float())
+        next_obs_e_random = self.aug(next_obs_e_raw_random.float())
+        obs_a_random = self.aug(obs_random.float())
+        next_obs_a_random = self.aug(next_obs_random.float())
+
+        if step % self.check_every_steps == 0:
+            self.check_aug(obs_a_random, next_obs_a_random, obs_e_random, next_obs_e_random, "random_buffer", step)
+
+        z_e = self.encoder(obs_e)
+        next_z_e = self.encoder(next_obs_e)
+
+        z_a = self.encoder(obs_a)
+        next_z_a = self.encoder(next_obs_a)
+
+        z_e_random = self.encoder(obs_e_random)
+        next_z_e_random = self.encoder(next_obs_e_random)
+
+        z_a_random = self.encoder(obs_a_random)
+        next_z_a_random = self.encoder(next_obs_a_random)
+
+        metrics.update(self.update_CL(obs,
+                                      z_a, 
+                                      next_z_a, 
+                                      z_e, 
+                                      next_z_e, 
+                                      z_a_random, 
+                                      next_z_a_random, 
+                                      z_e_random, 
+                                      next_z_e_random, 
+                                      self.check_every_steps, 
+                                      step))
 
         with torch.no_grad():
-            obs_e = self.encoder(obs_e)
-            next_obs_e = self.encoder(next_obs_e)
-            obs_a = self.encoder(obs_a)
-            next_obs_a = self.encoder(next_obs_a)
+            z_e = self.encoder(obs_e)
+            next_z_e = self.encoder(next_obs_e)
+            z_a = self.encoder(obs_a)
+            next_z_a = self.encoder(next_obs_a)
+
+        metrics.update(self.update_mi_estimator(z_a, next_z_a, z_e, next_z_e)) #Mutual information estimator update estimator
 
         # update critic
         if self.from_dem:
-            metrics.update(self.update_discriminator(obs_a, action, obs_e, action_e))
+            metrics.update(self.update_discriminator(z_a, action, z_e, action_e))
             reward, metrics_r = self.compute_reward(obs, action)
         else:
-            metrics.update(self.update_discriminator(obs_a, next_obs_a, obs_e, next_obs_e))
+            metrics.update(self.update_discriminator(z_a, next_z_a, z_e, next_z_e))
             reward, metrics_r = self.compute_reward(obs, next_obs)
 
         metrics.update(metrics_r)
@@ -605,22 +753,15 @@ class LailClAgent:
 
         return metrics
     
-    def check_aug(self, obs, next_obs, obs_e, next_obs_e, step):
+    def check_aug(self, obs, next_obs, obs_e, next_obs_e, type, step):
 
-        if not os.path.exists('checkimages'):
-            os.makedirs("checkimages")
+        if not os.path.exists(f'checkimages_{type}'):
+            os.makedirs(f"checkimages_{type}")
 
-        if self.from_depth:
-            obs = self.normalize(obs) # -> [0, 1]
-            next_obs = self.normalize(next_obs) # -> [0, 1]
-            obs_e = self.normalize(obs_e) # -> [0, 1]
-            next_obs_e = self.normalize(next_obs_e) # -> [0, 1]
-
-        else:
-            obs = obs/255
-            next_obs = next_obs/255
-            obs_e = obs_e/255
-            next_obs_e = next_obs_e/255
+        obs = obs/255
+        next_obs = next_obs/255
+        obs_e = obs_e/255
+        next_obs_e = next_obs_e/255
 
         obs = torch.cat([obs, next_obs], dim=0)
         obs_e = torch.cat([obs_e, next_obs_e])
@@ -631,7 +772,7 @@ class LailClAgent:
         imgs4 = obs_e[rand_idx[-18:-9]]
                 
         saved_imgs = torch.cat([imgs1[:,:3,:,:], imgs2[:,:3,:,:], imgs3[:,:3,:,:], imgs4[:,:3,:,:]], dim=0)
-        save_image(saved_imgs, "./checkimages/%d.png" % (step), nrow=9)
+        save_image(saved_imgs, f"./checkimages_{type}/{step}.png", nrow=9)
 
     def check_aug_CL(self, img1, img2, step):
 

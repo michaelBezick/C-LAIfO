@@ -3,7 +3,7 @@ defaults:
   - replay_buffer@_global_: numpy
   - replay_buffer_expert@_global_: numpy
   - task@_global_: walker_walk
-  - agent@_global_: lail_mi
+  - agent@_global_: disentAIL
   - expert@_global_: ddpg
   - difficulty@_global_: no_mismatch
   - override hydra/launcher: submitit_local
@@ -22,6 +22,7 @@ eval_every_frames: 10000
 num_eval_episodes: 10
 # snapshot
 save_snapshot: false
+save_replay_buffers: false
 # replay buffer
 replay_buffer_size: 1000000
 replay_buffer_num_workers: 4
@@ -39,6 +40,8 @@ experiment: exp
 # agent
 lr: 1e-4
 feature_dim: 50
+stochastic_encoder: false
+stochastic_preprocessor: true
 # expert data
 num_expert_episodes: 100
 frame_skip: 1

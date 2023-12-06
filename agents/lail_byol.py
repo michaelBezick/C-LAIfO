@@ -49,10 +49,12 @@ class RandomShiftsAug(nn.Module):
                              align_corners=False)
 
 class Encoder(nn.Module):
-    def __init__(self, obs_shape, feature_dim, from_depth):
+    def __init__(self, obs_shape, feature_dim, from_depth, stochastic, log_std_bounds):
         super().__init__()
 
         assert len(obs_shape) == 3
+        self.stochastic = stochastic
+        self.log_std_bounds = log_std_bounds
 
         if obs_shape[-1]==84:
             self.repr_dim = 32 * 35 * 35
@@ -66,8 +68,12 @@ class Encoder(nn.Module):
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
                                      nn.ReLU())
         
-        self.trunk = nn.Sequential(nn.Linear(self.repr_dim, feature_dim),
-                                nn.LayerNorm(feature_dim), nn.Tanh())
+        if self.stochastic:
+            self.trunk = nn.Sequential(nn.Linear(self.repr_dim, 2 * feature_dim),
+                                    nn.LayerNorm(2 * feature_dim), nn.Tanh())
+        else:
+            self.trunk = nn.Sequential(nn.Linear(self.repr_dim, feature_dim),
+                                    nn.LayerNorm(feature_dim), nn.Tanh())
 
         self.apply(utils.weight_init)
 
@@ -78,8 +84,18 @@ class Encoder(nn.Module):
             obs = obs / 255.0 - 0.5
 
         h = self.convnet(obs)
-        h = h.reshape(h.shape[0], -1)
+        h = h.view(h.shape[0], -1)
         z = self.trunk(h)
+
+        if self.stochastic:
+            mu, log_std = z.chunk(2, dim=-1)
+            log_std = torch.tanh(log_std)
+            log_std_min, log_std_max = self.log_std_bounds
+            log_std = log_std_min + 0.5 * (log_std_max - log_std_min) * (log_std + 1)
+            std = log_std.exp()
+            dist = torchd.Normal(mu, std) 
+            z = dist.sample()
+
         return z
         
 class Discriminator(nn.Module):
@@ -160,8 +176,8 @@ class LailByolAgent:
     def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
                  hidden_dim, critic_target_tau, num_expl_steps, 
                  update_every_steps, stddev_schedule, stddev_clip, use_tb, 
-                 reward_d_coef, discriminator_lr, spectral_norm_bool, check_every_steps,
-                 GAN_loss='bce', from_dem=False, from_depth=False, midas_size='small', 
+                 reward_d_coef, discriminator_lr, spectral_norm_bool, check_every_steps, log_std_bounds,
+                 GAN_loss='bce', stochastic_encoder=False, from_dem=False, from_depth=False, midas_size='small', 
                  add_aug=False, depth_flag=False, segm_flag=False):
         
         self.device = device
@@ -206,14 +222,16 @@ class LailByolAgent:
             elif midas_size == 'large':
                 self.midas = torch.hub.load("intel-isl/MiDaS", "DPT_Large").to(self.device).eval()
 
-            self.encoder = Encoder((obs_shape[0]//3,) + tuple(obs_shape[-2:]), feature_dim, from_depth).to(device)
+            self.encoder = Encoder((obs_shape[0]//3,) + tuple(obs_shape[-2:]), feature_dim, from_depth,
+                                   stochastic_encoder, log_std_bounds).to(device)
 
             self.byol = BYOL(self.encoder, (obs_shape[0]//3,) + tuple(obs_shape[-2:]), 
                              self.aug, self.augment1, self.augment2, self.add_aug, 
                              projection_size=(feature_dim//2)).to(device)
 
         else:
-            self.encoder = Encoder(obs_shape, feature_dim, from_depth).to(device)
+            self.encoder = Encoder(obs_shape, feature_dim, from_depth,
+                                   stochastic_encoder, log_std_bounds).to(device)
         
             self.byol = BYOL(self.encoder, obs_shape, self.aug, self.augment1, self.augment2,
                             self.add_aug, projection_size=(feature_dim//2)).to(device)
