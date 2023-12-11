@@ -103,7 +103,7 @@ class Encoder(nn.Module):
             obs = obs / 255.0 - 0.5
 
         h = self.convnet(obs)
-        h = h.view(h.shape[0], -1)
+        h = h.reshape(h.shape[0], -1)
         z = self.trunk(h)
 
         if self.stochastic:
@@ -222,7 +222,7 @@ class LailClAgent:
             T.RandomGrayscale(p=0.2),
             T.RandomHorizontalFlip(),
             RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.2),
-            T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]))
+            T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.9, 1.0), ratio=(0.9, 1.1))
         )
 
         self.augment1 = default(None, DEFAULT_AUG)
