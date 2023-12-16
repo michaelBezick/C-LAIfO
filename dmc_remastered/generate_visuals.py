@@ -42,7 +42,7 @@ def random_rgba_string():
     return f"{random.random()} {random.random()} {random.random()} {alpha}"
 
 
-def get_assets(visual_seed, vary=DMCR_VARY):
+def get_assets(visual_seed, delta, vary=DMCR_VARY):
     choices_dict = {
         "background": "default",
         "floor": "default",
@@ -110,34 +110,34 @@ def get_assets(visual_seed, vary=DMCR_VARY):
             choices_dict["target"] = target_color
 
         # change the light
-        amb_base = random.uniform(0.1, 0.8)
-        amb_delr = random.uniform(-0.05, 0.05)
-        amb_delg = random.uniform(-0.05, 0.05)
-        amb_delb = random.uniform(-0.05, 0.05)
+        amb_base = 0.4 + delta #random.uniform(0.1, 0.8)
+        amb_delr = delta/10 
+        amb_delg = delta/10
+        amb_delb = delta/10
         ambience = f"{amb_base+amb_delr} {amb_base+amb_delg} {amb_base+amb_delb}"
         if "light" in vary:
             visual_xml[0][0].attrib["ambient"] = ambience
             choices_dict["ambience"] = ambience
 
-        dif_base = random.uniform(0.4, 0.9)
-        dif_delr = random.uniform(-0.1, 0.1)
-        dif_delg = random.uniform(-0.1, 0.1)
-        dif_delb = random.uniform(-0.1, 0.1)
+        dif_base = 0.7 + delta
+        dif_delr = delta/5 
+        dif_delg = delta/5 
+        dif_delb = delta/5 #random.uniform(-0.1, 0.1)
         diffuse = f"{dif_base+dif_delr} {dif_base+dif_delg} {dif_base+dif_delb}"
         if "light" in vary:
             visual_xml[0][0].attrib["diffuse"] = diffuse
             choices_dict["diffuse"] = diffuse
 
-        spec_base = random.uniform(0.05, 0.3)
-        spec_delr = random.uniform(-0.02, 0.02)
-        spec_delg = random.uniform(-0.02, 0.02)
-        spec_delb = random.uniform(-0.02, 0.02)
+        spec_base = 0.2 + delta
+        spec_delr = delta/20 #random.uniform(-0.02, 0.02)
+        spec_delg = delta/20 #random.uniform(-0.02, 0.02)
+        spec_delb = delta/20 #random.uniform(-0.02, 0.02)
         specular = f"{spec_base+spec_delr} {spec_base+spec_delg} {spec_base+spec_delb}"
         if "light" in vary:
             visual_xml[0][0].attrib["specular"] = specular
             choices_dict["specular"] = specular
 
-        shadow_size = str(random.randint(2048 - 500, 2048 + 500))
+        shadow_size = str(2000 + delta*1000)
         if "light" in vary:
             visual_xml[0][2].attrib["shadowsize"] = shadow_size
             choices_dict["shadowsize"] = shadow_size

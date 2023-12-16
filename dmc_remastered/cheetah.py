@@ -43,11 +43,11 @@ def get_model(visual_seed, vary=["camera", "light"]):
 
 
 @register("cheetah", "run")
-def run(
+def run(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary)
+    assets, _ = get_assets(visual_seed, vary, delta)
     physics = Physics.from_xml_string(model, assets)
     task = Cheetah(random=dynamics_seed)
     return control.Environment(physics, task, time_limit=time_limit,)

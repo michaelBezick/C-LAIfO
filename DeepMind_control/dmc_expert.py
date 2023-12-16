@@ -64,6 +64,7 @@ class DMC_Remastered_Wrapper(core.Env):
                  task_builder,
                  visual_seed,
                  env_seed,
+                 delta,
                  height=84,
                  width=84,
                  camera_id=0,
@@ -78,6 +79,7 @@ class DMC_Remastered_Wrapper(core.Env):
         self._env_seed = env_seed
         self._visual_seed = visual_seed
         self._max_episode_steps = max_episode_steps
+        self._delta = delta
         
         self._height = height
         self._width = width
@@ -86,7 +88,7 @@ class DMC_Remastered_Wrapper(core.Env):
         self._num_frames = num_frames
         self._frames = deque([], maxlen=num_frames)
         
-        self._env = self._task_builder(dynamics_seed=0, visual_seed=0, vary=vary)
+        self._env = self._task_builder(dynamics_seed=0, visual_seed=0, delta=0, vary=vary)
         self._vary = vary
         self._depth_flag = depth_flag
         self._segm_flag = segm_flag
@@ -114,7 +116,7 @@ class DMC_Remastered_Wrapper(core.Env):
         dynamics_seed = self._env_seed
         visual_seed = self._visual_seed
         self._env = self._task_builder(
-            dynamics_seed=dynamics_seed, visual_seed=visual_seed, vary=self._vary,
+            dynamics_seed=dynamics_seed, visual_seed=visual_seed, delta = self._delta, vary=self._vary,
         )
 
     def __getattr__(self, name):
@@ -244,6 +246,7 @@ def make_remastered_states_only(domain_name,
                                 task_name, 
                                 seed, 
                                 visual_seed,
+                                delta,
                                 height=84,
                                 width=84,
                                 camera_id=0,
@@ -263,6 +266,7 @@ def make_remastered_states_only(domain_name,
     env = DMC_Remastered_Wrapper(ALL_ENVS[domain_name][task_name], 
                                  visual_seed, 
                                  seed,
+                                 delta,
                                  height = height,
                                  width = width,
                                  camera_id = camera_id,

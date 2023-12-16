@@ -70,6 +70,10 @@ segm_flag: false # Enables learning from perfect segmentation
 add_aug: false # adds additional augmentations to BYOL and CL agents
 deeper_head: false # in the projected setting it makes the encoder head deeper
 
+# multi-dataset
+train_encoder_w_critic: true
+CL_data_type: all
+
 # multi envs
 num_aug_envs: 10
 aug: true

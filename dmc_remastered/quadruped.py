@@ -61,10 +61,10 @@ _WALLS = ['wall_px', 'wall_py', 'wall_nx', 'wall_ny']
 
 
 @register("quadruped", "walk")
-def walk(time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY):  
+def walk(delta, time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY):  
     """Returns the Walk task."""
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary)
+    assets, _ = get_assets(visual_seed, vary, delta)
     physics = Physics.from_xml_string(model, assets)
     task = Move(desired_speed=_WALK_SPEED, random=dynamics_seed)
     return control.Environment(physics, task, time_limit=time_limit,
@@ -72,10 +72,10 @@ def walk(time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, v
 
 
 @register("quadruped", "run")
-def run(time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY):
+def run(delta, time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY):
     """Returns the Run task."""
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary)
+    assets, _ = get_assets(visual_seed, vary, delta)
     physics = Physics.from_xml_string(model, assets)
     task = Move(desired_speed=_RUN_SPEED, random=dynamics_seed)
     return control.Environment(physics, task, time_limit=time_limit,

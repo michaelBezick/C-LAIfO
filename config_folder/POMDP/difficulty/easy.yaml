@@ -4,4 +4,5 @@ defaults:
 difficulty_name: easy
 visual_seed_target: 0
 visual_seed_source: 9577
-vary: ["target", "reflectance", "camera", "light"] #, "bg", "floor"]  #["bg", "floor", "body", "target", "reflectance", "camera", "light"]
+delta: 0.1
+vary: ["light"] #, "bg", "floor"]  #["bg", "floor", "body", "target", "reflectance", "camera", "light"]

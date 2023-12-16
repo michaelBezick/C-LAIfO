@@ -16,22 +16,24 @@ class DMC_Remastered_Env(dm_env.Environment):
                  task_builder,
                  visual_seed,
                  env_seed,
+                 delta,
                  vary=DMCR_VARY):
         
         self._task_builder = task_builder
         self._env_seed = env_seed
         self._visual_seed = visual_seed
         
-        self._env = self._task_builder(dynamics_seed=0, visual_seed=0, vary=vary)
+        self._env = self._task_builder(delta, dynamics_seed=0, visual_seed=0, vary=vary)
         self._vary = vary
+        self._delta = delta
         
         self.make_new_env()
         
     def make_new_env(self):
         dynamics_seed = self._env_seed
         visual_seed = self._visual_seed
-        self._env = self._task_builder(
-            dynamics_seed=dynamics_seed, visual_seed=visual_seed, vary=self._vary,
+        self._env = self._task_builder(self._delta,
+            dynamics_seed=dynamics_seed, visual_seed=visual_seed, vary=self._vary
         )
         
     def step(self, action):
@@ -285,13 +287,13 @@ def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84
     env = ExtendedTimeStepWrapper(env)
     return env
 
-def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, image_height=84, image_width=84, 
+def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, delta, image_height=84, image_width=84, 
                     depth_flag=False, segm_flag=False):
     domain, task = name.split('_', 1)
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
     
-    env = DMC_Remastered_Env(ALL_ENVS[domain][task], visual_seed, seed, vary)
+    env = DMC_Remastered_Env(ALL_ENVS[domain][task], visual_seed, seed, delta, vary)
     pixels_key = 'pixels'
         
     env = ActionDTypeWrapper(env, np.float32)
