@@ -33,6 +33,15 @@ Alternatively, download the policies [here](https://figshare.com/s/22de566de2229
 
 #### easy setting
 
+**Multi Dataset**
+```shell
+python python train_LAIL_MI.py agent=lail_cl_multiset difficulty=easy delta=0.2 train_encoder_w_critic=false CL_data_type=expert
+```
+```shell
+python python train_LAIL_MI.py agent=lail_byol_multiset difficulty=easy delta=0.2 train_encoder_w_critic=false CL_data_type=expert
+```
+
+
 **Mutual Information**
 ```shell
 python train_LAIL_MI.py seed=0 task=walker_walk agent=lail_byol_mi difficulty=easy
