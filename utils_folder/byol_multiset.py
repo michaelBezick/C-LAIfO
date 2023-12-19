@@ -183,7 +183,11 @@ class BYOL(nn.Module):
         self.to(device)
 
         # send a mock image tensor to instantiate singleton parameters
-        self.forward(torch.randn(2, obs_shape[0], image_size, image_size, device=device))
+        self.forward(torch.randn(2, obs_shape[0], image_size, image_size, device=device), 
+                     torch.randn(2, obs_shape[0], image_size, image_size, device=device),
+                     torch.randn(2, obs_shape[0], image_size, image_size, device=device),
+                     torch.randn(2, obs_shape[0], image_size, image_size, device=device),
+                     'all')
 
     @singleton('target_encoder')
     def _get_target_encoder(self):
