@@ -218,7 +218,7 @@ class BYOL(nn.Module):
                 image_two.append(frame_two)
 
             image_two = torch.cat(image_two, dim=1).float()
-            image_one = image_one.float()
+            image_one = x.float()
 
         else:
             image_one = self.aug(x.float())
