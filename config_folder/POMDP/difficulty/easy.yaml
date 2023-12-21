@@ -2,7 +2,8 @@ defaults:
   - _self_
 
 difficulty_name: easy
-visual_seed_target: 0
+visual_seed_target: 9577
+delta_target: 0.2
 visual_seed_source: 9577
-delta: 0.1
+delta_source: 0.15
 vary: ["light"] #, "bg", "floor"]  #["bg", "floor", "body", "target", "reflectance", "camera", "light"]

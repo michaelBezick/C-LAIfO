@@ -261,11 +261,13 @@ class LailClAgent:
 
         # add augmentation for CL
         DEFAULT_AUG = torch.nn.Sequential(
-            RandomApply(T.ColorJitter(0.8, 0.8, 0.8, 0.2), p = 0.3),
+            RandomApply(T.ColorJitter(0.8, 0.8, 0.8, 0.2), p = 0.2),
             T.RandomGrayscale(p=0.2),
-            T.RandomHorizontalFlip(),
-            RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.2),
-            T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.9, 1.0), ratio=(0.9, 1.1))
+            T.RandomHorizontalFlip(p=0.1),
+            T.RandomVerticalFlip(p=0.1),
+            RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+            T.RandomInvert(p=0.2),
+            T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
         )
 
         self.augment1 = default(None, DEFAULT_AUG)

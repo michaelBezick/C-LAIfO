@@ -18,7 +18,6 @@ from .generate_visuals import get_assets
 
 _DEFAULT_TIME_LIMIT = 10
 
-
 def get_model(visual_seed, vary=["camera", "light"]):
     default_model = _make_model(n_poles=1)
     xml = ET.fromstring(default_model)
