@@ -80,9 +80,9 @@ aug: true
 
 hydra:
   run:
-    dir: ./experiments/exp_difficulty_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}/${agent_name}_add_aug_${add_aug}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
+    dir: ./experiments/exp_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_train_encoder_w_critic=${train_encoder_w_critic}_CL_data_type=${CL_data_type}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
   sweep:
-    dir: ./experiments/exp_multirun_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_aug}/
+    dir: ./experiments/exp_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_train_encoder_w_critic=${train_encoder_w_critic}_CL_data_type=${CL_data_type}/
     subdir: ${now:%Y.%m.%d}_${now:%H%M}_${hydra.job.override_dirname}
   launcher:
     timeout_min: 18000000
@@ -91,4 +91,4 @@ hydra:
     tasks_per_node: 1
     mem_gb: 160
     nodes: 1
-    submitit_folder: ./experiments/exp_multirun_${difficulty_name}_depth_flag_${depth_flag}_segm_flag_${segm_flag}_${task_name}_num_expert_episodes_${num_expert_episodes}/${agent_name}_add_aug_${add_aug}/
+    submitit_folder: ./experiments/exp_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_train_encoder_w_critic=${train_encoder_w_critic}_CL_data_type=${CL_data_type}/

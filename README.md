@@ -31,11 +31,23 @@ Alternatively, download the policies [here](https://figshare.com/s/22de566de2229
 
 ### Train imitation from experts
 
+#### easy setting deltas
+
+**Multi Dataset**
+
+```shell
+python train_LAIL_MI.py --multirun seed=0,1 agent=lail_byol_multiset difficulty=easy delta_source=0.2 delta_target=0.2 train_encoder_w_critic=true add_aug=false CL_data_type=all save_snapshot=true
+```
+```shell
+python train_LAIL_MI.py --multirun seed=0,1 agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=0.2 train_encoder_w_critic=true add_aug=false CL_data_type=all save_snapshot=true
+```
+
+
 #### easy setting
 
 **Multi Dataset**
 ```shell
-python python train_LAIL_MI.py agent=lail_cl_multiset difficulty=easy delta=0.2 train_encoder_w_critic=false CL_data_type=expert
+python python train_LAIL_MI.py agent=lail_cl_multiset difficulty=easy delta=0.2 train_encoder_w_critic=false CL_data_type=expert 
 ```
 ```shell
 python python train_LAIL_MI.py agent=lail_byol_multiset difficulty=easy delta=0.2 train_encoder_w_critic=false CL_data_type=expert
