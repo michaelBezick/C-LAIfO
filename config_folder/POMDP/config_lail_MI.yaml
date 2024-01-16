@@ -39,6 +39,7 @@ use_tb: false
 experiment: exp
 # agent
 lr: 1e-4
+lr_BYOL: 1e-4
 feature_dim: 50
 stochastic_encoder: false
 stochastic_preprocessor: true

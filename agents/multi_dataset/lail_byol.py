@@ -174,6 +174,7 @@ class LailByolAgent:
                  action_shape, 
                  device, 
                  lr, 
+                 lr_BYOL,
                  feature_dim,
                  hidden_dim, 
                  critic_target_tau, 
@@ -265,7 +266,7 @@ class LailByolAgent:
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=lr)
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=lr)
         self.discriminator_opt = torch.optim.Adam(self.discriminator.parameters(), lr=discriminator_lr)
-        self.byol_opt = torch.optim.Adam(self.byol.parameters(), lr=lr)
+        self.byol_opt = torch.optim.Adam(self.byol.parameters(), lr=lr_BYOL)
 
         self.train()
         self.critic_target.train()
