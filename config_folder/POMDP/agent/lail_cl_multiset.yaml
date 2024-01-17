@@ -26,6 +26,7 @@ agent:
   CL_data_type: ${CL_data_type}
   from_dem: ${from_dem}
   add_aug: ${add_aug}
+  brightness_only: ${brightness_only}
   depth_flag: ${depth_flag}
   segm_flag: ${segm_flag}
 

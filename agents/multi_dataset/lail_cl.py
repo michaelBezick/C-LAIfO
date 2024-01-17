@@ -212,6 +212,7 @@ class LailClAgent:
                  CL_data_type = 'all',
                  from_dem=False, 
                  add_aug=False, 
+                 brightness_only=True,
                  depth_flag=False, 
                  segm_flag=False):
         
@@ -233,15 +234,19 @@ class LailClAgent:
         self.aug = RandomShiftsAug(pad=4)
 
         # add augmentation for CL
-        DEFAULT_AUG = torch.nn.Sequential(
-            RandomApply(T.ColorJitter(0.8, 0.8, 0.8, 0.2), p = 0.2),
-            T.RandomGrayscale(p=0.2),
-            T.RandomHorizontalFlip(p=0.1),
-            T.RandomVerticalFlip(p=0.1),
-            RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
-            T.RandomInvert(p=0.2),
-            T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
-        )
+        if brightness_only:
+            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
+
+        else:
+            DEFAULT_AUG = torch.nn.Sequential(
+                T.ColorJitter(0.8, 0.8, 0.8, 0.2),
+                T.RandomGrayscale(p=0.2),
+                T.RandomHorizontalFlip(p=0.1),
+                T.RandomVerticalFlip(p=0.1),
+                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+                T.RandomInvert(p=0.2),
+                T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
+            )
 
         self.augment1 = default(None, DEFAULT_AUG)
         self.augment2 = default(None, self.augment1)
