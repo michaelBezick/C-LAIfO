@@ -3,7 +3,7 @@ defaults:
   - replay_buffer@_global_: numpy
   - replay_buffer_expert@_global_: numpy
   - task@_global_: walker_walk
-  - agent@_global_: disentAIL
+  - agent@_global_: disentanAIL
   - expert@_global_: ddpg
   - difficulty@_global_: no_mismatch
   - override hydra/launcher: submitit_local
