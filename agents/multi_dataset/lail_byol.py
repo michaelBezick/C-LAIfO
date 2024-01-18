@@ -194,6 +194,7 @@ class LailByolAgent:
                  CL_data_type = 'all',
                  from_dem=False, 
                  add_aug=False, 
+                 add_aug_anchor_and_positive=False,
                  brightness_only=True,
                  depth_flag=False, 
                  segm_flag=False):
@@ -239,7 +240,7 @@ class LailByolAgent:
         self.encoder = Encoder(obs_shape, feature_dim, stochastic_encoder, log_std_bounds).to(device)
     
         self.byol = BYOL(self.encoder, obs_shape, self.aug, self.augment1, self.augment2,
-                        self.add_aug, projection_size=(feature_dim//2)).to(device)
+                        self.add_aug, add_aug_anchor_and_positive, projection_size=(feature_dim//2)).to(device)
         
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)

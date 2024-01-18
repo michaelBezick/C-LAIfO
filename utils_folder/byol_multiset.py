@@ -150,6 +150,7 @@ class BYOL(nn.Module):
         augment_fn,
         augment_fn2,
         add_aug,
+        add_aug_anchor_and_positive,
         projection_size = 256,
         projection_hidden_size = 4096,
         moving_average_decay = 0.99,
@@ -164,6 +165,7 @@ class BYOL(nn.Module):
         self.augment1 = augment_fn
         self.augment2 = augment_fn2
         self.add_aug = add_aug
+        self.add_aug_anchor_and_positive = add_aug_anchor_and_positive
 
         self.online_encoder = NetWrapper(net, 
             projection_size, 
@@ -211,14 +213,29 @@ class BYOL(nn.Module):
             assert h == w 
 
             num_frames = c // 3
-            image_two = []
-            for i in range(num_frames):
-                frame = x[:, 3*i:3*i+3, :, :]
-                frame_two = self.augment2(frame)
-                image_two.append(frame_two)
 
-            image_two = torch.cat(image_two, dim=1).float()
-            image_one = x.float()
+            if self.add_aug_anchor_and_positive:
+                image_one = []
+                image_two = []
+                for i in range(num_frames):
+                    frame = x[:, 3*i:3*i+3, :, :]
+                    frame_one = self.augment1(frame)
+                    frame_two = self.augment2(frame)
+                    image_one.append(frame_one)
+                    image_two.append(frame_two)
+
+                image_one = torch.cat(image_one, dim=1).float()
+                image_two = torch.cat(image_two, dim=1).float()
+
+            else:
+                image_two = []
+                for i in range(num_frames):
+                    frame = x[:, 3*i:3*i+3, :, :]
+                    frame_two = self.augment2(frame)
+                    image_two.append(frame_two)
+
+                image_two = torch.cat(image_two, dim=1).float()
+                image_one = x.float()
 
         else:
             image_one = self.aug(x.float())
