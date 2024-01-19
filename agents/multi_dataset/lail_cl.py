@@ -7,7 +7,7 @@ from torch import distributions as torchd
 from torch import autograd
 from torch.nn.utils import spectral_norm 
 from torchvision.utils import save_image
-from torchvision import transforms as T
+from torchvision.transforms import v2 as T
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
@@ -212,6 +212,7 @@ class LailClAgent:
                  CL_data_type = 'all',
                  from_dem=False, 
                  add_aug=False, 
+                 add_aug_anchor_and_positive=False,
                  brightness_only=True,
                  depth_flag=False, 
                  segm_flag=False):
@@ -229,6 +230,7 @@ class LailClAgent:
         self.add_aug = add_aug
         self.train_encoder_w_critic = train_encoder_w_critic
         self.CL_data_type = CL_data_type
+        self.add_aug_anchor_and_positive = add_aug_anchor_and_positive
 
         # data augmentation
         self.aug = RandomShiftsAug(pad=4)
@@ -485,15 +487,31 @@ class LailClAgent:
         assert h == w 
 
         num_frames = c // 3
-        image_two = []
-        for i in range(num_frames):
-            frame = obs[:, 3*i:3*i+3, :, :]
-            frame_two = self.augment2(frame)
-            image_two.append(frame_two)
 
-        image_two = torch.cat(image_two, dim=1)
+        if self.add_aug_anchor_and_positive:
+            image_one = []
+            image_two = []
+            for i in range(num_frames):
+                frame = obs[:, 3*i:3*i+3, :, :]
+                frame_one = self.augment1(frame)
+                frame_two = self.augment2(frame)
+                image_one.append(frame_one)
+                image_two.append(frame_two)
 
-        return obs.float(), image_two.float()
+            image_one = torch.cat(image_one, dim=1).float()
+            image_two = torch.cat(image_two, dim=1).float()
+
+        else:
+            image_two = []
+            for i in range(num_frames):
+                frame = obs[:, 3*i:3*i+3, :, :]
+                frame_two = self.augment2(frame)
+                image_two.append(frame_two)
+
+            image_two = torch.cat(image_two, dim=1).float()
+            image_one = obs.float()
+
+        return image_one, image_two
     
     def update_CL(self, obs, obs_e_raw, obs_random, obs_e_raw_random, check_every_steps, step):
         metrics = dict()

@@ -66,6 +66,7 @@ check_every_steps: 5000
 depth_flag: false # Enables learning from perfect depth
 segm_flag: false # Enables learning from perfect segmentation
 add_aug: false # adds additional augmentations to BYOL and CL agents
+brightness_only: true # augmentation focuses mainly on brigthness
 deeper_head: false # in the projected setting it makes the encoder head deeper
 
 # multi envs
