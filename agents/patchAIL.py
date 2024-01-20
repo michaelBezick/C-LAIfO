@@ -6,8 +6,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.utils import save_image
+from torchvision.transforms import v2 as T
 
 from utils_folder import utils
+from utils_folder.byol_multiset import default, RandomApply
 
 import os
 
@@ -176,10 +178,29 @@ class Critic(nn.Module):
         return q1, q2
 
 class PatchAilAgent:
-    def __init__(self, obs_shape, action_shape, device, lr, feature_dim,
-                 hidden_dim, critic_target_tau, num_expl_steps, update_every_steps, stddev_schedule, stddev_clip, 
-                 use_tb, check_every_steps, reward_type="airl", sim_type="weight", reward_scale=1.0, grad_pen_weight=10.0, 
-                 disc_lr=None, use_simreg=False, sim_rate=1.5):
+    def __init__(self, 
+                 obs_shape, 
+                 action_shape, 
+                 device, 
+                 lr, 
+                 feature_dim,
+                 hidden_dim, 
+                 critic_target_tau, 
+                 num_expl_steps, 
+                 update_every_steps, 
+                 stddev_schedule, 
+                 stddev_clip, 
+                 use_tb, 
+                 check_every_steps, 
+                 reward_type="airl", 
+                 sim_type="weight", 
+                 reward_scale=1.0, 
+                 grad_pen_weight=10.0, 
+                 disc_lr=None, 
+                 use_simreg=False, 
+                 sim_rate=1.5,
+                 add_aug=False,
+                 brightness_only=True):
         
         self.device = device
         self.lr = lr
@@ -190,6 +211,8 @@ class PatchAilAgent:
         self.stddev_schedule = stddev_schedule
         self.stddev_clip = stddev_clip
         self.check_every_steps = check_every_steps
+        self.add_aug = add_aug
+        self.brightness_only = brightness_only
 
         self.sim_rate = sim_rate
         self.use_simreg = use_simreg
@@ -233,6 +256,23 @@ class PatchAilAgent:
         self.aug = RandomShiftsAug(pad=4)
         self.disc_aug = RandomShiftsAug(pad=4)
 
+        # add augmentation
+        if brightness_only:
+            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
+
+        else:
+            DEFAULT_AUG = torch.nn.Sequential(
+                T.ColorJitter(0.8, 0.8, 0.8, 0.2),
+                T.RandomGrayscale(p=0.2),
+                T.RandomHorizontalFlip(p=0.1),
+                T.RandomVerticalFlip(p=0.1),
+                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+                T.RandomInvert(p=0.2),
+                T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
+            )
+
+        self.augment1 = default(None, DEFAULT_AUG)        
+
         self.train()
         self.critic_target.train()
 
@@ -242,6 +282,22 @@ class PatchAilAgent:
         self.actor.train(training)
         self.critic.train(training)
         self.discriminator.train(training)
+
+    def augment(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        image_one = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_one = self.augment1(frame)
+            image_one.append(frame_one)
+
+        image_one = torch.cat(image_one, dim=1).float()
+
+        return image_one
 
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
@@ -432,12 +488,7 @@ class PatchAilAgent:
         self.global_step = step
 
         obs, action, reward_a, discount, next_obs = utils.to_torch(next(replay_iter), self.device)
-        obs = obs.float()
-        next_obs = next_obs.float()
-
         expert_obs, _, _, _, expert_next_obs = utils.to_torch(next(expert_replay_iter), self.device)
-        expert_obs = expert_obs.float()
-        expert_next_obs = expert_next_obs.float()
 
         obs_before_aug = obs
         next_obs_before_aug = next_obs
@@ -445,14 +496,21 @@ class PatchAilAgent:
         expert_next_obs_before_aug = expert_next_obs
 
         # augment
-        obs = self.aug(obs)
-        next_obs = self.aug(next_obs)
+        obs = self.aug(obs.float())
+        next_obs = self.aug(next_obs.float())
 
         # disc augment
-        disc_obs = self.disc_aug(obs_before_aug)
-        disc_next_obs = self.disc_aug(next_obs_before_aug)
-        disc_expert_obs = self.disc_aug(expert_obs_before_aug)
-        disc_expert_next_obs = self.disc_aug(expert_next_obs_before_aug)
+        if self.add_aug:
+            disc_obs = self.augment(obs_before_aug)
+            disc_next_obs = self.augment(next_obs_before_aug)
+            disc_expert_obs = self.augment(expert_obs_before_aug)
+            disc_expert_next_obs = self.augment(expert_next_obs_before_aug)            
+
+        else:
+            disc_obs = self.disc_aug(obs_before_aug.float())
+            disc_next_obs = self.disc_aug(next_obs_before_aug.float())
+            disc_expert_obs = self.disc_aug(expert_obs_before_aug.float())
+            disc_expert_next_obs = self.disc_aug(expert_next_obs_before_aug.float())
 
         if step % self.check_every_steps == 0:
             self.check_aug(disc_obs, disc_next_obs, disc_expert_obs, disc_expert_next_obs, step)
@@ -461,7 +519,10 @@ class PatchAilAgent:
         metrics.update(results)
         reward = self.dac_rewarder(disc_obs, disc_next_obs)
 
-        similarity = self.compute_similarity(obs_before_aug, expert_obs_before_aug, next_obs_before_aug, expert_next_obs_before_aug)
+        similarity = self.compute_similarity(obs_before_aug.float(), 
+                                             expert_obs_before_aug.float(), 
+                                             next_obs_before_aug.float(), 
+                                             expert_next_obs_before_aug.float())
 
         assert similarity.shape == reward.shape
         metrics['similarity'] = similarity.mean().item()

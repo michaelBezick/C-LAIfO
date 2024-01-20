@@ -263,7 +263,7 @@ class LailAgent:
         # data augmentation
         self.aug = RandomShiftsAug(pad=4)
 
-        # add augmentation for BYOL
+        # add augmentation
         if brightness_only:
             DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
 
