@@ -75,9 +75,9 @@ aug: true
 
 hydra:
   run:
-    dir: ./experiments/exp_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
+    dir: ./experiments/exp_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_brightness_only=${brightness_only}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
   sweep:
-    dir: ./experiments/exp_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}/
+    dir: ./experiments/exp_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_brightness_only=${brightness_only}/
     subdir: ${now:%Y.%m.%d}_${now:%H%M}_${hydra.job.override_dirname}
   launcher:
     timeout_min: 18000000
@@ -86,4 +86,4 @@ hydra:
     tasks_per_node: 1
     mem_gb: 160
     nodes: 1
-    submitit_folder: ./experiments/exp_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}/
+    submitit_folder: ./experiments/exp_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_brightness_only=${brightness_only}/

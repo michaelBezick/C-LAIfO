@@ -7,9 +7,11 @@ from torch import distributions as torchd
 from torch import autograd
 from torch.nn.utils import spectral_norm 
 from torchvision.utils import save_image
+from torchvision.transforms import v2 as T
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
+from utils_folder.byol_multiset import default, RandomApply
 
 import os
 
@@ -262,7 +264,9 @@ class DisentanAILAgent:
                  check_every_steps, 
                  GAN_loss='bce',
                  stochastic_encoder=False,
-                 stochastic_preprocessor=True):
+                 stochastic_preprocessor=True,
+                 add_aug=False,
+                 brightness_only=True):
         
         self.device = device
         self.critic_target_tau = critic_target_tau
@@ -274,6 +278,8 @@ class DisentanAILAgent:
         self.log_std_bounds = log_std_bounds
         self.GAN_loss = GAN_loss
         self.check_every_steps = check_every_steps
+        self.add_aug = add_aug
+        self.brightness_only = brightness_only
 
         self.encoder = Encoder(obs_shape, feature_dim, stochastic_encoder, log_std_bounds).to(device)  
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
@@ -317,6 +323,24 @@ class DisentanAILAgent:
         # data augmentation
         self.aug = RandomShiftsAug(pad=4)
 
+        # add augmentation
+        if brightness_only:
+            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
+
+        else:
+            DEFAULT_AUG = torch.nn.Sequential(
+                T.ColorJitter(0.8, 0.8, 0.8, 0.2),
+                T.RandomGrayscale(p=0.2),
+                T.RandomHorizontalFlip(p=0.1),
+                T.RandomVerticalFlip(p=0.1),
+                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+                T.RandomInvert(p=0.2),
+                T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
+            )
+
+        self.augment1 = default(None, DEFAULT_AUG)
+        self.augment2 = default(None, self.augment1)
+
         self.train()
         self.critic_target.train()
 
@@ -328,6 +352,22 @@ class DisentanAILAgent:
         self.discriminator.train(training)
         self.preprocessor.train(training)
         self.mi_estimator.train(training)
+
+    def augment(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        image_one = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_one = self.augment1(frame)
+            image_one.append(frame_one)
+
+        image_one = torch.cat(image_one, dim=1).float()
+
+        return image_one
 
     @property
     def mi_constant(self):
@@ -604,10 +644,17 @@ class DisentanAILAgent:
         batch_expert = next(replay_iter_expert)
         obs_e_raw, _, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
 
-        obs_e = self.aug(obs_e_raw.float())
-        next_obs_e = self.aug(next_obs_e_raw.float())
-        obs_a = self.aug(obs.float())
-        next_obs_a = self.aug(next_obs.float())
+        if self.add_aug:
+            obs_e = self.augment(obs_e_raw)
+            next_obs_e = self.augment(next_obs_e_raw)
+            obs_a = self.augment(obs)
+            next_obs_a = self.augment(next_obs)
+
+        else:
+            obs_e = self.aug(obs_e_raw.float())
+            next_obs_e = self.aug(next_obs_e_raw.float())
+            obs_a = self.aug(obs.float())
+            next_obs_a = self.aug(next_obs.float())
 
         if step % self.check_every_steps == 0:
             self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step)
@@ -627,10 +674,17 @@ class DisentanAILAgent:
         batch_expert_random = next(replay_iter_expert_random)
         obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(batch_expert_random, self.device)
 
-        obs_e_random = self.aug(obs_e_raw_random.float())
-        next_obs_e_random = self.aug(next_obs_e_raw_random.float())
-        obs_a_random = self.aug(obs_random.float())
-        next_obs_a_random = self.aug(next_obs_random.float())
+        if self.add_aug:
+            obs_e_random = self.augment(obs_e_raw_random)
+            next_obs_e_random = self.augment(next_obs_e_raw_random)
+            obs_a_random = self.augment(obs_random)
+            next_obs_a_random = self.augment(next_obs_random)
+
+        else:
+            obs_e_random = self.aug(obs_e_raw_random.float())
+            next_obs_e_random = self.aug(next_obs_e_raw_random.float())
+            obs_a_random = self.aug(obs_random.float())
+            next_obs_a_random = self.aug(next_obs_random.float())
 
         if step % self.check_every_steps == 0:
             self.check_aug(obs_a_random, next_obs_a_random, obs_e_random, next_obs_e_random, "random_buffer", step)

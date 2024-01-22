@@ -516,7 +516,6 @@ class LailAgent:
         batch_expert = next(replay_iter_expert)
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
         
-        
         if self.add_aug:
             obs_e = self.augment(obs_e_raw)
             next_obs_e = self.augment(next_obs_e_raw)
