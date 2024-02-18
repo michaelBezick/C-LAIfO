@@ -42,7 +42,7 @@ def balance(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary, delta)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Balance(swing_up=False, sparse=False, random=dynamics_seed)
     return control.Environment(physics, task, time_limit=time_limit)
@@ -53,7 +53,7 @@ def balance_sparse(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary, delta)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Balance(swing_up=False, sparse=True, random=dynamics_seed)
     return control.Environment(physics, task, time_limit=time_limit)
@@ -64,7 +64,7 @@ def swingup(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary, delta)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Balance(swing_up=True, sparse=False, random=dynamics_seed)
     return control.Environment(physics, task, time_limit=time_limit)
@@ -79,7 +79,7 @@ def swingup_sparse(
     delta=0.1
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary, delta)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Balance(swing_up=True, sparse=True, random=dynamics_seed)
     return control.Environment(physics, task, time_limit=time_limit)

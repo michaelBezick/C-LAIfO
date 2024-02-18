@@ -57,7 +57,7 @@ def stand(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model, local_choices = get_model(visual_seed, vary)
-    assets, global_choices = get_assets(visual_seed, vary, delta)
+    assets, global_choices = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = PlanarWalker(move_speed=0, random=dynamics_seed)
     return control.Environment(
@@ -83,7 +83,7 @@ def run(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model, local_choices = get_model(visual_seed, vary)
-    assets, global_choices = get_assets(visual_seed, vary, delta)
+    assets, global_choices = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = PlanarWalker(move_speed=_RUN_SPEED, random=dynamics_seed)
     return control.Environment(

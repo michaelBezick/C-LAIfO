@@ -50,7 +50,7 @@ def hop(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary, delta)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Hopper(hopping=True, random=dynamics_seed)
     return control.Environment(
@@ -63,7 +63,7 @@ def stand(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary, delta)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Hopper(hopping=False, random=dynamics_seed)
     return control.Environment(

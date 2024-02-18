@@ -66,11 +66,11 @@ def get_model(visual_seed, vary=["camera", "light"]):
 
 
 @register("finger", "spin")
-def spin(
+def spin(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Spin(random=dynamics_seed)
     return control.Environment(
@@ -79,11 +79,11 @@ def spin(
 
 
 @register("finger", "turn_easy")
-def turn_easy(
+def turn_easy(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Turn(target_radius=_EASY_TARGET_SIZE, random=dynamics_seed)
     return control.Environment(
@@ -92,11 +92,11 @@ def turn_easy(
 
 
 @register("finger", "turn_hard")
-def turn_hard(
+def turn_hard(delta,
     time_limit=_DEFAULT_TIME_LIMIT, dynamics_seed=None, visual_seed=None, vary=DMCR_VARY
 ):
     model = get_model(visual_seed, vary)
-    assets, _ = get_assets(visual_seed, vary)
+    assets, _ = get_assets(visual_seed, delta, vary)
     physics = Physics.from_xml_string(model, assets)
     task = Turn(target_radius=_HARD_TARGET_SIZE, random=dynamics_seed)
     return control.Environment(
