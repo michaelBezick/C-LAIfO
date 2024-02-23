@@ -18,6 +18,7 @@ def register(domain, task):
 from .ball_in_cup import catch
 from .benchmarks import classic, visual_generalization
 from .cartpole import balance, balance_sparse, swingup, swingup_sparse
+from .cartpole2poles import balance, balance_sparse, swingup, swingup_sparse
 from .cheetah import run
 from .finger import spin, turn_easy, turn_hard
 from .fish import swim, upright

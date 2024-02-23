@@ -4,6 +4,22 @@ defaults:
   - agent@_global_: sac
   - override hydra/launcher: submitit_local
 
+# task settings
+frame_stack: 3
+action_repeat: 1
+discount: 0.99
+image_height: 64
+image_width: 64
+
+visual_seed_target: 9577
+delta_target: 0.2
+visual_seed_source: 9577
+delta_source: 0.2
+vary: ["light"]
+
+depth_flag: false # Enables learning from perfect depth
+segm_flag: false # Enables learning from perfect segmentation
+
 # eval
 eval_frequency: 10000
 num_eval_episodes: 10

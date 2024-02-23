@@ -1,0 +1,5 @@
+defaults:
+  - medium
+  - _self_
+
+task_name: cartpole2poles_swingup_sparse

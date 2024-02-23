@@ -25,10 +25,21 @@ def make_env(cfg):
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
 
-    env = dmc_expert.make_states_only(domain_name=domain,
-                                    task_name=task,
-                                    seed=cfg.seed,
-                                    frame_skip=cfg.frame_skip)
+    env = dmc_expert.make_remastered_states_only(domain_name=domain,
+                                                 task_name=task,
+                                                 seed=cfg.seed,
+                                                 visual_seed=cfg.visual_seed_source,
+                                                 delta = cfg.delta_source,
+                                                 height=cfg.image_height,
+                                                 width=cfg.image_width,
+                                                 camera_id=0,
+                                                 frame_skip=1,
+                                                 num_frames = cfg.frame_stack,
+                                                 vary = cfg.vary,
+                                                 depth_flag = cfg.depth_flag,
+                                                 segm_flag = cfg.segm_flag,
+                                                )
+    
     env.seed(cfg.seed)
     
     assert env.action_space.low.min() >= -1
