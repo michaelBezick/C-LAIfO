@@ -86,14 +86,17 @@ def get_assets(visual_seed, delta, vary=DMCR_VARY):
 
         # negative seeds use random RGB variations of the default
         else:
-            # change background color
-            skybox_xml[0][0].attrib["rgb1"] = random_rgb_string()
-            # change star color
-            skybox_xml[0][0].attrib["rgb2"] = random_rgb_string()
 
-            # change the floor color
-            materials_xml[0][0].attrib["rgb1"] = random_rgb_string()
-            materials_xml[0][0].attrib["rgb2"] = random_rgb_string()
+            if "bg" in vary:
+                # change background color
+                skybox_xml[0][0].attrib["rgb1"] = random_rgb_string()
+                # change star color
+                skybox_xml[0][0].attrib["rgb2"] = random_rgb_string()
+
+            if "floor" in vary:
+                # change the floor color
+                materials_xml[0][0].attrib["rgb1"] = random_rgb_string()
+                materials_xml[0][0].attrib["rgb2"] = random_rgb_string()
 
         # change agent body color
         body_color = random_rgba_string()
