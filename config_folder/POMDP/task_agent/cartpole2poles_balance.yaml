@@ -2,4 +2,4 @@ defaults:
   - easy
   - _self_
 
-task_name: cartpole2poles_balance
+task_name_agent: cartpole2poles_balance
