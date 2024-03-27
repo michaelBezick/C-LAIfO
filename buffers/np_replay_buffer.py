@@ -102,6 +102,10 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
 
         ret = (obs, act, rew, dis, nobs)
         return ret
+    
+    def gather_images(self):
+        indices = np.random.choice(self.valid.nonzero()[0], size=self.batch_size)
+        return self.obs[indices, :, :, :]
 
     def __len__(self):
         if self.full:

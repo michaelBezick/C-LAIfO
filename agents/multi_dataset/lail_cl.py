@@ -21,6 +21,7 @@ class RandomShiftsAug(nn.Module):
         self.pad = pad
 
     def forward(self, x):
+        x = x.float()
         n, c, h, w = x.size()
         assert h == w
         padding = tuple([self.pad] * 4)
@@ -47,6 +48,27 @@ class RandomShiftsAug(nn.Module):
                              grid,
                              padding_mode='zeros',
                              align_corners=False)
+    
+class CustomAug(nn.Module):
+    def __init__(self, aug_function):
+        super().__init__()
+        self.aug = aug_function
+
+    def forward(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        image_aug = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_aug = self.aug(frame)
+            image_aug.append(frame_aug)
+
+        image_aug = torch.cat(image_aug, dim=1).float()
+
+        return image_aug
     
 class CL(nn.Module):
     """Contrastive learning for the encoder"""
@@ -211,9 +233,9 @@ class LailClAgent:
                  train_encoder_w_critic = True,
                  CL_data_type = 'all',
                  from_dem=False, 
-                 add_aug=False, 
                  add_aug_anchor_and_positive=False,
-                 brightness_only=True,
+                 aug_type='full',
+                 apply_aug = 'everywhere', #everywhere, nowhere, CL-only, CL-D
                  depth_flag=False, 
                  segm_flag=False):
         
@@ -227,34 +249,16 @@ class LailClAgent:
         self.GAN_loss = GAN_loss
         self.from_dem = from_dem
         self.check_every_steps = check_every_steps
-        self.add_aug = add_aug
         self.train_encoder_w_critic = train_encoder_w_critic
         self.CL_data_type = CL_data_type
         self.add_aug_anchor_and_positive = add_aug_anchor_and_positive
+        self.apply_aug = apply_aug
 
         # data augmentation
-        self.aug = RandomShiftsAug(pad=4)
-
-        # add augmentation for CL
-        if brightness_only:
-            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
-
-        else:
-            DEFAULT_AUG = torch.nn.Sequential(
-                T.ColorJitter(0.8, 0.8, 0.8, 0.2),
-                T.RandomGrayscale(p=0.2),
-                T.RandomHorizontalFlip(p=0.1),
-                T.RandomVerticalFlip(p=0.1),
-                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
-                T.RandomInvert(p=0.2),
-                T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
-            )
-
-        self.augment1 = default(None, DEFAULT_AUG)
-        self.augment2 = default(None, self.augment1)
+        self.select_aug_type(aug_type, apply_aug, obs_shape)
 
         if depth_flag or segm_flag:
-            self.add_aug = False
+            self.apply_aug = 'nowhere'
 
         self.encoder = Encoder(obs_shape, feature_dim, stochastic_encoder, log_std_bounds).to(device)
 
@@ -296,6 +300,98 @@ class LailClAgent:
 
         self.train()
         self.critic_target.train()
+
+    def select_aug_type(self, aug_type, apply_aug, obs_shape):
+        # add augmentation for CL
+        if aug_type == 'brightness':
+            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
+
+        elif aug_type == 'color':
+            DEFAULT_AUG = torch.nn.Sequential(
+                T.ColorJitter(0.8, 0.8, 0.8, 0.2),
+                T.RandomGrayscale(p=0.2),
+                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+                T.RandomInvert(p=0.2),
+                RandomApply(T.RandomChannelPermutation(), p = 0.1)
+            )
+
+        elif aug_type == 'full':
+            DEFAULT_AUG = torch.nn.Sequential(
+                T.ColorJitter(0.8, 0.8, 0.8, 0.2),
+                T.RandomGrayscale(p=0.2),
+                T.RandomHorizontalFlip(p=0.1),
+                T.RandomVerticalFlip(p=0.1),
+                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+                T.RandomInvert(p=0.2),
+                T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
+            )
+
+        else:
+            NotImplementedError
+
+        if apply_aug == 'everywhere':
+            self.augment1 = default(None, DEFAULT_AUG)
+            self.augment2 = default(None, self.augment1)
+            self.aug_D = CustomAug(self.augment1)
+            self.aug_Q = CustomAug(self.augment1)
+
+        elif apply_aug == 'nowhere':
+            self.augment1 = RandomShiftsAug(pad=4)
+            self.augment2 = RandomShiftsAug(pad=4)
+            self.aug_D = RandomShiftsAug(pad=4)
+            self.aug_Q = RandomShiftsAug(pad=4)
+
+        elif apply_aug == 'CL-only':
+            self.augment1 = default(None, DEFAULT_AUG)
+            self.augment2 = default(None, self.augment1)
+            self.aug_D = RandomShiftsAug(pad=4)
+            self.aug_Q = RandomShiftsAug(pad=4)
+
+        elif apply_aug == 'CL-D':
+            self.augment1 = default(None, DEFAULT_AUG)
+            self.augment2 = default(None, self.augment1)
+            self.aug_D = CustomAug(self.augment1)
+            self.aug_Q = RandomShiftsAug(pad=4)
+
+        elif apply_aug == 'CL-Q':
+            self.augment1 = default(None, DEFAULT_AUG)
+            self.augment2 = default(None, self.augment1)
+            self.aug_D = RandomShiftsAug(pad=4)
+            self.aug_Q = CustomAug(self.augment1)
+
+        else: 
+            NotImplementedError
+
+    def augment(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        if self.add_aug_anchor_and_positive:
+            image_one = []
+            image_two = []
+            for i in range(num_frames):
+                frame = obs[:, 3*i:3*i+3, :, :]
+                frame_one = self.augment1(frame)
+                frame_two = self.augment2(frame)
+                image_one.append(frame_one)
+                image_two.append(frame_two)
+
+            image_one = torch.cat(image_one, dim=1).float()
+            image_two = torch.cat(image_two, dim=1).float()
+
+        else:
+            image_two = []
+            for i in range(num_frames):
+                frame = obs[:, 3*i:3*i+3, :, :]
+                frame_two = self.augment2(frame)
+                image_two.append(frame_two)
+
+            image_two = torch.cat(image_two, dim=1).float()
+            image_one = obs.float()
+
+        return image_one, image_two
 
     def train(self, training=True):
         self.training = training
@@ -381,10 +477,10 @@ class LailClAgent:
 
         # augment
         if self.from_dem:
-            obs_a = self.aug(obs_a.float())
+            obs_a = self.aug_D(obs_a)
         else:
-            obs_a = self.aug(obs_a.float())
-            next_a = self.aug(next_a.float())
+            obs_a = self.aug_D(obs_a)
+            next_a = self.aug_D(next_a)
         
         # encode
         with torch.no_grad():
@@ -481,37 +577,6 @@ class LailClAgent:
             metrics['discriminator_grad_pen'] = grad_pen_loss.item()
         
         return metrics    
-
-    def augment(self, obs):
-        b, c, h, w = obs.size()
-        assert h == w 
-
-        num_frames = c // 3
-
-        if self.add_aug_anchor_and_positive:
-            image_one = []
-            image_two = []
-            for i in range(num_frames):
-                frame = obs[:, 3*i:3*i+3, :, :]
-                frame_one = self.augment1(frame)
-                frame_two = self.augment2(frame)
-                image_one.append(frame_one)
-                image_two.append(frame_two)
-
-            image_one = torch.cat(image_one, dim=1).float()
-            image_two = torch.cat(image_two, dim=1).float()
-
-        else:
-            image_two = []
-            for i in range(num_frames):
-                frame = obs[:, 3*i:3*i+3, :, :]
-                frame_two = self.augment2(frame)
-                image_two.append(frame_two)
-
-            image_two = torch.cat(image_two, dim=1).float()
-            image_one = obs.float()
-
-        return image_one, image_two
     
     def update_CL(self, obs, obs_e_raw, obs_random, obs_e_raw_random, check_every_steps, step):
         metrics = dict()
@@ -532,15 +597,10 @@ class LailClAgent:
         else:
             NotImplementedError
         
-        if self.add_aug:
-            image_one, image_two = self.augment(anchor_to_aug)
+        image_one, image_two = self.augment(anchor_to_aug)
 
-            if step % check_every_steps == 0:
-                self.check_aug_CL(image_one.float(), image_two.float(), step)
-
-        else:
-            image_one = self.aug(anchor_to_aug.float())
-            image_two = self.aug(anchor_to_aug.float())
+        if step % check_every_steps == 0:
+            self.check_aug_CL(image_one, image_two, step)
 
         if self.CL_data_type == 'all':
             anchors = torch.cat([anchors.float(), image_one], dim=0)
@@ -599,10 +659,10 @@ class LailClAgent:
                                       self.check_every_steps, 
                                       step))
         
-        obs_e = self.aug(obs_e_raw.float())
-        next_obs_e = self.aug(next_obs_e_raw.float())
-        obs_a = self.aug(obs.float())
-        next_obs_a = self.aug(next_obs.float())
+        obs_e = self.aug_D(obs_e_raw)
+        next_obs_e = self.aug_D(next_obs_e_raw)
+        obs_a = self.aug_D(obs)
+        next_obs_a = self.aug_D(next_obs)
 
         if step % self.check_every_steps == 0:
             self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step)
@@ -624,8 +684,8 @@ class LailClAgent:
         metrics.update(metrics_r)
 
         # augment
-        obs = self.aug(obs.float())
-        next_obs = self.aug(next_obs.float())
+        obs = self.aug_Q(obs)
+        next_obs = self.aug_Q(next_obs)
         # encode
         obs = self.encoder(obs)
         with torch.no_grad():

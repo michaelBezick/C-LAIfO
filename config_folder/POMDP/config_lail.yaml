@@ -2,7 +2,8 @@ defaults:
   - _self_
   - replay_buffer@_global_: numpy
   - replay_buffer_expert@_global_: numpy
-  - task@_global_: walker_walk
+  - task_agent@_global_: walker_walk
+  - task_expert@_global_: walker_walk
   - agent@_global_: lail
   - expert@_global_: ddpg
   - difficulty@_global_: no_mismatch
@@ -65,8 +66,8 @@ midas_size: small
 check_every_steps: 5000
 depth_flag: false # Enables learning from perfect depth
 segm_flag: false # Enables learning from perfect segmentation
-add_aug: false # adds additional augmentations to BYOL and CL agents
-brightness_only: true # augmentation focuses mainly on brigthness
+apply_aug: 'everywhere' # adds additional augmentations to BYOL and CL agents
+aug_type: 'full' # augmentation type [full, color, brightness]
 deeper_head: false # in the projected setting it makes the encoder head deeper
 
 # multi envs
@@ -75,9 +76,9 @@ aug: true
 
 hydra:
   run:
-    dir: ./experiments/exp_${task_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_brightness_only=${brightness_only}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
+    dir: ./experiments/exp_${task_name}_difficulty=${difficulty_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_aug_type=${aug_type}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
   sweep:
-    dir: ./experiments/exp_${task_name}_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_brightness_only=${brightness_only}/
+    dir: ./experiments/exp_${task_name}_multirun_difficulty=${difficulty_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_aug_type=${aug_type}/
     subdir: ${now:%Y.%m.%d}_${now:%H%M}_${hydra.job.override_dirname}
   launcher:
     timeout_min: 18000000
@@ -86,4 +87,4 @@ hydra:
     tasks_per_node: 1
     mem_gb: 160
     nodes: 1
-    submitit_folder: ./experiments/exp_${task_name}_multirun_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_brightness_only=${brightness_only}/
+    submitit_folder: ./experiments/exp_${task_name}_multirun_difficulty=${difficulty_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_add_aug=${add_aug}_aug_type=${aug_type}/

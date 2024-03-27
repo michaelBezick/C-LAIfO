@@ -1,0 +1,13 @@
+
+# agent_name: 
+
+aug_policy:
+  _target_: agents.addp.ADDPAgent
+  device: ${device}
+  num_sub_policies: ${num_sub_policies}
+  temperature: ${temperature}
+  operation_count: ${operation_count}
+  operations_subset: ${operations_subset}
+  aug_policy_lr: ${aug_policy_lr}
+  check_every_steps: ${check_every_steps_aug_policy}
+

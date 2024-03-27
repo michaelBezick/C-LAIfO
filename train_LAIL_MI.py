@@ -27,7 +27,7 @@ def make_agent(obs_spec, action_spec, cfg):
 
 def make_env_expert(cfg):
     """Helper function to create dm_control environment"""
-    domain, task = cfg.task_name.split('_', 1)
+    domain, task = cfg.task_name_expert.split('_', 1)
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
 
@@ -63,7 +63,7 @@ class Workspace:
         self.agent = make_agent(self.train_env.observation_spec(),
                                 self.train_env.action_spec(),
                                 self.cfg.agent)
-        
+              
         self.timer = utils.Timer()
         self._global_step = 0
         self._global_episode = 0
@@ -72,12 +72,12 @@ class Workspace:
         # create logger
         self.logger = Logger(self.work_dir, use_tb=self.cfg.use_tb)
         # create target envs and agent
-        self.train_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
+        self.train_env = dmc.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
                                             self.cfg.depth_flag, self.cfg.segm_flag)
                                                 
-        self.eval_env = dmc.make_remastered(self.cfg.task_name, self.cfg.frame_stack,
+        self.eval_env = dmc.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
                                             self.cfg.depth_flag, self.cfg.segm_flag)
@@ -301,42 +301,42 @@ class Workspace:
             self._global_step += 1
 
     def save_snapshot(self):
-        snapshot = self.work_dir / f'snapshot_{self.cfg.task_name}.pt'
+        snapshot = self.work_dir / f'snapshot_{self.cfg.task_name_agent}.pt'
         keys_to_save = ['agent', 'timer', '_global_step', '_global_episode']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f, pickle_protocol=4)
 
     def save_buffer(self):
-        snapshot = self.work_dir / f'replay_buffer_{self.cfg.task_name}.pt'
+        snapshot = self.work_dir / f'replay_buffer_{self.cfg.task_name_agent}.pt'
         keys_to_save = ['replay_buffer']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f, pickle_protocol=4)
 
     def save_buffer_random(self):
-        snapshot = self.work_dir / f'replay_buffer_random_{self.cfg.task_name}.pt'
+        snapshot = self.work_dir / f'replay_buffer_random_{self.cfg.task_name_agent}.pt'
         keys_to_save = ['replay_buffer_random']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f, pickle_protocol=4)
 
     def save_expert_buffer(self):
-        snapshot = self.work_dir / f'replay_buffer_expert_{self.cfg.task_name}.pt'
+        snapshot = self.work_dir / f'replay_buffer_expert_{self.cfg.task_name_expert}.pt'
         keys_to_save = ['replay_buffer_expert']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f, pickle_protocol=4)
 
     def save_expert_buffer_random(self):
-        snapshot = self.work_dir / f'replay_buffer_expert_random_{self.cfg.task_name}.pt'
+        snapshot = self.work_dir / f'replay_buffer_expert_random_{self.cfg.task_name_expert}.pt'
         keys_to_save = ['replay_buffer_random_expert']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
             torch.save(payload, f, pickle_protocol=4)
 
     def load_snapshot(self):
-        snapshot = self.work_dir / f'snapshot_{self.cfg.task_name}.pt'
+        snapshot = self.work_dir / f'snapshot_{self.cfg.task_name_agent}.pt'
         with snapshot.open('rb') as f:
             payload = torch.load(f)
         for k, v in payload.items():
@@ -353,7 +353,7 @@ def main(cfg):
     root_dir = Path.cwd()
     workspace = W(cfg)
     parent_dir = root_dir.parents[3]
-    snapshot = parent_dir / f'expert_policies/snapshot_{cfg.task_name}_frame_skip_{cfg.frame_skip}.pt'
+    snapshot = parent_dir / f'expert_policies/snapshot_{cfg.task_name_expert}_frame_skip_{cfg.frame_skip}.pt'
     assert snapshot.exists()
     print(f'loading expert target: {snapshot}')
     workspace.load_expert(snapshot)

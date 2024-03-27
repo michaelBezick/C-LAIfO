@@ -21,6 +21,6 @@ agent:
   disc_lr: ${discriminator_lr}
   use_simreg: True
   sim_rate: 'auto-1.3'
-  add_aug: ${add_aug}
-  brightness_only: ${brightness_only}
+  aug_type: ${aug_type}
+  apply_aug: ${apply_aug}
   # sim_rate: 2.0

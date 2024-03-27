@@ -25,6 +25,6 @@ agent:
   check_every_steps: ${check_every_steps}
   from_depth: ${from_depth}
   midas_size: ${midas_size}
-  add_aug: ${add_aug}
-  brightness_only: ${brightness_only}
+  aug_type: ${aug_type}
+  apply_aug: ${apply_aug}
 

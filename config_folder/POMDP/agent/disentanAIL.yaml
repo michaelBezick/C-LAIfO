@@ -32,7 +32,7 @@ agent:
   max_mi_constant: ${max_mi_constant}
   mi_constant: ${mi_constant}
   unbiased_mi_decay: ${unbiased_mi_decay}
-  add_aug: ${add_aug}
-  brightness_only: ${brightness_only}
+  aug_type: ${aug_type}
+  apply_aug: ${apply_aug}
 
 

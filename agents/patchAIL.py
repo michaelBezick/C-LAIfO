@@ -49,6 +49,7 @@ class RandomShiftsAug(nn.Module):
         self.pad = pad
 
     def forward(self, x):
+        x = x.float()
         n, c, h, w = x.size()
         assert h == w
         padding = tuple([self.pad] * 4)
@@ -75,6 +76,27 @@ class RandomShiftsAug(nn.Module):
                              grid,
                              padding_mode='zeros',
                              align_corners=False)
+    
+class CustomAug(nn.Module):
+    def __init__(self, aug_function):
+        super().__init__()
+        self.aug = aug_function
+
+    def forward(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        image_aug = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_aug = self.aug(frame)
+            image_aug.append(frame_aug)
+
+        image_aug = torch.cat(image_aug, dim=1).float()
+
+        return image_aug
 
 class PatchDiscriminator(nn.Module):
     """Defines a PatchGAN discriminator"""
@@ -199,8 +221,9 @@ class PatchAilAgent:
                  disc_lr=None, 
                  use_simreg=False, 
                  sim_rate=1.5,
-                 add_aug=False,
-                 brightness_only=True):
+                 aug_type='full',
+                 apply_aug = 'everywhere', #everywhere, nowhere, D-only, Q-only
+                 ):
         
         self.device = device
         self.lr = lr
@@ -211,8 +234,7 @@ class PatchAilAgent:
         self.stddev_schedule = stddev_schedule
         self.stddev_clip = stddev_clip
         self.check_every_steps = check_every_steps
-        self.add_aug = add_aug
-        self.brightness_only = brightness_only
+        self.apply_aug = apply_aug
 
         self.sim_rate = sim_rate
         self.use_simreg = use_simreg
@@ -221,7 +243,6 @@ class PatchAilAgent:
             disc_lr = lr
         if use_simreg:
             print("\nUsing Sim Reg, Sim Rate: {}".format(sim_rate))
-
 
         self.reward_type = reward_type
         self.reward_scale = reward_scale
@@ -233,6 +254,9 @@ class PatchAilAgent:
 
         print("Using reward scale: {}\n".format(reward_scale))
         print("Using mean as reward aggregation")
+
+        # data augmentation
+        self.select_aug_type(aug_type, apply_aug, obs_shape)  
 
         # models
         self.encoder = Encoder(obs_shape).to(device)
@@ -252,15 +276,24 @@ class PatchAilAgent:
         self.actor_opt = torch.optim.Adam(self.actor.parameters(), lr=lr)
         self.critic_opt = torch.optim.Adam(self.critic.parameters(), lr=lr)
 
-        # data augmentation
-        self.aug = RandomShiftsAug(pad=4)
-        self.disc_aug = RandomShiftsAug(pad=4)
+        self.train()
+        self.critic_target.train()
 
-        # add augmentation
-        if brightness_only:
+    def select_aug_type(self, aug_type, apply_aug, obs_shape):
+        # add augmentation for CL
+        if aug_type == 'brightness':
             DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
 
-        else:
+        elif aug_type == 'color':
+            DEFAULT_AUG = torch.nn.Sequential(
+                T.ColorJitter(0.8, 0.8, 0.8, 0.2),
+                T.RandomGrayscale(p=0.2),
+                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+                T.RandomInvert(p=0.2),
+                RandomApply(T.RandomChannelPermutation(), p = 0.1)
+            )
+
+        elif aug_type == 'full':
             DEFAULT_AUG = torch.nn.Sequential(
                 T.ColorJitter(0.8, 0.8, 0.8, 0.2),
                 T.RandomGrayscale(p=0.2),
@@ -271,10 +304,30 @@ class PatchAilAgent:
                 T.RandomResizedCrop((obs_shape[-1], obs_shape[-1]), scale=(0.8, 1.0), ratio=(0.9, 1.1))
             )
 
-        self.augment1 = default(None, DEFAULT_AUG)        
+        else:
+            NotImplementedError
 
-        self.train()
-        self.critic_target.train()
+        self.augment1 = default(None, DEFAULT_AUG)
+
+        if apply_aug == 'everywhere':
+            self.aug_D = CustomAug(self.augment1)
+            self.aug_Q = CustomAug(self.augment1)
+
+        elif apply_aug == 'nowhere':
+            self.aug_D = RandomShiftsAug(pad=4)
+            self.aug_Q = RandomShiftsAug(pad=4)
+
+        elif apply_aug == 'D-only':
+            self.aug_D = CustomAug(self.augment1)
+            self.aug_Q = RandomShiftsAug(pad=4)
+
+        elif apply_aug == 'Q-only':
+            self.aug_D = RandomShiftsAug(pad=4)
+            self.aug_Q = CustomAug(self.augment1)
+
+
+        else: 
+            NotImplementedError
 
     def train(self, training=True):
         self.training = training
@@ -282,22 +335,6 @@ class PatchAilAgent:
         self.actor.train(training)
         self.critic.train(training)
         self.discriminator.train(training)
-
-    def augment(self, obs):
-        b, c, h, w = obs.size()
-        assert h == w 
-
-        num_frames = c // 3
-
-        image_one = []
-        for i in range(num_frames):
-            frame = obs[:, 3*i:3*i+3, :, :]
-            frame_one = self.augment1(frame)
-            image_one.append(frame_one)
-
-        image_one = torch.cat(image_one, dim=1).float()
-
-        return image_one
 
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
@@ -496,21 +533,14 @@ class PatchAilAgent:
         expert_next_obs_before_aug = expert_next_obs
 
         # augment
-        obs = self.aug(obs.float())
-        next_obs = self.aug(next_obs.float())
+        obs = self.aug_Q(obs)
+        next_obs = self.aug_Q(next_obs)
 
         # disc augment
-        if self.add_aug:
-            disc_obs = self.augment(obs_before_aug)
-            disc_next_obs = self.augment(next_obs_before_aug)
-            disc_expert_obs = self.augment(expert_obs_before_aug)
-            disc_expert_next_obs = self.augment(expert_next_obs_before_aug)            
-
-        else:
-            disc_obs = self.disc_aug(obs_before_aug.float())
-            disc_next_obs = self.disc_aug(next_obs_before_aug.float())
-            disc_expert_obs = self.disc_aug(expert_obs_before_aug.float())
-            disc_expert_next_obs = self.disc_aug(expert_next_obs_before_aug.float())
+        disc_obs = self.aug_D(obs_before_aug)
+        disc_next_obs = self.aug_D(next_obs_before_aug)
+        disc_expert_obs = self.aug_D(expert_obs_before_aug)
+        disc_expert_next_obs = self.aug_D(expert_next_obs_before_aug)            
 
         if step % self.check_every_steps == 0:
             self.check_aug(disc_obs, disc_next_obs, disc_expert_obs, disc_expert_next_obs, step)

@@ -25,9 +25,9 @@ agent:
   train_encoder_w_critic: ${train_encoder_w_critic}
   CL_data_type: ${CL_data_type}
   from_dem: ${from_dem}
-  add_aug: ${add_aug}
-  add_aug_anchor_and_positive: ${add_aug_anchor_and_positive}
-  brightness_only: ${brightness_only}
+  add_aug_anchor_and_positive: true
+  aug_type: ${aug_type}
+  apply_aug: ${apply_aug}
   depth_flag: ${depth_flag}
   segm_flag: ${segm_flag}
 
