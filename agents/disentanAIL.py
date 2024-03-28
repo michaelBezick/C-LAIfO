@@ -21,6 +21,7 @@ class RandomShiftsAug(nn.Module):
         self.pad = pad
 
     def forward(self, x):
+        x = x.float()
         n, c, h, w = x.size()
         assert h == w
         padding = tuple([self.pad] * 4)

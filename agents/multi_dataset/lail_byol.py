@@ -239,12 +239,12 @@ class LailByolAgent:
         self.select_aug_type(aug_type, apply_aug, obs_shape)
 
         if depth_flag or segm_flag:
-            self.add_aug = 'nowhere'
+            self.apply_aug = 'nowhere'
 
         self.encoder = Encoder(obs_shape, feature_dim, stochastic_encoder, log_std_bounds).to(device)
     
-        self.byol = BYOL(self.encoder, obs_shape, self.aug, self.augment1, self.augment2,
-                        self.add_aug, add_aug_anchor_and_positive, projection_size=(feature_dim//2)).to(device)
+        self.byol = BYOL(self.encoder, obs_shape, self.augment1, self.augment2,
+                         add_aug_anchor_and_positive, projection_size=(feature_dim//2)).to(device)
         
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
