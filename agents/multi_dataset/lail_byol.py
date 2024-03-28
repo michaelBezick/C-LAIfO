@@ -284,7 +284,7 @@ class LailByolAgent:
     def select_aug_type(self, aug_type, apply_aug, obs_shape):
         # add augmentation for CL
         if aug_type == 'brightness':
-            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
+            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((1, 4), None, None, None))
 
         elif aug_type == 'color':
             DEFAULT_AUG = torch.nn.Sequential(
@@ -599,10 +599,10 @@ class LailByolAgent:
                                         self.check_every_steps, 
                                         step))
         
-        obs_e = self.aug_D(obs_e_raw.float())
-        next_obs_e = self.aug_D(next_obs_e_raw.float())
-        obs_a = self.aug_D(obs.float())
-        next_obs_a = self.aug_D(next_obs.float())
+        obs_e = self.aug_D(obs_e_raw)
+        next_obs_e = self.aug_D(next_obs_e_raw)
+        obs_a = self.aug_D(obs)
+        next_obs_a = self.aug_D(next_obs)
 
         if step % self.check_every_steps == 0:
             self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step)
@@ -624,8 +624,8 @@ class LailByolAgent:
         metrics.update(metrics_r)
 
         # augment
-        obs = self.aug_Q(obs.float())
-        next_obs = self.aug_Q(next_obs.float())
+        obs = self.aug_Q(obs)
+        next_obs = self.aug_Q(next_obs)
         # encode
         obs = self.byol.online_encoder(obs, return_projection=False)
         with torch.no_grad():

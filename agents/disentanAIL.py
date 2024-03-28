@@ -481,8 +481,8 @@ class DisentanAILAgent:
         metrics = dict()
 
         # augment
-        obs_a = self.aug(obs_a.float())
-        next_a = self.aug(next_a.float())
+        obs_a = self.aug_D(obs_a)
+        next_a = self.aug_D(next_a)  
         
         # encode
         with torch.no_grad():

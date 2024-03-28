@@ -441,10 +441,10 @@ class LailAgent:
 
         # augment
         if self.from_dem:
-            obs_a = self.aug(obs_a.float())
+            obs_a = self.aug_D(obs_a)
         else:
-            obs_a = self.aug(obs_a.float())
-            next_a = self.aug(next_a.float())
+            obs_a = self.aug_D(obs_a)
+            next_a = self.aug_D(next_a)
         
         # encode
         with torch.no_grad():
@@ -579,8 +579,8 @@ class LailAgent:
         metrics.update(metrics_r)
 
         # augment
-        obs = self.aug_Q(obs.float())
-        next_obs = self.aug_Q(next_obs.float())
+        obs = self.aug_Q(obs)
+        next_obs = self.aug_Q(next_obs)
         # encode
         obs = self.encoder(obs)
         with torch.no_grad():
