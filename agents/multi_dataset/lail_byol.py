@@ -290,9 +290,9 @@ class LailByolAgent:
             DEFAULT_AUG = torch.nn.Sequential(
                 T.ColorJitter(0.8, 0.8, 0.8, 0.2),
                 T.RandomGrayscale(p=0.2),
-                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.1),
+                RandomApply(T.GaussianBlur((3, 3), (1.0, 2.0)), p = 0.2),
                 T.RandomInvert(p=0.2),
-                RandomApply(T.RandomChannelPermutation(), p = 0.1)
+                RandomApply(T.RandomChannelPermutation(), p = 0.2)
             )
 
         elif aug_type == 'full':
