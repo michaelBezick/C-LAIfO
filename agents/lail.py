@@ -291,7 +291,7 @@ class LailAgent:
     def select_aug_type(self, aug_type, apply_aug, obs_shape):
         # add augmentation for CL
         if aug_type == 'brightness':
-            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
+            DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((1, 4), None, None, None))
 
         elif aug_type == 'color':
             DEFAULT_AUG = torch.nn.Sequential(
