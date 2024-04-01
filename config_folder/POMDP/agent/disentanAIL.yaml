@@ -34,5 +34,6 @@ agent:
   unbiased_mi_decay: ${unbiased_mi_decay}
   aug_type: ${aug_type}
   apply_aug: ${apply_aug}
+  grayscale: ${grayscale}
 
 

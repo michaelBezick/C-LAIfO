@@ -74,6 +74,7 @@ apply_aug: 'everywhere' # adds additional augmentations to BYOL and CL agents
 add_aug_anchor_and_positive: false # adds augmentations to both anchors and positives
 aug_type: 'full' # augmentation type [full, color, brightness]
 deeper_head: false # in the projected setting it makes the encoder head deeper
+grayscale: false
 
 # data aug policy
 num_sub_policies: 5

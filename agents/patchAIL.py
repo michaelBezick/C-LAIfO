@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.utils import save_image
 from torchvision.transforms import v2 as T
+from torchvision.transforms.functional import rgb_to_grayscale
 
 from utils_folder import utils
 from utils_folder.byol_multiset import default, RandomApply
@@ -95,6 +96,26 @@ class CustomAug(nn.Module):
             image_aug.append(frame_aug)
 
         image_aug = torch.cat(image_aug, dim=1).float()
+
+        return image_aug
+    
+class Grayscale(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        image_aug = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_aug = rgb_to_grayscale(frame, num_output_channels=3)
+            image_aug.append(frame_aug)
+
+        image_aug = torch.cat(image_aug, dim=1)
 
         return image_aug
 
@@ -223,6 +244,7 @@ class PatchAilAgent:
                  sim_rate=1.5,
                  aug_type='full',
                  apply_aug = 'everywhere', #everywhere, nowhere, D-only, Q-only
+                 grayscale = False,
                  ):
         
         self.device = device
@@ -235,6 +257,8 @@ class PatchAilAgent:
         self.stddev_clip = stddev_clip
         self.check_every_steps = check_every_steps
         self.apply_aug = apply_aug
+        self.grayscale = grayscale
+        self.grayscale_aug = Grayscale()
 
         self.sim_rate = sim_rate
         self.use_simreg = use_simreg
@@ -338,7 +362,13 @@ class PatchAilAgent:
 
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
-        obs = self.encoder(obs.unsqueeze(0)) 
+
+        if self.grayscale:
+            obs = self.grayscale_aug(obs.unsqueeze(0))
+            obs = self.encoder(obs)
+        else:
+            obs = self.encoder(obs.unsqueeze(0))
+
         stddev = utils.schedule(self.stddev_schedule, step)
         dist = self.actor(obs, std=stddev)
         if eval_mode:
@@ -526,6 +556,12 @@ class PatchAilAgent:
 
         obs, action, reward_a, discount, next_obs = utils.to_torch(next(replay_iter), self.device)
         expert_obs, _, _, _, expert_next_obs = utils.to_torch(next(expert_replay_iter), self.device)
+
+        if self.grayscale:
+            obs = self.grayscale_aug(obs)
+            next_obs = self.grayscale_aug(next_obs)
+            expert_obs = self.grayscale_aug(expert_obs)
+            expert_next_obs = self.grayscale_aug(expert_next_obs)
 
         obs_before_aug = obs
         next_obs_before_aug = next_obs

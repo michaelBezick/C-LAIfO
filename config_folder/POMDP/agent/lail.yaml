@@ -27,4 +27,5 @@ agent:
   midas_size: ${midas_size}
   aug_type: ${aug_type}
   apply_aug: ${apply_aug}
+  grayscale: ${grayscale}
 

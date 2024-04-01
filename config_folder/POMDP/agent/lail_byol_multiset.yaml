@@ -29,6 +29,7 @@ agent:
   add_aug_anchor_and_positive: false
   aug_type: ${aug_type}
   apply_aug: ${apply_aug}
+  grayscale: ${grayscale}
   depth_flag: ${depth_flag}
   segm_flag: ${segm_flag}
 

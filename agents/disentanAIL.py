@@ -8,6 +8,7 @@ from torch import autograd
 from torch.nn.utils import spectral_norm 
 from torchvision.utils import save_image
 from torchvision.transforms import v2 as T
+from torchvision.transforms.functional import rgb_to_grayscale
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
@@ -67,6 +68,26 @@ class CustomAug(nn.Module):
             image_aug.append(frame_aug)
 
         image_aug = torch.cat(image_aug, dim=1).float()
+
+        return image_aug
+    
+class Grayscale(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        image_aug = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_aug = rgb_to_grayscale(frame, num_output_channels=3)
+            image_aug.append(frame_aug)
+
+        image_aug = torch.cat(image_aug, dim=1)
 
         return image_aug
 
@@ -289,6 +310,7 @@ class DisentanAILAgent:
                  stochastic_preprocessor=True,
                  aug_type='full',
                  apply_aug = 'everywhere', #everywhere, nowhere, D-only, Q-only
+                 grayscale = False
                  ):
         
         self.device = device
@@ -302,6 +324,8 @@ class DisentanAILAgent:
         self.GAN_loss = GAN_loss
         self.check_every_steps = check_every_steps
         self.apply_aug = apply_aug
+        self.grayscale = grayscale
+        self.grayscale_aug = Grayscale()
 
         # data augmentation
         self.select_aug_type(aug_type, apply_aug, obs_shape)  
@@ -394,7 +418,6 @@ class DisentanAILAgent:
             self.aug_D = RandomShiftsAug(pad=4)
             self.aug_Q = CustomAug(self.augment1)
 
-
         else: 
             NotImplementedError
 
@@ -413,7 +436,13 @@ class DisentanAILAgent:
 
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
-        obs = self.encoder(obs.unsqueeze(0))
+
+        if self.grayscale:
+            obs = self.grayscale_aug(obs.unsqueeze(0))
+            obs = self.encoder(obs)
+        else:
+            obs = self.encoder(obs.unsqueeze(0))
+
         stddev = utils.schedule(self.stddev_schedule, step)
         dist = self.actor(obs, stddev)
         if eval_mode:
@@ -682,6 +711,12 @@ class DisentanAILAgent:
         batch_expert = next(replay_iter_expert)
         obs_e_raw, _, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
 
+        if self.grayscale:
+            obs = self.grayscale_aug(obs)
+            next_obs = self.grayscale_aug(next_obs)
+            obs_e_raw = self.grayscale_aug(obs_e_raw)
+            next_obs_e_raw = self.grayscale_aug(next_obs_e_raw)
+
         obs_e = self.aug_D(obs_e_raw)
         next_obs_e = self.aug_D(next_obs_e_raw)
         obs_a = self.aug_D(obs)
@@ -704,6 +739,12 @@ class DisentanAILAgent:
 
         batch_expert_random = next(replay_iter_expert_random)
         obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(batch_expert_random, self.device)
+
+        if self.grayscale:
+            obs_random = self.grayscale_aug(obs_random)
+            next_obs_random = self.grayscale_aug(next_obs_random)
+            obs_e_raw_random = self.grayscale_aug(obs_e_raw_random)
+            next_obs_e_raw_random = self.grayscale_aug(next_obs_e_raw_random)
 
         obs_e_random = self.aug_D(obs_e_raw_random)
         next_obs_e_random = self.aug_D(next_obs_e_raw_random)

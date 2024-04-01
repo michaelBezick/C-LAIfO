@@ -8,6 +8,7 @@ from torch import autograd
 from torch.nn.utils import spectral_norm 
 from torchvision.utils import save_image
 from torchvision.transforms import v2 as T
+from torchvision.transforms.functional import rgb_to_grayscale
 
 from utils_folder import utils
 from utils_folder.utils_dreamer import Bernoulli
@@ -67,6 +68,26 @@ class CustomAug(nn.Module):
             image_aug.append(frame_aug)
 
         image_aug = torch.cat(image_aug, dim=1).float()
+
+        return image_aug
+    
+class Grayscale(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, obs):
+        b, c, h, w = obs.size()
+        assert h == w 
+
+        num_frames = c // 3
+
+        image_aug = []
+        for i in range(num_frames):
+            frame = obs[:, 3*i:3*i+3, :, :]
+            frame_aug = rgb_to_grayscale(frame, num_output_channels=3)
+            image_aug.append(frame_aug)
+
+        image_aug = torch.cat(image_aug, dim=1)
 
         return image_aug
 
@@ -218,6 +239,7 @@ class LailByolAgent:
                  add_aug_anchor_and_positive=False,
                  aug_type='full',
                  apply_aug = 'everywhere', #everywhere, nowhere, CL-only, CL-D, CL-Q
+                 grayscale = False,
                  depth_flag=False, 
                  segm_flag=False):
         
@@ -234,6 +256,8 @@ class LailByolAgent:
         self.train_encoder_w_critic = train_encoder_w_critic
         self.CL_data_type = CL_data_type
         self.apply_aug = apply_aug
+        self.grayscale = grayscale
+        self.grayscale_aug = Grayscale()
 
         # data augmentation
         self.select_aug_type(aug_type, apply_aug, obs_shape)
@@ -382,7 +406,13 @@ class LailByolAgent:
 
     def act(self, obs, step, eval_mode):
         obs = torch.as_tensor(obs, device=self.device)
-        obs = self.byol.online_encoder(obs.unsqueeze(0), return_projection=False)
+
+        if self.grayscale:
+            obs = self.grayscale_aug(obs.unsqueeze(0))
+            obs = self.byol.online_encoder(obs, return_projection=False)
+        else:
+            obs = self.byol.online_encoder(obs.unsqueeze(0), return_projection=False)
+
         stddev = utils.schedule(self.stddev_schedule, step)
         dist = self.actor(obs, stddev)
         if eval_mode:
@@ -591,6 +621,16 @@ class LailByolAgent:
 
         batch_expert_random = next(replay_iter_expert_random)
         obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(batch_expert_random, self.device)
+
+        if self.grayscale:
+            obs = self.grayscale_aug(obs)
+            next_obs = self.grayscale_aug(next_obs)
+            obs_e_raw = self.grayscale_aug(obs_e_raw)
+            next_obs_e_raw = self.grayscale_aug(next_obs_e_raw)
+            obs_random = self.grayscale_aug(obs_random)
+            next_obs_random = self.grayscale_aug(next_obs_random)
+            obs_e_raw_random = self.grayscale_aug(obs_e_raw_random)
+            next_obs_e_raw_random = self.grayscale_aug(next_obs_e_raw_random)
 
         metrics.update(self.update_BYOL(obs,
                                         obs_e_raw,

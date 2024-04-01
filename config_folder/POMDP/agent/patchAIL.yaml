@@ -23,4 +23,5 @@ agent:
   sim_rate: 'auto-1.3'
   aug_type: ${aug_type}
   apply_aug: ${apply_aug}
+  grayscale: ${grayscale}
   # sim_rate: 2.0

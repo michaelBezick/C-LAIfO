@@ -69,6 +69,7 @@ segm_flag: false # Enables learning from perfect segmentation
 apply_aug: 'everywhere' # adds additional augmentations to BYOL and CL agents
 aug_type: 'full' # augmentation type [full, color, brightness]
 deeper_head: false # in the projected setting it makes the encoder head deeper
+grayscale: false
 
 # multi envs
 num_aug_envs: 10
