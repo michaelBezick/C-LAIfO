@@ -620,25 +620,36 @@ class LailClAgent:
         elif self.CL_data_type == 'all':
             anchor_to_aug = torch.cat([obs, obs_e_raw], dim=0)
             anchors = torch.cat([obs_random, obs_e_raw_random], dim=0)
+            rand_idx = torch.randperm(obs_random.shape[0])
+            positives = torch.cat([obs_e_raw_random[rand_idx], obs_random[rand_idx]], dim=0)
 
+        elif self.CL_data_type == 'random-only':
+            anchors = torch.cat([obs_random, obs_e_raw_random], dim=0)
             rand_idx = torch.randperm(obs_random.shape[0])
             positives = torch.cat([obs_e_raw_random[rand_idx], obs_random[rand_idx]], dim=0)
 
         else:
             NotImplementedError
-        
-        image_one, image_two = self.augment(anchor_to_aug)
-
-        if step % check_every_steps == 0:
-            self.check_aug_CL(image_one, image_two, step)
 
         if self.CL_data_type == 'all':
+            image_one, image_two = self.augment(anchor_to_aug)
             anchors = torch.cat([anchors.float(), image_one], dim=0)
             positives = torch.cat([positives.float(), image_two], dim=0)
 
+            if step % check_every_steps == 0:
+                self.check_aug_CL(image_one, image_two, step)
+
+        elif self.CL_data_type == 'random-only':
+            anchors = anchors.float()
+            positives = positives.float()
+
         else:
+            image_one, image_two = self.augment(anchor_to_aug)
             anchors = image_one
             positives = image_two
+
+            if step % check_every_steps == 0:
+                self.check_aug_CL(image_one, image_two, step)
 
         z_anchor = self.encoder(anchors)
         with torch.no_grad():

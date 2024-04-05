@@ -86,7 +86,7 @@ check_every_steps_aug_policy: 10
 
 # multi-dataset
 train_encoder_w_critic: true
-CL_data_type: all
+CL_data_type: all # agent, expert, all, random-only
 
 # multi envs
 num_aug_envs: 10
