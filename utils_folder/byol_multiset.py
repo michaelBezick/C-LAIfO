@@ -258,6 +258,12 @@ class BYOL(nn.Module):
             rand_idx = torch.randperm(obs_random.shape[0])
             positives = torch.cat([obs_e_raw_random[rand_idx], obs_random[rand_idx]], dim=0)
 
+        elif CL_data_type == 'agent-random':
+            anchor_to_aug = obs
+            anchors = obs_random
+            rand_idx = torch.randperm(obs_random.shape[0])
+            positives = torch.cat([obs_e_raw_random[rand_idx], obs_random[rand_idx]], dim=0)
+
         elif CL_data_type == 'random-only':
             anchors = torch.cat([obs_random, obs_e_raw_random], dim=0)
             rand_idx = torch.randperm(obs_random.shape[0])
@@ -269,7 +275,7 @@ class BYOL(nn.Module):
         if return_embedding:
             return self.online_encoder(anchor_to_aug, return_projection = return_projection)
 
-        if CL_data_type == 'all':
+        if CL_data_type == 'all' or CL_data_type == 'agent-random':
             image_one, image_two = self.augment(anchor_to_aug)
             anchors = torch.cat([anchors.float(), image_one], dim=0)
             positives = torch.cat([positives.float(), image_two], dim=0)
