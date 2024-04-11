@@ -333,7 +333,7 @@ class LailClAgent:
                 DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((1, 4), None, None, None))
 
             else:
-                DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 2), None, None, None))
+                DEFAULT_AUG = torch.nn.Sequential(T.ColorJitter((0, 3), None, None, None))
 
         elif aug_type == 'color':
             DEFAULT_AUG = torch.nn.Sequential(
