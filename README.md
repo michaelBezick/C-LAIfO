@@ -71,4 +71,4 @@ python train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lai
 python train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=color_all_together apply_aug='CL-Q' aug_type='color' CL_data_type=agent
 ```
 
-### Code for adroit experiments available at this other [repository](https://anonymous.4open.science/r/C-LAIfO_adroit-1D18/adroit.py) 
+### Code for adroit experiments available at this other [repository](https://anonymous.4open.science/r/C-LAIfO_adroit-1D18/README.md) 
