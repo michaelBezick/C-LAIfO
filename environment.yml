@@ -241,6 +241,8 @@ dependencies:
     - importlib-metadata==4.12.0
     - ipdb==0.13.9
     - joblib==1.1.0
+    - kornia==0.7.2
+    - kornia-rs==0.1.2
     - labmaze==1.0.5
     - lxml==4.9.1
     - markdown==3.4.1
@@ -256,6 +258,7 @@ dependencies:
     - pyasn1-modules==0.2.8
     - pyopengl==3.1.6
     - pyopengl-accelerate==3.1.6
+    - pytorch-msssim==1.0.0
     - requests-oauthlib==1.3.1
     - rsa==4.9
     - safetensors==0.3.3
@@ -273,4 +276,3 @@ dependencies:
     - werkzeug==2.2.2
     - yapf==0.31.0
     - zipp==3.8.1
-prefix: /home/vittoriogiammarino/anaconda3/envs/AIL_w_DA

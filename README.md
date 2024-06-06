@@ -1,4 +1,4 @@
-# AIL_from_visual_obs_with_latent_information
+# Visually Robust Adversarial Imitation Learning from Videos with Contrastive Learning
 
 ## Instructions
 
@@ -17,7 +17,7 @@ bash Miniconda3-latest-Linux-x86_64.sh
 
 ```shell
 conda env create -f environment.yml
-conda activate AdvIL_from_videos
+conda activate AIL_w_DA
 ```
 
 ### Train expert
@@ -29,72 +29,46 @@ Create a new directory `expert_policies`, move the trained expert policy in `exp
 
 Alternatively, download the policies [here](https://figshare.com/s/22de566de2229068fb75) and unzip in main directory.
 
-### Train imitation from experts
+### Train imitation from expert videos with visual mismatch for the DMC suite
 
-#### easy setting deltas
+#### Light
 
-**Multi Dataset**
+**C-LAIfO**
 
 ```shell
-python train_LAIL_MI.py --multirun seed=0,1 agent=lail_byol_multiset difficulty=easy delta_source=0.2 delta_target=0.2 train_encoder_w_critic=true add_aug=false CL_data_type=all save_snapshot=true
-```
-```shell
-python train_LAIL_MI.py --multirun seed=0,1 agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=0.2 train_encoder_w_critic=true add_aug=false CL_data_type=all save_snapshot=true
+python train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug='CL-Q' aug_type='brightness' CL_data_type=agent
 ```
 
+#### Body
 
-#### easy setting
+**C-LAIfO**
 
-**Multi Dataset**
 ```shell
-python python train_LAIL_MI.py agent=lail_cl_multiset difficulty=easy delta=0.2 train_encoder_w_critic=false CL_data_type=expert 
-```
-```shell
-python python train_LAIL_MI.py agent=lail_byol_multiset difficulty=easy delta=0.2 train_encoder_w_critic=false CL_data_type=expert
+python train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=color_body apply_aug='CL-Q' aug_type='color' CL_data_type=agent
 ```
 
+#### Floor
 
-**Mutual Information**
+**C-LAIfO**
+
 ```shell
-python train_LAIL_MI.py seed=0 task=walker_walk agent=lail_byol_mi difficulty=easy
-```
-```shell
-python train_LAIL_MI.py seed=0 task=walker_walk agent=lail_cl_mi difficulty=easy
-```
-```shell
-python train_LAIL_MI.py seed=0 task=walker_walk agent=lail_mi difficulty=easy
-```
-```shell
-python train_LAIL_MI.py seed=0 task=walker_walk agent=disentanAIL difficulty=easy
+python train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=color_floor apply_aug='CL-Q' aug_type='color' CL_data_type=agent
 ```
 
-**DAC**
+#### Background
+
+**C-LAIfO**
+
 ```shell
-python train_w_expert_MDP.py task=walker_walk seed=0 GAN_loss=bce from_dem=true
+python train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=color_bg apply_aug='CL-Q' aug_type='color' CL_data_type=agent
 ```
 
-**DACfO**
+#### Full
+
+**C-LAIfO**
+
 ```shell
-python train_w_expert_MDP.py task=walker_walk seed=0 GAN_loss=bce from_dem=false
+python train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=color_all_together apply_aug='CL-Q' aug_type='color' CL_data_type=agent
 ```
 
-**patchAIL**
-```shell
-python train_LAIL.py task=walker_walk agent=patchAIL seed=0 GAN_loss=bce discriminator_lr=1e-4
-```
-
-**LAIfO**
-```shell
-python train_LAIL.py task=walker_walk agent=lail seed=0 GAN_loss=bce from_dem=false
-```
-
-**VMAIL**
-```shell
-python train_VMAIL.py task=walker_walk seed=0 GAN_loss=bce from_dem=true
-```
-
-**LAIL**
-```shell
-python train_LAIL.py task=walker_walk agent=lail seed=0 GAN_loss=bce from_dem=true
-```
-
+### Code for adroit experiments available at this other [repository](https://anonymous.4open.science/r/C-LAIfO_adroit-1D18/adroit.py) 
