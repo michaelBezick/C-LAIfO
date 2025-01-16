@@ -8,6 +8,7 @@ Created on Wed Oct  4 17:00:15 2023
 
 import cv2
 import torch
+import os
 import urllib.request
 
 import matplotlib.pyplot as plt
@@ -35,10 +36,12 @@ if model_type == "DPT_Large" or model_type == "DPT_Hybrid":
 else:
     transform = midas_transforms.small_transform
 
-img = cv2.imread("expert.png")
+
+
+img = cv2.imread("frame.jpg")
 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-plt.imshow(img)
+#plt.imshow(img)
 
 input_batch = transform(img).to(device)
 
@@ -62,6 +65,4 @@ import numpy as np
 output = (output - np.mean(output))/np.std(output)
 
 plt.imshow(output)
-
-
-
+plt.savefig("output.jpg")
