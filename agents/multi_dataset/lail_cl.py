@@ -190,10 +190,10 @@ class Encoder(nn.Module):
         elif obs_shape[-1]==64:
             self.repr_dim = 32 * 25 * 25
 
-        self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(self.repr_dim, self.repr_dim / 35)
-        self.encoding1 = self.sinusoidal_encodings(torch.tensor([1]))
-        self.encoding2 = self.sinusoidal_encodings(torch.tensor([1]))
-        self.encoding3 = self.sinusoidal_encodings(torch.tensor([1]))
+        self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(64 * 64, 35)
+        self.encoding1 = self.sinusoidal_encodings(torch.tensor([1]).float())
+        self.encoding2 = self.sinusoidal_encodings(torch.tensor([2]).float())
+        self.encoding3 = self.sinusoidal_encodings(torch.tensor([3]).float())
 
         # self.convnet = nn.Sequential(nn.Conv3d(obs_shape[0], 32, kernel_size=(3,3,3), stride=1),
         #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
@@ -241,6 +241,8 @@ class Encoder(nn.Module):
 
     def forward(self, obs):
 
+
+        print(obs.size())
         batch_size, channel_dim, height, width = obs.size()
 
         num_frames = channel_dim // 3
