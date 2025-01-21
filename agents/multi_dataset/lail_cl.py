@@ -20,11 +20,13 @@ from utils_folder.byol_pytorch import default, RandomApply
 import os
 
 class SinusoidalPositionalEmbeddings(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, scale):
         super().__init__()
         self.dim = dim
+        self.scale = scale
 
     def forward(self, time):
+        time *= self.scale
         device = time.device
         half_dim = self.dim // 2
         embeddings = m.log(10000) / (half_dim - 1)
@@ -33,7 +35,7 @@ class SinusoidalPositionalEmbeddings(nn.Module):
         embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
         return embeddings
 
-class AttnBlock(nn.Module):
+class AttnBlock3D(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
         self.in_channels = in_channels
@@ -60,19 +62,19 @@ class AttnBlock(nn.Module):
         v = self.v(h_)
 
         # compute attention
-        b, c, h, w = q.shape
-        q = q.reshape(b, c, h * w)
+        b, c, t, h, w = q.shape
+        q = q.reshape(b, c * t, h * w)
         q = q.permute(0, 2, 1)  # b,hw,c
-        k = k.reshape(b, c, h * w)  # b,c,hw
+        k = k.reshape(b, c * t, h * w)  # b,c,hw
         w_ = torch.bmm(q, k)  # b,hw,hw    w[b,i,j]=sum_c q[b,i,c]k[b,c,j]
         w_ = w_ * (int(c) ** (-0.5))
         w_ = torch.nn.functional.softmax(w_, dim=2)
 
         # attend to values
-        v = v.reshape(b, c, h * w)
+        v = v.reshape(b, c * t, h * w)
         w_ = w_.permute(0, 2, 1)  # b,hw,hw (first hw of k, second of q)
         h_ = torch.bmm(v, w_)  # b, c,hw (hw of q) h_[b,c,j] = sum_i v[b,c,i] w_[b,i,j]
-        h_ = h_.reshape(b, c, h, w)
+        h_ = h_.reshape(b, c * t, h, w)
 
         h_ = self.proj_out(h_)
 
@@ -186,30 +188,26 @@ class Encoder(nn.Module):
         elif obs_shape[-1]==64:
             self.repr_dim = 32 * 25 * 25
 
-        self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(64)
-        self.encoding1 = self.sinusoidal_encodings(1)
-        self.encoding2 = self.sinusoidal_encodings(2)
-        self.encoding3 = self.sinusoidal_encodings(3)
+        self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(self.repr_dim, self.repr_dim / 35)
+        self.encoding1 = self.sinusoidal_encodings(torch.tensor([1]))
+        self.encoding2 = self.sinusoidal_encodings(torch.tensor([1]))
+        self.encoding3 = self.sinusoidal_encodings(torch.tensor([1]))
 
-        self.linear_projection1 = nn.Linear(64, obs_shape[2] * obs_shape[3])
-        self.linear_projection2 = nn.Linear(64, obs_shape[2] * obs_shape[3])
-        self.linear_projection3 = nn.Linear(64, obs_shape[2] * obs_shape[3])
-
-        self.convnet = nn.Sequential(nn.Conv2d(obs_shape[0], 32, 3, stride=2),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU())
+        # self.convnet = nn.Sequential(nn.Conv3d(obs_shape[0], 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU())
 
         self.additional_dim_optical_flow = 2
-        self.initial_conv = nn.Conv2d(obs_shape[0] + self.additional_dim_optical_flow, 32, 3, stride=2)
+        self.initial_conv = nn.Conv3d(obs_shape[0] + self.additional_dim_optical_flow, 32, kernel_size=(3,3,3), stride=1)
         self.relu = nn.ReLU()
-        self.convnet = nn.Sequential(nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
+        self.convnet = nn.Sequential(nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+                                     nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+                                     nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
                                      nn.ReLU())
 
-        self.attention = AttnBlock(32)
+        self.attention = AttnBlock3D(32)
         self.optical_flow_model = raft_small(pretrained=True, progress=False).cuda()
         self.optical_flow_model = self.optical_flow_model.eval()
         
@@ -240,23 +238,38 @@ class Encoder(nn.Module):
             return x
 
     def forward(self, obs):
+
+        batch_size, channel_dim, height, width = obs.size()
+
+        num_frames = channel_dim // 3
+        num_channels = 3
+
             
         obs = obs / 255.0 - 0.5
 
         with torch.no_grad():
             flow = self.optical_flow(obs)
 
-        proj1 = self.linear_projection1(self.encoding1)
-        proj2= self.linear_projection2(self.encoding2)
-        proj3= self.linear_projection3(self.encoding3)
+        obs = obs.view(batch_size, num_frames, num_channels, height, width)
+        obs = obs.permute(0, 2, 1, 3, 4)
 
-        proj1 = proj1.view(self.obs_shape)
-        proj2 = proj2.view(self.obs_shape)
-        proj3 = proj3.view(self.obs_shape)
+        #obs dimensions = (batch, channels, frame, height, width)
+
+        encoding1 = self.encoding1.view(self.obs_shape)
+        encoding1 = encoding1.unsqueeze(1)
+        encoding1 = encoding1.repeat(1, 3, 1, 1)
+
+        encoding2= self.encoding2.view(self.obs_shape)
+        encoding2 = encoding2.unsqueeze(1)
+        encoding2 = encoding2.repeat(1, 3, 1, 1)
+
+        encoding3 = self.encoding3.view(self.obs_shape)
+        encoding3 = encoding3.unsqueeze(1)
+        encoding3 = encoding3.repeat(1, 3, 1, 1)
 
         flow = self.min_max_norm(flow)
 
-        flow = flow - 1 
+        flow = flow - 0.5
 
         obs = torch.cat([obs, flow], dim=1)
 
