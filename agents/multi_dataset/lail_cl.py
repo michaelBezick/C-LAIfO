@@ -226,7 +226,7 @@ class Encoder(nn.Module):
 
     def optical_flow(self, x):
         x = self.min_max_norm(x) * 2 - 1
-        # x = FT.resize(x, size=(88,88))
+        x = FT.resize(x, size=(128,128))
         flow = self.optical_flow_model(x[:, -3:, :, :], x[:, -6:-3, :, :])
         flow = flow[-1]
         flow = FT.resize(flow, size=self.spatial_dim)
@@ -244,7 +244,6 @@ class Encoder(nn.Module):
     def forward(self, obs):
 
 
-        print(obs.size())
         batch_size, channel_dim, height, width = obs.size()
 
         num_frames = channel_dim // 3
