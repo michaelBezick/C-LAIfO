@@ -32,8 +32,10 @@ class SinusoidalPositionalEmbeddings(nn.Module):
         embeddings = m.log(10000) / (half_dim - 1)
         embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
         embeddings = time[:, None] * embeddings[None, :]
-        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
-        return embeddings
+        interleaved = torch.empty(time.size(0), self.dim)
+        interleaved[:, 0::2] = embeddings.sin()
+        interleaved[:, 1::2] = embeddings.cos()
+        return interleaved
 
 class AttnBlock3D(nn.Module):
     def __init__(self, in_channels):
@@ -256,16 +258,20 @@ class Encoder(nn.Module):
         #obs dimensions = (batch, channels, frame, height, width)
 
         encoding1 = self.encoding1.view(self.obs_shape)
-        encoding1 = encoding1.unsqueeze(1)
+        encoding1 = encoding1.unsqueeze(1).unsqueeze(1)
         encoding1 = encoding1.repeat(1, 3, 1, 1)
 
         encoding2= self.encoding2.view(self.obs_shape)
-        encoding2 = encoding2.unsqueeze(1)
+        encoding2 = encoding2.unsqueeze(1).unsqueeze(1)
         encoding2 = encoding2.repeat(1, 3, 1, 1)
 
         encoding3 = self.encoding3.view(self.obs_shape)
-        encoding3 = encoding3.unsqueeze(1)
+        encoding3 = encoding3.unsqueeze(1).unsqueeze(1)
         encoding3 = encoding3.repeat(1, 3, 1, 1)
+
+        obs[:, :, 0, :, :] = encoding1
+        obs[:, :, 1, :, :] = encoding2
+        obs[:, :, 2, :, :] = encoding3
 
         flow = self.min_max_norm(flow)
 
