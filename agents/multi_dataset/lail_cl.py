@@ -261,15 +261,15 @@ class Encoder(nn.Module):
         #obs dimensions = (batch, channels, frame, height, width)
 
         encoding1 = self.encoding1.view(self.spatial_dim_tuple)
-        encoding1 = encoding1.unsqueeze(1).unsqueeze(1)
+        encoding1 = encoding1.unsqueeze(0).unsqueeze(0)
         encoding1 = encoding1.repeat(1, 3, 1, 1)
 
         encoding2= self.encoding2.view(self.spatial_dim_tuple)
-        encoding2 = encoding2.unsqueeze(1).unsqueeze(1)
+        encoding2 = encoding2.unsqueeze(0).unsqueeze(0)
         encoding2 = encoding2.repeat(1, 3, 1, 1)
 
         encoding3 = self.encoding3.view(self.spatial_dim_tuple)
-        encoding3 = encoding3.unsqueeze(1).unsqueeze(1)
+        encoding3 = encoding3.unsqueeze(0).unsqueeze(0)
         encoding3 = encoding3.repeat(1, 3, 1, 1)
 
         obs[:, :, 0, :, :] = encoding1
