@@ -26,11 +26,11 @@ class SinusoidalPositionalEmbeddings(nn.Module):
         return interleaved
 
 
-repr_dim = 32 * 35 * 35
+repr_dim = 64 * 64
 positions = torch.linspace(1, 3, 1000)
-positions *= repr_dim / 35
+positions *= repr_dim / 10
 
-encoding_size = 32 * 35 * 35
+encoding_size = 64 * 64
 batch_size = 1000
 encoder = SinusoidalPositionalEmbeddings(encoding_size)
 torch.set_printoptions(sci_mode=False)

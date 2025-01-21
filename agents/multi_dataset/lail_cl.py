@@ -190,7 +190,8 @@ class Encoder(nn.Module):
         elif obs_shape[-1]==64:
             self.repr_dim = 32 * 25 * 25
 
-        self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(64 * 64, 35)
+        self.spatial_dim = 64 * 64
+        self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(self.spatial_dim, self.spatial_dim // 10)
         self.encoding1 = self.sinusoidal_encodings(torch.tensor([1]).float())
         self.encoding2 = self.sinusoidal_encodings(torch.tensor([2]).float())
         self.encoding3 = self.sinusoidal_encodings(torch.tensor([3]).float())
