@@ -1,9 +1,12 @@
 import hydra
+import math as m
+from torchvision.models.optical_flow import raft_small
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import distributions as torchd
+import torchvision.transforms.functional as FT
 from torch import autograd
 from torch.nn.utils import spectral_norm 
 from torchvision.utils import save_image
@@ -15,6 +18,70 @@ from utils_folder.utils_dreamer import Bernoulli
 from utils_folder.byol_pytorch import default, RandomApply
 
 import os
+
+class SinusoidalPositionalEmbeddings(nn.Module):
+    def __init__(self, dim, scale):
+        super().__init__()
+        self.dim = dim
+        self.scale = scale
+
+    def forward(self, time):
+        time *= self.scale
+        device = time.device
+        half_dim = self.dim // 2
+        embeddings = m.log(10000) / (half_dim - 1)
+        embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
+        embeddings = time[:, None] * embeddings[None, :]
+        interleaved = torch.empty(time.size(0), self.dim)
+        interleaved[:, 0::2] = embeddings.sin()
+        interleaved[:, 1::2] = embeddings.cos()
+        return interleaved
+
+class AttnBlock3D(nn.Module):
+    def __init__(self, in_channels):
+        super().__init__()
+        self.in_channels = in_channels
+
+        self.norm = torch.nn.GroupNorm(num_groups=8, num_channels=self.in_channels)
+        self.q = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.k = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.v = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+        self.proj_out = torch.nn.Conv2d(
+            in_channels, in_channels, kernel_size=1, stride=1, padding=0
+        )
+
+    def forward(self, x):
+        h_ = x
+        h_ = self.norm(h_)
+        q = self.q(h_)
+        k = self.k(h_)
+        v = self.v(h_)
+
+        # compute attention
+        b, c, t, h, w = q.shape
+        q = q.reshape(b, c * t, h * w)
+        q = q.permute(0, 2, 1)  # b,hw,c
+        k = k.reshape(b, c * t, h * w)  # b,c,hw
+        w_ = torch.bmm(q, k)  # b,hw,hw    w[b,i,j]=sum_c q[b,i,c]k[b,c,j]
+        w_ = w_ * (int(c) ** (-0.5))
+        w_ = torch.nn.functional.softmax(w_, dim=2)
+
+        # attend to values
+        v = v.reshape(b, c * t, h * w)
+        w_ = w_.permute(0, 2, 1)  # b,hw,hw (first hw of k, second of q)
+        h_ = torch.bmm(v, w_)  # b, c,hw (hw of q) h_[b,c,j] = sum_i v[b,c,i] w_[b,i,j]
+        h_ = h_.reshape(b, c * t, h, w)
+
+        h_ = self.proj_out(h_)
+
+        return x + h_
+
 
 class RandomShiftsAug(nn.Module):
     def __init__(self, pad):
@@ -123,11 +190,28 @@ class Encoder(nn.Module):
         elif obs_shape[-1]==64:
             self.repr_dim = 32 * 25 * 25
 
-        self.convnet = nn.Sequential(nn.Conv2d(obs_shape[0], 32, 3, stride=2),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
+        self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(self.repr_dim, self.repr_dim / 35)
+        self.encoding1 = self.sinusoidal_encodings(torch.tensor([1]))
+        self.encoding2 = self.sinusoidal_encodings(torch.tensor([1]))
+        self.encoding3 = self.sinusoidal_encodings(torch.tensor([1]))
+
+        # self.convnet = nn.Sequential(nn.Conv3d(obs_shape[0], 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+        #                              nn.ReLU())
+
+        self.additional_dim_optical_flow = 2
+        self.initial_conv = nn.Conv3d(obs_shape[0] + self.additional_dim_optical_flow, 32, kernel_size=(3,3,3), stride=1)
+        self.relu = nn.ReLU()
+        self.convnet = nn.Sequential(nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+                                     nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+                                     nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
                                      nn.ReLU())
+
+        self.attention = AttnBlock3D(32)
+        self.optical_flow_model = raft_small(pretrained=True, progress=False).cuda()
+        self.optical_flow_model = self.optical_flow_model.eval()
         
         if self.stochastic:
             self.trunk = nn.Sequential(nn.Linear(self.repr_dim, 2 * feature_dim),
@@ -138,11 +222,71 @@ class Encoder(nn.Module):
 
         self.apply(utils.weight_init)
 
+    def optical_flow(self, x):
+        x = self.min_max_norm(x) * 2 - 1
+        x = FT.resize(x, size=(88,88))
+        flow = self.optical_flow_model(x[:, -3:, :, :], x[:, -6:-3, :, :])
+        flow = flow[-1]
+        flow = FT.resize(flow, size=(84,84))
+        
+        assert not torch.isnan(flow).any()
+
+        return flow
+
+    def min_max_norm(self, x):
+        if torch.min(x) != torch.max(x):
+            return (x - torch.min(x)) / (torch.max(x) - torch.min(x))
+        else:
+            return x
+
     def forward(self, obs):
+
+        batch_size, channel_dim, height, width = obs.size()
+
+        num_frames = channel_dim // 3
+        num_channels = 3
+
             
         obs = obs / 255.0 - 0.5
-        h = self.convnet(obs)
+
+        with torch.no_grad():
+            flow = self.optical_flow(obs)
+
+        obs = obs.view(batch_size, num_frames, num_channels, height, width)
+        obs = obs.permute(0, 2, 1, 3, 4)
+
+        #obs dimensions = (batch, channels, frame, height, width)
+
+        encoding1 = self.encoding1.view(self.obs_shape)
+        encoding1 = encoding1.unsqueeze(1).unsqueeze(1)
+        encoding1 = encoding1.repeat(1, 3, 1, 1)
+
+        encoding2= self.encoding2.view(self.obs_shape)
+        encoding2 = encoding2.unsqueeze(1).unsqueeze(1)
+        encoding2 = encoding2.repeat(1, 3, 1, 1)
+
+        encoding3 = self.encoding3.view(self.obs_shape)
+        encoding3 = encoding3.unsqueeze(1).unsqueeze(1)
+        encoding3 = encoding3.repeat(1, 3, 1, 1)
+
+        obs[:, :, 0, :, :] = encoding1
+        obs[:, :, 1, :, :] = encoding2
+        obs[:, :, 2, :, :] = encoding3
+
+        flow = self.min_max_norm(flow)
+
+        flow = flow - 0.5
+
+        obs = torch.cat([obs, flow], dim=1)
+
+        h = self.initial_conv(obs)
+
+        h = self.attention(h)
+
+        h = self.convnet(h)
+
         h = h.reshape(h.shape[0], -1)
+
         z = self.trunk(h)
 
         if self.stochastic:

@@ -99,6 +99,8 @@ class Encoder(nn.Module):
     def forward(self, obs):
         print("definitely here")
 
+        print('DEFINITELY THIS ONE')
+
         # we do not use this normalization step when from depth as images come out of the buffer already normalized
         if not self.from_depth:
             obs = obs / 255.0 - 0.5
