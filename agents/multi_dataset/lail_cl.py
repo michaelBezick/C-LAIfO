@@ -280,6 +280,8 @@ class Encoder(nn.Module):
 
         flow = flow - 0.5
 
+        flow = flow.unsqueeze(2) #try broadcasting first
+
         obs = torch.cat([obs, flow], dim=1)
 
         h = self.initial_conv(obs)
