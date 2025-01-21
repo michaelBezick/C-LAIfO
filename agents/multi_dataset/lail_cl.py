@@ -57,6 +57,8 @@ class AttnBlock3D(nn.Module):
         )
 
     def forward(self, x):
+        b,c,t,h,w = x.shape
+        x = x.reshape(b, c*t, h, w)
         h_ = x
         h_ = self.norm(h_)
         q = self.q(h_)
@@ -64,7 +66,6 @@ class AttnBlock3D(nn.Module):
         v = self.v(h_)
 
         # compute attention
-        b, c, t, h, w = q.shape
         q = q.reshape(b, c * t, h * w)
         q = q.permute(0, 2, 1)  # b,hw,c
         k = k.reshape(b, c * t, h * w)  # b,c,hw
@@ -203,7 +204,7 @@ class Encoder(nn.Module):
         #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
         #                              nn.ReLU())
 
-        self.additional_dim_optical_flow = 2
+        self.additional_dim_optical_flow = -4
         self.initial_conv = nn.Conv3d(obs_shape[0] + self.additional_dim_optical_flow, 32, kernel_size=(3,3,3), stride=1)
         self.relu = nn.ReLU()
         self.convnet = nn.Sequential(nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
@@ -229,7 +230,7 @@ class Encoder(nn.Module):
         x = FT.resize(x, size=(128,128))
         flow = self.optical_flow_model(x[:, -3:, :, :], x[:, -6:-3, :, :])
         flow = flow[-1]
-        flow = FT.resize(flow, size=self.spatial_dim)
+        flow = FT.resize(flow, size=self.spatial_dim_tuple)
         
         assert not torch.isnan(flow).any()
 
@@ -243,6 +244,9 @@ class Encoder(nn.Module):
 
     def forward(self, obs):
 
+
+
+        print(f"initial obs size: {obs.size()}")
 
         batch_size, channel_dim, height, width = obs.size()
 
@@ -284,6 +288,8 @@ class Encoder(nn.Module):
         flow = flow.repeat(1, 1, 3, 1, 1)
 
         obs = torch.cat([obs, flow], dim=1)
+
+        print(f"size before initial_conv {obs.size()}")
 
         h = self.initial_conv(obs)
 
