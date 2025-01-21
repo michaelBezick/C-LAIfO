@@ -119,7 +119,8 @@ class Workspace:
     
     def store_expert_transitions(self):
         step, episode, total_reward = 0, 0, 0
-        eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+        #eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+        eval_until_episode = utils.Until(1)
         
         while eval_until_episode(episode):
             obs, time_step = self.expert_env.reset()
@@ -144,13 +145,15 @@ class Workspace:
                 step += 1
 
             episode += 1
+            print(episode)
             self.video_recorder.save('expert.mp4')
 
         print(f'Average expert reward: {total_reward / episode}, Total number of samples: {step}')
 
     def store_random_expert_transitions(self):
         step, episode, total_reward = 0, 0, 0
-        eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+        #eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+        eval_until_episode = utils.Until(1)
         self.expert.num_expl_steps = 1.0
         
         while eval_until_episode(episode):
@@ -182,7 +185,8 @@ class Workspace:
         
     def eval(self):
         step, episode, total_reward = 0, 0, 0
-        eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
+        #eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
+        eval_until_episode = utils.Until(1)
 
         while eval_until_episode(episode):
             time_step = self.eval_env.reset()
@@ -199,6 +203,7 @@ class Workspace:
                 step += 1
 
             episode += 1
+            print(episode)
             self.video_recorder.save(f'{self.global_frame}.mp4')
 
         with self.logger.log_and_dump_ctx(self.global_frame, ty='eval') as log:

@@ -121,6 +121,8 @@ class Encoder(nn.Module):
         self.apply(utils.weight_init)
 
     def forward(self, obs):
+        print("just plain")
+        exit()
 
         # we do not use this normalization step when from depth as images come out of the buffer already normalized
         if not self.from_depth:

@@ -264,7 +264,9 @@ def main(cfg):
     assert snapshot.exists()
     print(f'loading expert target: {snapshot}')
     workspace.load_expert(snapshot)
+    print(f'got here')
     workspace.store_expert_transitions()
+    print(f'got here')
     workspace.train()
 
 if __name__ == '__main__':

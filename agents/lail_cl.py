@@ -97,6 +97,7 @@ class Encoder(nn.Module):
         self.apply(utils.weight_init)
 
     def forward(self, obs):
+        print("definitely here")
 
         # we do not use this normalization step when from depth as images come out of the buffer already normalized
         if not self.from_depth:
