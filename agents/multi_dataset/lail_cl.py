@@ -191,6 +191,7 @@ class Encoder(nn.Module):
             self.repr_dim = 32 * 25 * 25
 
         self.spatial_dim = 64 * 64
+        self.spatial_dim_tuple = (64, 64)
         self.sinusoidal_encodings = SinusoidalPositionalEmbeddings(self.spatial_dim, self.spatial_dim // 10)
         self.encoding1 = self.sinusoidal_encodings(torch.tensor([1]).float())
         self.encoding2 = self.sinusoidal_encodings(torch.tensor([2]).float())
@@ -225,10 +226,10 @@ class Encoder(nn.Module):
 
     def optical_flow(self, x):
         x = self.min_max_norm(x) * 2 - 1
-        x = FT.resize(x, size=(88,88))
+        # x = FT.resize(x, size=(88,88))
         flow = self.optical_flow_model(x[:, -3:, :, :], x[:, -6:-3, :, :])
         flow = flow[-1]
-        flow = FT.resize(flow, size=(84,84))
+        flow = FT.resize(flow, size=self.spatial_dim)
         
         assert not torch.isnan(flow).any()
 
