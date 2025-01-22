@@ -1,23 +1,23 @@
-import hydra
 import math as m
-from torchvision.models.optical_flow import raft_small
+import os
+
+import hydra
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import distributions as torchd
 import torchvision.transforms.functional as FT
 from torch import autograd
-from torch.nn.utils import spectral_norm 
-from torchvision.utils import save_image
+from torch import distributions as torchd
+from torch.nn.utils import spectral_norm
+from torchvision.models.optical_flow import raft_small
 from torchvision.transforms import v2 as T
 from torchvision.transforms.functional import rgb_to_grayscale
-
+from torchvision.utils import save_image
 from utils_folder import utils
+from utils_folder.byol_pytorch import RandomApply, default
 from utils_folder.utils_dreamer import Bernoulli
-from utils_folder.byol_pytorch import default, RandomApply
 
-import os
 
 class SinusoidalPositionalEmbeddings(nn.Module):
     def __init__(self, dim, scale):
@@ -210,7 +210,8 @@ class Encoder(nn.Module):
         self.relu = nn.ReLU()
         self.convnet = nn.Sequential(nn.Conv2d(32, 32, kernel_size=3, stride=1),
                                      nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
-                                     nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
+                                     nn.ReLU(), AttnBlock(32),
+                                     nn.Conv2d(32, 32, kernel_size=3, stride=1),
                                      nn.ReLU())
 
         self.attention = AttnBlock(32)
