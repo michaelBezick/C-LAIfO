@@ -37,7 +37,7 @@ class SinusoidalPositionalEmbeddings(nn.Module):
         interleaved[:, 1::2] = embeddings.cos()
         return interleaved
 
-class AttnBlock3D(nn.Module):
+class AttnBlock(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
         self.in_channels = in_channels
@@ -57,27 +57,28 @@ class AttnBlock3D(nn.Module):
         )
 
     def forward(self, x):
-        b,c,t,h,w = x.shape
-        x = x.reshape(b, c*t, h, w)
+
         h_ = x
         h_ = self.norm(h_)
         q = self.q(h_)
         k = self.k(h_)
         v = self.v(h_)
 
+        b, c, h, w = x.shape
+
         # compute attention
-        q = q.reshape(b, c * t, h * w)
+        q = q.reshape(b, c, h * w)
         q = q.permute(0, 2, 1)  # b,hw,c
-        k = k.reshape(b, c * t, h * w)  # b,c,hw
+        k = k.reshape(b, c, h * w)  # b,c,hw
         w_ = torch.bmm(q, k)  # b,hw,hw    w[b,i,j]=sum_c q[b,i,c]k[b,c,j]
         w_ = w_ * (int(c) ** (-0.5))
         w_ = torch.nn.functional.softmax(w_, dim=2)
 
         # attend to values
-        v = v.reshape(b, c * t, h * w)
+        v = v.reshape(b, c, h * w)
         w_ = w_.permute(0, 2, 1)  # b,hw,hw (first hw of k, second of q)
         h_ = torch.bmm(v, w_)  # b, c,hw (hw of q) h_[b,c,j] = sum_i v[b,c,i] w_[b,i,j]
-        h_ = h_.reshape(b, c * t, h, w)
+        h_ = h_.reshape(b, c, h, w)
 
         h_ = self.proj_out(h_)
 
@@ -207,12 +208,12 @@ class Encoder(nn.Module):
         self.additional_dim_optical_flow = -4
         self.initial_conv = nn.Conv3d(obs_shape[0] + self.additional_dim_optical_flow, 32, kernel_size=(3,3,3), stride=1)
         self.relu = nn.ReLU()
-        self.convnet = nn.Sequential(nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
-                                     nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
-                                     nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
+        self.convnet = nn.Sequential(nn.Conv2d(32, 32, kernel_size=3, stride=1),
+                                     nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
+                                     nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
                                      nn.ReLU())
 
-        self.attention = AttnBlock3D(32)
+        self.attention = AttnBlock(32)
         self.optical_flow_model = raft_small(pretrained=True, progress=False).cuda()
         self.optical_flow_model = self.optical_flow_model.eval()
         
@@ -220,6 +221,7 @@ class Encoder(nn.Module):
             self.trunk = nn.Sequential(nn.Linear(self.repr_dim, 2 * feature_dim),
                                     nn.LayerNorm(2 * feature_dim), nn.Tanh())
         else:
+            self.repr_dim = 100_352
             self.trunk = nn.Sequential(nn.Linear(self.repr_dim, feature_dim),
                                     nn.LayerNorm(feature_dim), nn.Tanh())
 
@@ -246,7 +248,6 @@ class Encoder(nn.Module):
 
 
 
-        print(f"initial obs size: {obs.size()}")
 
         batch_size, channel_dim, height, width = obs.size()
 
@@ -289,9 +290,13 @@ class Encoder(nn.Module):
 
         obs = torch.cat([obs, flow], dim=1)
 
-        print(f"size before initial_conv {obs.size()}")
 
         h = self.initial_conv(obs)
+
+        h = torch.squeeze(h)
+
+        if (h.dim() == 3):
+            h = h.unsqueeze(0)
 
         h = self.attention(h)
 
