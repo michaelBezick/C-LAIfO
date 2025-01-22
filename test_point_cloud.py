@@ -22,6 +22,8 @@ depth_buf = rgbd[..., 3]
 
 # 3) Convert from z-buffer to actual depth Z
 model = physics.model
+print(dir(model.vis.global_))
+exit()
 near = model.vis.global_.znear
 far = model.vis.global_.zfar
 z_buffer = depth_buf  # in [0,1]
