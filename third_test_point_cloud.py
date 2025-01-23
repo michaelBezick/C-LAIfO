@@ -2,6 +2,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 from dm_control import suite
+import matplotlib.pyplot as plt
 
 # Load the walker environment
 env = suite.load(domain_name="walker", task_name="walk")
@@ -21,6 +22,11 @@ print(np.mean(depth_map))
 data = depth_map.flatten()
 counts, bins = np.histogram(data, bins=100, range=(0, 100))
 plt.stairs(counts, bins)
+
+x_ticks = np.arange(0, 100)
+plt.xticks(x_ticks)
+plt.tight_layout()
+
 plt.savefig("hist.png", dpi=300)
 exit()
 
