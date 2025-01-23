@@ -18,7 +18,7 @@ print(np.max(depth_map))
 print(np.min(depth_map))
 print(np.mean(depth_map))
 
-min_depth, max_depth = 1, 3
+min_depth, max_depth = 1, 2
 clipped_depth = np.clip(depth_map, min_depth, max_depth)
 normalized_depth = (clipped_depth - min_depth) / (max_depth - min_depth)
 depth_map = normalized_depth
