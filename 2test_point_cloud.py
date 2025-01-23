@@ -3,6 +3,8 @@ import numpy as np
 from dm_control import suite
 import open3d as o3d
 
+from dm_control._render.executor import render_executor
+
 def quat2Mat(quat):
     """Converts quaternion (w, x, y, z) to a 3x3 rotation matrix."""
     w, x, y, z = quat
@@ -91,6 +93,7 @@ class DMControlPointCloudGenerator:
 
         # Clean up
         #renderer.close()
+        del renderer
         print(f"Point cloud projection saved to {output_image}")
 
 # Example usage
