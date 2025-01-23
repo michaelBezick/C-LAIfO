@@ -19,7 +19,7 @@ print(np.min(depth_map))
 print(np.mean(depth_map))
 
 data = depth_map.flatten()
-counts, bins = np.histogram(data)
+counts, bins = np.histogram(data, bins=100)
 plt.stairs(counts, bins)
 plt.savefig("hist.png", dpi=300)
 exit()
