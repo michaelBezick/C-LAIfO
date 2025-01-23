@@ -25,12 +25,10 @@ depth_map = normalized_depth
 
 
 data = depth_map.flatten()
-counts, bins = np.histogram(data, bins=100, range=(0, 100))
+counts, bins = np.histogram(data, bins=100)
 plt.stairs(counts, bins)
 
-x_ticks = np.arange(0, 100)
-plt.xticks(x_ticks)
-plt.savefig("hist.png", dpi=300)
+plt.savefig("hist1.png", dpi=300)
 exit()
 
 
