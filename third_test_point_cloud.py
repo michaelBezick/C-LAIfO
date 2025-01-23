@@ -20,8 +20,9 @@ print(np.mean(depth_map))
 
 min_depth, max_depth = 1, 2
 clipped_depth = np.clip(depth_map, min_depth, max_depth)
-normalized_depth = (clipped_depth - min_depth) / (max_depth - min_depth)
-depth_map = normalized_depth
+#normalized_depth = (clipped_depth - min_depth) / (max_depth - min_depth)
+#depth_map = normalized_depth
+depth_map = clipped_depth
 
 data = depth_map.flatten()
 counts, bins = np.histogram(data, bins=100)
