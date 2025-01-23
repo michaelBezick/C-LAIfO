@@ -20,9 +20,8 @@ print(np.mean(depth_map))
 
 min_depth, max_depth = 1, 4
 clipped_depth = np.clip(depth_map, min_depth, max_depth)
-#normalized_depth = (clipped_depth - min_depth) / (max_depth - min_depth)
-#depth_map = normalized_depth
-depth_map = clipped_depth
+normalized_depth = (clipped_depth - min_depth) / (max_depth - min_depth)
+depth_map = normalized_depth
 
 data = depth_map.flatten()
 counts, bins = np.histogram(data, bins=100)
@@ -31,7 +30,7 @@ plt.stairs(counts, bins)
 
 plt.title("depth")
 
-plt.savefig("hist1.png", dpi=300)
+plt.savefig("hist.png", dpi=300)
 
 
 # Display the RGB image
@@ -46,4 +45,4 @@ plt.imshow(depth_map, cmap="viridis")
 plt.colorbar(label="Depth")
 plt.title("Depth Map")
 
-plt.savefig("3rd.png", dpi=300)
+plt.savefig("3rd1.png", dpi=300)
