@@ -26,7 +26,10 @@ depth_map = clipped_depth
 
 data = depth_map.flatten()
 counts, bins = np.histogram(data, bins=100)
+plt.figure()
 plt.stairs(counts, bins)
+
+plt.title("depth")
 
 plt.savefig("hist1.png", dpi=300)
 
