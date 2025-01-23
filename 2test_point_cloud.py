@@ -89,9 +89,8 @@ class DMControlPointCloudGenerator:
 
         # Render the scene and save as image
         image = renderer.render_to_image()
-        print(image)
-        exit()
         o3d.io.write_image(output_image, image)
+
 
         # Clean up
         #renderer.close()
