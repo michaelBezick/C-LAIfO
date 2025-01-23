@@ -43,4 +43,4 @@ plt.imshow(depth_map, cmap="viridis")
 plt.colorbar(label="Depth")
 plt.title("Depth Map")
 
-plt.savefig("third.png", dpi=300)
+plt.savefig("3rd.png", dpi=300)
