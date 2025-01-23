@@ -18,7 +18,7 @@ print(np.max(depth_map))
 print(np.min(depth_map))
 print(np.mean(depth_map))
 
-min_depth, max_depth = 1, 4
+min_depth, max_depth = 1, 6
 clipped_depth = np.clip(depth_map, min_depth, max_depth)
 normalized_depth = (clipped_depth - min_depth) / (max_depth - min_depth)
 depth_map = normalized_depth
@@ -45,4 +45,4 @@ plt.imshow(depth_map, cmap="viridis")
 plt.colorbar(label="Depth")
 plt.title("Depth Map")
 
-plt.savefig("3rd1.png", dpi=300)
+plt.savefig("3rd.png", dpi=300)
