@@ -10,7 +10,7 @@ add:
 	git add --all
 
 commit:
-	git commit -m "$(MESSAGE)"
+	git commit -m $(MESSAGE)
 
 push: add commit
 	git push $(REMOTE) $(BRANCH)
