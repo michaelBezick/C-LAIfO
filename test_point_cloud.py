@@ -17,15 +17,14 @@ rgbd = physics.render(
     height=height,
     depth=True
 )
-rgb = rgbd[..., :3]
-depth_buf = rgbd[..., 3]
+#rgb = rgbd[..., :3]
+#depth_buf = rgbd[..., 3]
+depth_buf = rgbd
 
 # 3) Convert from z-buffer to actual depth Z
 model = physics.model
-print(dir(model.vis.global_))
-exit()
-near = model.vis.global_.znear
-far = model.vis.global_.zfar
+near = model.vis.map_.znear
+far = model.vis.map_.zfar
 z_buffer = depth_buf  # in [0,1]
 Z = (near * far) / (far - (far - near) * z_buffer)
 

@@ -199,19 +199,18 @@ class Encoder(nn.Module):
         self.encoding2 = self.sinusoidal_encodings(torch.tensor([2]).float())
         self.encoding3 = self.sinusoidal_encodings(torch.tensor([3]).float())
 
-        # self.convnet = nn.Sequential(nn.Conv3d(obs_shape[0], 32, kernel_size=(3,3,3), stride=1),
-        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
-        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
-        #                              nn.ReLU(), nn.Conv3d(32, 32, kernel_size=(3,3,3), stride=1),
-        #                              nn.ReLU())
+        self.convnet2 = nn.Sequential(nn.Conv2d(obs_shape[0] + 2, 32, kernel_size=3, stride=2),
+                                     nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
+                                     nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
+                                     nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
+                                     nn.ReLU())
 
         self.additional_dim_optical_flow = -4
-        self.initial_conv = nn.Conv3d(obs_shape[0] + self.additional_dim_optical_flow, 32, kernel_size=(3,3,3), stride=1)
+        self.initial_conv = nn.Conv3d(obs_shape[0] + self.additional_dim_optical_flow, 32, kernel_size=(3,3,3), stride=2)
         self.relu = nn.ReLU()
         self.convnet = nn.Sequential(nn.Conv2d(32, 32, kernel_size=3, stride=1),
                                      nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
-                                     nn.ReLU(), AttnBlock(32),
-                                     nn.Conv2d(32, 32, kernel_size=3, stride=1),
+                                     nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
                                      nn.ReLU())
 
         self.attention = AttnBlock(32)
@@ -222,7 +221,7 @@ class Encoder(nn.Module):
             self.trunk = nn.Sequential(nn.Linear(self.repr_dim, 2 * feature_dim),
                                     nn.LayerNorm(2 * feature_dim), nn.Tanh())
         else:
-            self.repr_dim = 100_352
+            #self.repr_dim = 100_352
             self.trunk = nn.Sequential(nn.Linear(self.repr_dim, feature_dim),
                                     nn.LayerNorm(feature_dim), nn.Tanh())
 
@@ -247,6 +246,8 @@ class Encoder(nn.Module):
 
     def forward(self, obs):
 
+        print(obs.size())
+
 
 
 
@@ -261,11 +262,35 @@ class Encoder(nn.Module):
         with torch.no_grad():
             flow = self.optical_flow(obs)
 
+        """NEW TEST"""
+
+        #flow = self.min_max_norm(flow)
+        #flow = flow - 0.5
+        #obs = torch.cat([obs, flow], dim=1)
+        #h = self.convnet2(obs)
+
+        #h = h.reshape(h.shape[0], -1)
+
+        #z = self.trunk(h)
+        #if self.stochastic:
+            #mu, log_std = z.chunk(2, dim=-1)
+            #log_std = torch.tanh(log_std)
+            #log_std_min, log_std_max = self.log_std_bounds
+            #log_std = log_std_min + 0.5 * (log_std_max - log_std_min) * (log_std + 1)
+            #std = log_std.exp()
+            #dist = torchd.Normal(mu, std) 
+            #z = dist.sample()
+
+        #return z
+
+
+
+        """"""
         obs = obs.view(batch_size, num_frames, num_channels, height, width)
         obs = obs.permute(0, 2, 1, 3, 4)
 
         #obs dimensions = (batch, channels, frame, height, width)
-
+        """
         encoding1 = self.encoding1.view(self.spatial_dim_tuple)
         encoding1 = encoding1.unsqueeze(0).unsqueeze(0)
         encoding1 = encoding1.repeat(1, 3, 1, 1)
@@ -281,6 +306,7 @@ class Encoder(nn.Module):
         obs[:, :, 0, :, :] = encoding1
         obs[:, :, 1, :, :] = encoding2
         obs[:, :, 2, :, :] = encoding3
+        """
 
         flow = self.min_max_norm(flow)
 

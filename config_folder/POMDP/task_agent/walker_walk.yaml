@@ -4,4 +4,4 @@ defaults:
 
 task_name_agent: walker_walk
 nstep: 1
-batch_size: 512
+batch_size: 128
