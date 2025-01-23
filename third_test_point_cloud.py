@@ -29,7 +29,6 @@ counts, bins = np.histogram(data, bins=100)
 plt.stairs(counts, bins)
 
 plt.savefig("hist1.png", dpi=300)
-exit()
 
 
 # Display the RGB image
