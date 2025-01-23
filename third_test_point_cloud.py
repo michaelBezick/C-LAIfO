@@ -25,8 +25,6 @@ plt.stairs(counts, bins)
 
 x_ticks = np.arange(0, 100)
 plt.xticks(x_ticks)
-plt.tight_layout()
-
 plt.savefig("hist.png", dpi=300)
 exit()
 
