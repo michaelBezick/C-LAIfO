@@ -117,7 +117,6 @@ if __name__ == "__main__":
     # Generate the point cloud
     point_cloud = pc_generator.generate_point_cloud()
     print("pc points", len(point_cloud.points))
-    exit()
 
     # Save the point cloud as a 2D projection image
     pc_generator.save_point_cloud_as_image(point_cloud, "walker_point_cloud_image.png")
