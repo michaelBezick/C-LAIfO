@@ -119,8 +119,8 @@ class Workspace:
     
     def store_expert_transitions(self):
         step, episode, total_reward = 0, 0, 0
-        #eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
-        eval_until_episode = utils.Until(1)
+        eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+        #eval_until_episode = utils.Until(1)
         
         while eval_until_episode(episode):
             obs, time_step = self.expert_env.reset()

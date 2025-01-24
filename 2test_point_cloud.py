@@ -38,11 +38,19 @@ class DMControlPointCloudGenerator:
         """Generates a 3D point cloud from a specified camera."""
         # Render depth image
         depth = self.physics.render(width=self.img_width, height=self.img_height, camera_id=camera_id, depth=True)
+        print("depth", depth)
 
         # Convert depth to real-world distances
         near = self.physics.model.vis.map.znear
         far = self.physics.model.vis.map.zfar
-        depth_in_meters = depthimg2Meters(depth, near, far)
+
+        print("near", near)
+        print("far", far)
+
+
+        #depth_in_meters = depthimg2Meters(depth, near, far)
+        depth_in_meters = depth
+        print("depth in meters", depth_in_meters)
 
         # Get camera intrinsics
         fovy = math.radians(self.physics.model.cam_fovy[camera_id])
@@ -52,10 +60,12 @@ class DMControlPointCloudGenerator:
             [0, f, self.img_height / 2],
             [0, 0, 1]
         ])
+        print("cam mat", cam_mat)
         o3d_intrinsics = o3d.camera.PinholeCameraIntrinsic(self.img_width, self.img_height, f, f, self.img_width / 2, self.img_height / 2)
 
         # Create point cloud
-        depth_img = o3d.geometry.Image(depth_in_meters)
+        #depth_img = o3d.geometry.Image(depth_in_meters)
+        depth_img = o3d.geometry.Image(np.ascontiguousarray(depth_in_meters))
         
         point_cloud = o3d.geometry.PointCloud.create_from_depth_image(depth_img, o3d_intrinsics)
 
@@ -107,6 +117,8 @@ if __name__ == "__main__":
 
     # Generate the point cloud
     point_cloud = pc_generator.generate_point_cloud()
+    print("pc points", len(point_cloud.points))
+    exit()
 
     # Save the point cloud as a 2D projection image
     pc_generator.save_point_cloud_as_image(point_cloud, "walker_point_cloud_image.png")
