@@ -147,7 +147,7 @@ class DMControlPointCloudGenerator:
 
         # Save the point cloud
         o3d.io.write_point_cloud("./point_cloud_images/" + output_file, point_cloud)
-        print(f"Point cloud saved to {"./point_cloud_images/" + output_file}")
+        print(f"Point cloud saved to {output_file}")
 
     def save_point_cloud_as_image(self, point_cloud, output_image="point_cloud_image.png"):
         """Saves a 2D projection of the point cloud to an image using offscreen rendering."""
