@@ -195,7 +195,7 @@ if __name__ == "__main__":
 
     min_depth, max_depth = 1, 6
     #filtering all values greater than 6 to be 0
-    #depth[depth >= max_depth] = 0
+    depth[depth >= max_depth] = 0
     # clipped_depth = np.clip(depth, min_depth, max_depth)
     #normalized_depth = (depth - np.min(depth)) / (np.max(depth) - np.min(depth))
     normalized_depth = depth
