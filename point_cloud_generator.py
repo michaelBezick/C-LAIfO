@@ -183,14 +183,17 @@ if __name__ == "__main__":
     rgb_image = physics.render(height=480, width=640, camera_id=0)
 
     min_depth, max_depth = 1, 6
-    clipped_depth = np.clip(depth, min_depth, max_depth)
-    normalized_depth = (clipped_depth - min_depth) / (max_depth - min_depth)
+    #filtering all values greater than 6 to be 0
+    depth[depth >= max_depth] = 0
+    # clipped_depth = np.clip(depth, min_depth, max_depth)
+    normalized_depth = (depth - min_depth) / (np.max(depth) - min_depth)
     depth_map = normalized_depth
+
 
     pc_generator = DMControlPointCloudGenerator(physics)
 
     # Generate the point cloud
-    point_cloud = pc_generator.generate_point_cloud(depth)
+    point_cloud = pc_generator.generate_point_cloud(depth_map)
     print("pc points", len(point_cloud.points))
     # Save the point cloud as a 2D projection image
     pc_generator.save_point_cloud(point_cloud)
