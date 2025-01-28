@@ -79,10 +79,12 @@ class DMControlPointCloudGenerator:
         point_cloud.transform(extrinsics)
 
         #ignore point cloud points that are far away
+        """
         points = np.asarray(point_cloud.points)
         valid_indices = points[:, 2] < 6
         filtered_points = points[valid_indices]
         point_cloud.points = o3d.utility.Vector3dVector(filtered_points)
+        """
 
         # Crop point cloud if bounds are specified
         if self.target_bounds is not None:
@@ -182,7 +184,7 @@ if __name__ == "__main__":
     depth = physics.render(width=img_width, height=img_height, camera_id=camera_id, depth=True)
     rgb_image = physics.render(height=480, width=640, camera_id=0)
 
-    min_depth, max_depth = 1, 6
+    min_depth, max_depth = 1, 5
     #filtering all values greater than 6 to be 0
     depth[depth >= max_depth] = 0
     # clipped_depth = np.clip(depth, min_depth, max_depth)
