@@ -199,7 +199,7 @@ class Encoder(nn.Module):
         self.encoding2 = self.sinusoidal_encodings(torch.tensor([2]).float())
         self.encoding3 = self.sinusoidal_encodings(torch.tensor([3]).float())
 
-        self.convnet2 = nn.Sequential(nn.Conv2d(obs_shape[0] + 2, 32, kernel_size=3, stride=2),
+        self.convnet2 = nn.Sequential(nn.Conv2d(obs_shape[0], 32, kernel_size=3, stride=2),
                                      nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
                                      nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
                                      nn.ReLU(), nn.Conv2d(32, 32, kernel_size=3, stride=1),
