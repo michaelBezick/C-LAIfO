@@ -81,17 +81,8 @@ class DMControlPointCloudGenerator:
         #ignore point cloud points that are far away
         points = np.asarray(point_cloud.points)
 
-        x_min, y_min, z_min = points.min(axis=0)
-        x_max, y_max, z_max = points.max(axis=0)
-
-        #print(x_min, x_max)
-        #print(y_min, y_max)
-        #print(z_min, z_max)
-
-
         valid_indices = points[:, 2] > 0
-        #print(np.shape(valid_indices))
-        #print(np.shape(points))
+
         filtered_points = points[valid_indices]
         point_cloud.points = o3d.utility.Vector3dVector(filtered_points)
 
@@ -199,7 +190,7 @@ if __name__ == "__main__":
         #now generate 2 point clouds
 
         depth = physics.render(width=img_width, height=img_height, camera_id=camera_id, depth=True)
-        rgb_image = physics.render(height=480, width=640, camera_id=0)
+        rgb_image = physics.render(height=480, width=640, camera_id=camera_id)
 
         min_depth, max_depth = 1, 6
         depth[depth >= max_depth] = 0
