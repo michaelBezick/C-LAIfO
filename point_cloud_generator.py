@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
 # Display the depth map
     plt.subplot(1, 2, 2)
-    plt.imshow(depth_map, cmap="viridis")
+    plt.imshow(depth, cmap="viridis")
     plt.colorbar(label="Depth")
     plt.title("Depth Map")
 
