@@ -190,28 +190,28 @@ if __name__ == "__main__":
     max_bound=None
     camera_id=0
 
-    depth = physics.render(width=img_width, height=img_height, camera_id=camera_id, depth=True)
-    rgb_image = physics.render(height=480, width=640, camera_id=0)
-
-    min_depth, max_depth = 1, 6
-    #filtering all values greater than 6 to be 0
-    depth[depth >= max_depth] = 0
-    # clipped_depth = np.clip(depth, min_depth, max_depth)
-    #normalized_depth = (depth - np.min(depth)) / (np.max(depth) - np.min(depth))
-    normalized_depth = depth
-    depth_map = normalized_depth
-
-    print(np.min(depth_map))
-    print(np.max(depth_map))
-
-
+    camera_ids = [0,1,2]
+    merged_pcd = o3d.geometry.PointCloud()
     pc_generator = DMControlPointCloudGenerator(physics)
 
-    # Generate the point cloud
-    point_cloud = pc_generator.generate_point_cloud(depth_map)
-    print("pc points", len(point_cloud.points))
-    # Save the point cloud as a 2D projection image
-    pc_generator.save_point_cloud(point_cloud)
+    for camera_id in camera_ids:
+
+        #now generate 2 point clouds
+
+        depth = physics.render(width=img_width, height=img_height, camera_id=camera_id, depth=True)
+        rgb_image = physics.render(height=480, width=640, camera_id=0)
+
+        min_depth, max_depth = 1, 6
+        depth[depth >= max_depth] = 0
+
+
+        # Generate the point cloud
+        point_cloud = pc_generator.generate_point_cloud(depth, camera_id=camera_id)
+        # Save the point cloud as a 2D projection image
+        merged_pcd += point_cloud
+
+    pc_generator.save_point_cloud(merged_pcd)
+    exit()
 # Display the RGB image
     plt.figure(figsize=(10, 5))
     plt.subplot(1, 2, 1)
