@@ -211,7 +211,7 @@ if __name__ == "__main__":
         merged_pcd += point_cloud
 
     pc_generator.save_point_cloud(merged_pcd)
-    exit()
+
 # Display the RGB image
     plt.figure(figsize=(10, 5))
     plt.subplot(1, 2, 1)
@@ -224,4 +224,4 @@ if __name__ == "__main__":
     plt.colorbar(label="Depth")
     plt.title("Depth Map")
 
-    plt.savefig("./depth_test/3rd.png", dpi=300)
+    plt.savefig("./depth_test/second_view.png", dpi=300)
