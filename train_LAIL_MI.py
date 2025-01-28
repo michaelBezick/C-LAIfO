@@ -152,8 +152,8 @@ class Workspace:
 
     def store_random_expert_transitions(self):
         step, episode, total_reward = 0, 0, 0
-        #eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
-        eval_until_episode = utils.Until(1)
+        eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+        # eval_until_episode = utils.Until(1)
         self.expert.num_expl_steps = 1.0
         
         while eval_until_episode(episode):
@@ -185,8 +185,8 @@ class Workspace:
         
     def eval(self):
         step, episode, total_reward = 0, 0, 0
-        #eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
-        eval_until_episode = utils.Until(1)
+        eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
+        # eval_until_episode = utils.Until(1)
 
         while eval_until_episode(episode):
             time_step = self.eval_env.reset()

@@ -246,21 +246,36 @@ class Encoder(nn.Module):
 
     def forward(self, obs):
 
-        print(obs.size())
-
-
+        # print(obs.size())
 
 
         batch_size, channel_dim, height, width = obs.size()
 
-        num_frames = channel_dim // 3
-        num_channels = 3
+        # num_frames = channel_dim // 3
+        # num_channels = 3
 
             
         obs = obs / 255.0 - 0.5
 
-        with torch.no_grad():
-            flow = self.optical_flow(obs)
+        h = self.convnet2(obs)
+
+        h = h.reshape(h.shape[0], -1)
+
+        z = self.trunk(h)
+
+        if self.stochastic:
+            mu, log_std = z.chunk(2, dim=-1)
+            log_std = torch.tanh(log_std)
+            log_std_min, log_std_max = self.log_std_bounds
+            log_std = log_std_min + 0.5 * (log_std_max - log_std_min) * (log_std + 1)
+            std = log_std.exp()
+            dist = torchd.Normal(mu, std) 
+            z = dist.sample()
+
+        return z
+
+        # with torch.no_grad():
+        #     flow = self.optical_flow(obs)
 
         """NEW TEST"""
 
