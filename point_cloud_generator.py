@@ -36,19 +36,19 @@ class DMControlPointCloudGenerator:
             self.target_bounds = o3d.geometry.AxisAlignedBoundingBox(min_bound=min_bound, max_bound=max_bound)
 
     def generate_point_cloud(self, depth, camera_id=0):
-        print("depth", depth)
+        #print("depth", depth)
 
         # Convert depth to real-world distances
         near = self.physics.model.vis.map.znear
         far = self.physics.model.vis.map.zfar
 
-        print("near", near)
-        print("far", far)
+        #print("near", near)
+        #print("far", far)
 
 
         #depth_in_meters = depthimg2Meters(depth, near, far)
         depth_in_meters = depth
-        print("depth in meters", depth_in_meters)
+        #print("depth in meters", depth_in_meters)
 
         # Get camera intrinsics
         fovy = math.radians(self.physics.model.cam_fovy[camera_id])
@@ -58,7 +58,7 @@ class DMControlPointCloudGenerator:
             [0, f, self.img_height / 2],
             [0, 0, 1]
         ])
-        print("cam mat", cam_mat)
+        #print("cam mat", cam_mat)
         o3d_intrinsics = o3d.camera.PinholeCameraIntrinsic(self.img_width, self.img_height, f, f, self.img_width / 2, self.img_height / 2)
 
         # Create point cloud
@@ -84,14 +84,14 @@ class DMControlPointCloudGenerator:
         x_min, y_min, z_min = points.min(axis=0)
         x_max, y_max, z_max = points.max(axis=0)
 
-        print(x_min, x_max)
-        print(y_min, y_max)
-        print(z_min, z_max)
+        #print(x_min, x_max)
+        #print(y_min, y_max)
+        #print(z_min, z_max)
 
 
         valid_indices = points[:, 2] > 0
-        print(np.shape(valid_indices))
-        print(np.shape(points))
+        #print(np.shape(valid_indices))
+        #print(np.shape(points))
         filtered_points = points[valid_indices]
         point_cloud.points = o3d.utility.Vector3dVector(filtered_points)
 
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     max_bound=None
     camera_id=0
 
-    camera_ids = [0,1,2]
+    camera_ids = [0,1]
     merged_pcd = o3d.geometry.PointCloud()
     pc_generator = DMControlPointCloudGenerator(physics)
 
