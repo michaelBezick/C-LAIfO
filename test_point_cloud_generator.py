@@ -10,8 +10,6 @@ import open3d as o3d
 from dm_control import suite
 from dm_control._render.executor import render_executor
 from PIL import Image as PIL_Image
-import pdb
-pdb.set_trace()
 
 
 
@@ -312,4 +310,4 @@ if __name__ == "__main__":
     point_cloud_generator = PointCloudGenerator(physics)
     point_cloud = point_cloud_generator.generateCroppedPointCloud(save_img_dir="./depth_test/")
     point_cloud_generator.save_point_cloud(point_cloud)
-    point_cloud_generator.save_point_cloud_as_image(point_cloud)
+    #point_cloud_generator.save_point_cloud_as_image(point_cloud)
