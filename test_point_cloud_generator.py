@@ -147,8 +147,6 @@ class PointCloudGenerator(object):
         super(PointCloudGenerator, self).__init__()
 
         self.sim = sim
-        print(self.sim.model.vis.map.znear)
-        exit()
 
         # I think these can be set to anything
         self.img_width = 640
