@@ -13,6 +13,8 @@ from PIL import Image as PIL_Image
 import pdb
 pdb.set_trace()
 
+
+
 """
 Generates numpy rotation matrix from quaternion
 
@@ -191,7 +193,7 @@ class PointCloudGenerator(object):
                 self.cam_mats[cam_i], self.img_width, self.img_height
             )
 
-            od_depth = o3d.geometry.Image(depth_img)
+            od_depth = o3d.geometry.Image(np.ascontiguousarray(depth_img))
 
             o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(
                 od_depth, od_cammat
@@ -260,8 +262,6 @@ class PointCloudGenerator(object):
             depth=True,
         )
 
-        rendered_images = [img, depth]
-
         if capture_depth:
             depth = self.verticalFlip(depth)
             #real_depth = self.depthimg2Meters(depth)
@@ -269,7 +269,6 @@ class PointCloudGenerator(object):
 
             return real_depth
         else:
-            img = rendered_images
             # Rendered images appear to be flipped about vertical axis
             return self.verticalFlip(img)
 
@@ -298,7 +297,6 @@ class PointCloudGenerator(object):
 
 
         # Clean up
-        renderer.close()
         print(f"Point cloud projection saved to {output_image}")
 
     def save_point_cloud(self, point_cloud, output_file="point_cloud.ply"):
@@ -313,5 +311,5 @@ if __name__ == "__main__":
     physics = env.physics
     point_cloud_generator = PointCloudGenerator(physics)
     point_cloud = point_cloud_generator.generateCroppedPointCloud(save_img_dir="./depth_test/")
-    point_cloud_generator.save_point_cloud(point_cloud, "./point_cloud_images/")
+    point_cloud_generator.save_point_cloud(point_cloud)
     point_cloud_generator.save_point_cloud_as_image(point_cloud)
