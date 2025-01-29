@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 import math
 
+
+from dm_control.suite.walker import Physics
+
 import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
 from dm_control import suite
-import dm_control
 from dm_control._render.executor import render_executor
 from PIL import Image as PIL_Image
-from dm_control.rl.control import Environment
-from dm_control.suite.walker import Physics
+import pdb
+pdb.set_trace()
 
 """
 Generates numpy rotation matrix from quaternion
@@ -152,8 +154,7 @@ class PointCloudGenerator(object):
         self.img_width = 640
         self.img_height = 480
 
-        # self.cam_names = self.sim.model.camera_names
-        exit()
+        self.cam_names = [i for i in range(len(self.sim.model.cam_bodyid))]
 
         self.target_bounds = None
         if min_bound != None and max_bound != None:
@@ -242,10 +243,11 @@ class PointCloudGenerator(object):
 
     # Render and process an image
     def captureImage(self, cam_ind, capture_depth=True):
+
         rendered_images = self.sim.render(
-            self.img_width,
-            self.img_height,
-            camera_name=self.cam_names[cam_ind],
+            width=self.img_width,
+            height=self.img_height,
+            camera_id=self.cam_names[cam_ind],
             depth=capture_depth,
         )
         if capture_depth:
@@ -271,8 +273,5 @@ class PointCloudGenerator(object):
 if __name__ == "__main__":
     env = suite.load(domain_name="walker", task_name="walk")
     physics = env.physics
-    print(physics)
-    print(type(physics))
-    exit()
     point_cloud_generator = PointCloudGenerator(physics)
     point_cloud_generator.generateCroppedPointCloud()

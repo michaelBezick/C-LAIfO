@@ -1,4 +1,5 @@
 import math
+from dm_control.rl.control import Physics
 import matplotlib.pyplot as plt
 import numpy as np
 from dm_control import suite
@@ -207,6 +208,12 @@ if __name__ == "__main__":
     min_bound=None
     max_bound=None
     camera_id=0
+
+    # print(dir(physics.model))
+    # print(physics.model.cam_pos)
+    # print(len(physics.model.cam_bodyid))
+    # exit()
+
 
     camera_ids = [0,1]
     merged_pcd = o3d.geometry.PointCloud()
