@@ -132,6 +132,8 @@ class PointCloudGenerator(object):
         self.img_width = 640
         self.img_height = 480
 
+        print(dir(self.sim.model))
+        exit()
         self.cam_names = self.sim.model.camera_names
 
         self.target_bounds=None
