@@ -188,7 +188,9 @@ class PointCloudGenerator(object):
             od_cammat = cammat2o3d(
                 self.cam_mats[cam_i], self.img_width, self.img_height
             )
-            od_depth = o3d.geometry.Image(depth_img)
+            # od_depth = o3d.geometry.Image(depth_img)
+            od_depth = o3d.geometry.Image(np.ascontiguousarray(depth_img))
+
             o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(
                 od_depth, od_cammat
             )
@@ -219,8 +221,6 @@ class PointCloudGenerator(object):
                     radius=0.03, max_nn=250
                 )
             )
-            print(cam_pos)
-            exit()
             transformed_cloud.orient_normals_towards_camera_location(cam_pos)
 
             o3d_clouds.append(transformed_cloud)
@@ -257,6 +257,8 @@ class PointCloudGenerator(object):
             camera_id=self.cam_names[cam_ind],
             depth=True,
         )
+
+        rendered_images = [img, depth]
 
         if capture_depth:
             depth = self.verticalFlip(depth)
