@@ -94,7 +94,6 @@ class DMControlPointCloudGenerator:
         depth_img = o3d.geometry.Image(np.ascontiguousarray(depth_in_meters))
         
         print(o3d_intrinsics)
-        exit()
         point_cloud = o3d.geometry.PointCloud.create_from_depth_image(depth_img, o3d_intrinsics)
 
         # Get camera extrinsics
