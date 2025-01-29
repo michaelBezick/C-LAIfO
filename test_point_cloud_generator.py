@@ -10,8 +10,6 @@ import open3d as o3d
 from dm_control import suite
 from dm_control._render.executor import render_executor
 from PIL import Image as PIL_Image
-import pdb
-pdb.set_trace()
 
 """
 Generates numpy rotation matrix from quaternion
@@ -221,6 +219,8 @@ class PointCloudGenerator(object):
                     radius=0.03, max_nn=250
                 )
             )
+            print(cam_pos)
+            exit()
             transformed_cloud.orient_normals_towards_camera_location(cam_pos)
 
             o3d_clouds.append(transformed_cloud)
@@ -244,14 +244,21 @@ class PointCloudGenerator(object):
     # Render and process an image
     def captureImage(self, cam_ind, capture_depth=True):
 
-        rendered_images = self.sim.render(
+        img = self.sim.render(
             width=self.img_width,
             height=self.img_height,
             camera_id=self.cam_names[cam_ind],
-            depth=capture_depth,
+            depth=False,
         )
+
+        depth = self.sim.render(
+            width=self.img_width,
+            height=self.img_height,
+            camera_id=self.cam_names[cam_ind],
+            depth=True,
+        )
+
         if capture_depth:
-            img, depth = rendered_images
             depth = self.verticalFlip(depth)
             real_depth = self.depthimg2Meters(depth)
 
