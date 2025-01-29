@@ -8,16 +8,43 @@ from dm_control._render.executor import render_executor
 
 def quat2Mat(quat):
     """Converts quaternion (w, x, y, z) to a 3x3 rotation matrix."""
-    w, x, y, z = quat
-    x2, y2, z2 = x * x, y * y, z * z
-    wx, wy, wz = w * x, w * y, w * z
-    xy, xz, yz = x * y, x * z, y * z
+    w = quat[0]
+    x = quat[1]
+    y = quat[2]
+    z = quat[3]
 
-    return np.array([
-        [1 - 2 * (y2 + z2), 2 * (xy - wz), 2 * (xz + wy)],
-        [2 * (xy + wz), 1 - 2 * (x2 + z2), 2 * (yz - wx)],
-        [2 * (xz - wy), 2 * (yz + wx), 1 - 2 * (x2 + y2)],
-    ])
+    x2 = x * x
+    y2 = y * y
+    z2 = z * z
+    w2 = w * w
+
+    xy = x * y
+    zw = z * w
+    xz = x * z
+    yw = y * w
+    yz = y * z
+    xw = x * w
+
+    rot_mat_arr = [x2 - y2 - z2 + w2, 2 * (xy - zw), 2 * (xz + yw), \
+        2 * (xy + zw), - x2 + y2 - z2 + w2, 2 * (yz - xw), \
+        2 * (xz - yw), 2 * (yz + xw), - x2 - y2 + z2 + w2]
+    np_rot_mat = rotMatList2NPRotMat(rot_mat_arr)
+    return np_rot_mat
+    # w, x, y, z = quat
+    # x2, y2, z2 = x * x, y * y, z * z
+    # wx, wy, wz = w * x, w * y, w * z
+    # xy, xz, yz = x * y, x * z, y * z
+    #
+    # return np.array([
+    #     [1 - 2 * (y2 + z2), 2 * (xy - wz), 2 * (xz + wy)],
+    #     [2 * (xy + wz), 1 - 2 * (x2 + z2), 2 * (yz - wx)],
+    #     [2 * (xz - wy), 2 * (yz + wx), 1 - 2 * (x2 + y2)],
+    # ])
+
+def rotMatList2NPRotMat(rot_mat_arr):
+    np_rot_arr = np.array(rot_mat_arr)
+    np_rot_mat = np_rot_arr.reshape((3,3))
+    return np_rot_mat
 
 def depthimg2Meters(depth, near, far):
     """Converts normalized depth image to real-world distances."""
