@@ -10,6 +10,8 @@ import open3d as o3d
 from dm_control import suite
 from dm_control._render.executor import render_executor
 from PIL import Image as PIL_Image
+import pdb
+pdb.set_trace()
 
 """
 Generates numpy rotation matrix from quaternion
@@ -188,8 +190,8 @@ class PointCloudGenerator(object):
             od_cammat = cammat2o3d(
                 self.cam_mats[cam_i], self.img_width, self.img_height
             )
-            # od_depth = o3d.geometry.Image(depth_img)
-            od_depth = o3d.geometry.Image(np.ascontiguousarray(depth_img))
+
+            od_depth = o3d.geometry.Image(depth_img)
 
             o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(
                 od_depth, od_cammat
@@ -262,7 +264,8 @@ class PointCloudGenerator(object):
 
         if capture_depth:
             depth = self.verticalFlip(depth)
-            real_depth = self.depthimg2Meters(depth)
+            #real_depth = self.depthimg2Meters(depth)
+            real_depth = depth
 
             return real_depth
         else:
@@ -278,9 +281,37 @@ class PointCloudGenerator(object):
         im = PIL_Image.fromarray(normalized_image)
         im.save(filepath + "/" + filename + ".jpg")
 
+    def save_point_cloud_as_image(self, point_cloud, output_image="point_cloud_image.png"):
+        """Saves a 2D projection of the point cloud to an image using offscreen rendering."""
+        # Offscreen rendering
+        renderer = o3d.visualization.rendering.OffscreenRenderer(640, 480)
+
+        # Add the point cloud to the scene
+        renderer.scene.add_geometry("point_cloud", point_cloud, o3d.visualization.rendering.MaterialRecord())
+
+        # Set the camera perspective
+        renderer.scene.camera.look_at([0, 0, 0], [0, 0, 1], [0, 1, 0])
+
+        # Render the scene and save as image
+        image = renderer.render_to_image()
+        o3d.io.write_image(output_image, image)
+
+
+        # Clean up
+        renderer.close()
+        print(f"Point cloud projection saved to {output_image}")
+
+    def save_point_cloud(self, point_cloud, output_file="point_cloud.ply"):
+
+        # Save the point cloud
+        o3d.io.write_point_cloud("./point_cloud_images/" + output_file, point_cloud)
+        print(f"Point cloud saved to {output_file}")
+
 
 if __name__ == "__main__":
     env = suite.load(domain_name="walker", task_name="walk")
     physics = env.physics
     point_cloud_generator = PointCloudGenerator(physics)
-    point_cloud_generator.generateCroppedPointCloud()
+    point_cloud = point_cloud_generator.generateCroppedPointCloud(save_img_dir="./depth_test/")
+    point_cloud_generator.save_point_cloud(point_cloud, "./point_cloud_images/")
+    point_cloud_generator.save_point_cloud_as_image(point_cloud)
