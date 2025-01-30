@@ -209,23 +209,7 @@ class PointCloudGenerator(object):
 
             print("Downsampled point count:", np.asarray(o3d_cloud.points).shape[0])
 
-            #scale the point cloud to have max magnitude of 1 and shift to have mean 0,0,0
-            points = np.asarray(o3d_cloud.points)
-
-            center = np.mean(points, axis=0)
-            centered_points = points - center
-            print("centroid: ", np.mean(centered_points,axis=0))
-
-            magnitudes = np.linalg.norm(centered_points, axis=1)
-            max_magnitude = np.max(magnitudes)
-            print("max_magnitude: ", max_magnitude)
-
-            if max_magnitude > 0:
-                normalized_points = centered_points / max_magnitude
-                o3d_cloud.points = o3d.utility.Vector3dVector(normalized_points)
-            else:
-                o3d_cloud.points = o3d.utility.Vector3dVector(centered_points)
-
+            
 
             # Compute world to camera transformation matrix
 
@@ -269,6 +253,25 @@ class PointCloudGenerator(object):
         combined_cloud = o3d.geometry.PointCloud()
         for i, cloud in enumerate(o3d_clouds):
             combined_cloud += cloud
+
+
+        #scale the point cloud to have max magnitude of 1 and shift to have mean 0,0,0
+        points = np.asarray(combined_cloud.points)
+
+        center = np.mean(points, axis=0)
+        centered_points = points - center
+        print("centroid: ", np.mean(centered_points,axis=0))
+
+        magnitudes = np.linalg.norm(centered_points, axis=1)
+        max_magnitude = np.max(magnitudes)
+        print("max_magnitude: ", max_magnitude)
+
+        if max_magnitude > 0:
+            normalized_points = centered_points / max_magnitude
+            combined_cloud.points = o3d.utility.Vector3dVector(normalized_points)
+        else:
+            combined_cloud.points = o3d.utility.Vector3dVector(centered_points)
+
         return combined_cloud
 
     # https://github.com/htung0101/table_dome/blob/master/table_dome_calib/utils.py#L160
