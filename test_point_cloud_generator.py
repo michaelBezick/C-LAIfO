@@ -247,7 +247,7 @@ class PointCloudGenerator(object):
             if i == 0:
                 cloud = cloud.translate(np.array([0,0,0.25]))
 
-                theta = np.pi/2
+                theta = - np.pi/2
 
                 R =  np.array([
                     [np.cos(theta), -np.sin(theta), 0],
