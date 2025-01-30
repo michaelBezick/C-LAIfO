@@ -205,7 +205,7 @@ class PointCloudGenerator(object):
 
             print("Original point count:", np.asarray(o3d_cloud.points).shape[0])
 
-            o3d_cloud = o3d_cloud.voxel_down_sample(voxel_size=0.10)
+            o3d_cloud = o3d_cloud.voxel_down_sample(voxel_size=0.05)
 
             print("Downsampled point count:", np.asarray(o3d_cloud.points).shape[0])
 
