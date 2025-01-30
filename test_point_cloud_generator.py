@@ -173,7 +173,7 @@ class PointCloudGenerator(object):
             )
             self.cam_mats.append(cam_mat)
 
-    def generateCroppedPointCloud(self, save_img_dir=None):
+    def generateCroppedPointCloud(self, save_img_dir=None, fast=True):
         o3d_clouds = []
         cam_poses = []
         for cam_i in range(len(self.cam_names)):
@@ -181,10 +181,11 @@ class PointCloudGenerator(object):
             depth_img = self.captureImage(cam_i)
             # If directory was provided, save color and depth images
             #    (overwriting previous)
-            if save_img_dir != None:
-                self.saveImg(depth_img, save_img_dir, "depth_test_" + str(cam_i))
-                color_img = self.captureImage(cam_i, False)
-                self.saveImg(color_img, save_img_dir, "color_test_" + str(cam_i))
+            if fast == False:
+                if save_img_dir != None:
+                    self.saveImg(depth_img, save_img_dir, "depth_test_" + str(cam_i))
+                    color_img = self.captureImage(cam_i, False)
+                    self.saveImg(color_img, save_img_dir, "color_test_" + str(cam_i))
 
             # convert camera matrix and depth image to Open3D format, then
             #    generate point cloud
@@ -203,19 +204,11 @@ class PointCloudGenerator(object):
                 od_depth, od_cammat
             )
 
-            print("Original point count:", np.asarray(o3d_cloud.points).shape[0])
-
-            o3d_cloud = o3d_cloud.voxel_down_sample(voxel_size=0.05)
-
-            print("Downsampled point count:", np.asarray(o3d_cloud.points).shape[0])
-
-            
-
-            # Compute world to camera transformation matrix
-
-            # cam_body_id = self.sim.model.cam_bodyid[cam_i]
-            #cam_body_id = cam_i
-            #cam_pos = self.sim.model.body_pos[cam_body_id]
+            # print("Original point count:", np.asarray(o3d_cloud.points).shape[0])
+            #
+            # o3d_cloud = o3d_cloud.voxel_down_sample(voxel_size=0.05)
+            #
+            # print("Downsampled point count:", np.asarray(o3d_cloud.points).shape[0])
 
             cam_pos = self.sim.model.cam_pos[cam_i]
 
