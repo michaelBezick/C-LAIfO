@@ -233,12 +233,14 @@ class PointCloudGenerator(object):
 
             # Estimate normals of cropped cloud, then flip them based on camera
             #    position.
+            """
             transformed_cloud.estimate_normals(
                 search_param=o3d.geometry.KDTreeSearchParamHybrid(
                     radius=0.03, max_nn=250
                 )
             )
             transformed_cloud.orient_normals_towards_camera_location(cam_pos)
+            """
 
             o3d_clouds.append(transformed_cloud)
 
