@@ -203,6 +203,8 @@ class PointCloudGenerator(object):
                 od_depth, od_cammat
             )
 
+            o3d_cloud = o3d.geometry.voxel_down_sample(o3d_cloud, voxel_size=0.25)
+
             # Compute world to camera transformation matrix
 
             # cam_body_id = self.sim.model.cam_bodyid[cam_i]
@@ -210,8 +212,6 @@ class PointCloudGenerator(object):
             #cam_pos = self.sim.model.body_pos[cam_body_id]
 
             cam_pos = self.sim.model.cam_pos[cam_i]
-
-
 
             c2b_r = rotMatList2NPRotMat(self.sim.model.cam_mat0[cam_i])
 
@@ -246,20 +246,6 @@ class PointCloudGenerator(object):
 
         combined_cloud = o3d.geometry.PointCloud()
         for i, cloud in enumerate(o3d_clouds):
-            # if i == 0:
-                # cloud = cloud.translate(np.array([2,-2,0.25]))
-                #
-                # theta = - np.pi/2
-                #
-                # R =  np.array([
-                #     [np.cos(theta), -np.sin(theta), 0],
-                #     [np.sin(theta), np.cos(theta), 0],
-                #     [0, 0, 1]
-                # ])
-                #
-                #
-                # cloud = cloud.rotate(R)
-
             combined_cloud += cloud
         return combined_cloud
 
