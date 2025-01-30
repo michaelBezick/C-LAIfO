@@ -206,11 +206,12 @@ class PointCloudGenerator(object):
             # Compute world to camera transformation matrix
 
             # cam_body_id = self.sim.model.cam_bodyid[cam_i]
-            cam_body_id = self.sim.model.cam_pos[cam_i]
             #cam_body_id = cam_i
+            #cam_pos = self.sim.model.body_pos[cam_body_id]
+
+            cam_pos = self.sim.model.cam_pos[cam_i]
 
 
-            cam_pos = self.sim.model.body_pos[cam_body_id]
 
             c2b_r = rotMatList2NPRotMat(self.sim.model.cam_mat0[cam_i])
 
