@@ -205,8 +205,8 @@ class PointCloudGenerator(object):
 
             # Compute world to camera transformation matrix
 
-            #cam_body_id = self.sim.model.cam_bodyid[cam_i]
-            cam_body_id = cam_i
+            cam_body_id = self.sim.model.cam_bodyid[cam_i]
+            #cam_body_id = cam_i
 
 
             cam_pos = self.sim.model.body_pos[cam_body_id]
