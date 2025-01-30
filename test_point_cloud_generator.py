@@ -245,18 +245,18 @@ class PointCloudGenerator(object):
         combined_cloud = o3d.geometry.PointCloud()
         for i, cloud in enumerate(o3d_clouds):
             if i == 0:
-                cloud = cloud.translate(np.array([0,0,0.25]))
-
-                theta = - np.pi/2
-
-                R =  np.array([
-                    [np.cos(theta), -np.sin(theta), 0],
-                    [np.sin(theta), np.cos(theta), 0],
-                    [0, 0, 1]
-                ])
-
-
-                cloud = cloud.rotate(R)
+                cloud = cloud.translate(np.array([2,-2,0.25]))
+                #
+                # theta = - np.pi/2
+                #
+                # R =  np.array([
+                #     [np.cos(theta), -np.sin(theta), 0],
+                #     [np.sin(theta), np.cos(theta), 0],
+                #     [0, 0, 1]
+                # ])
+                #
+                #
+                # cloud = cloud.rotate(R)
 
             combined_cloud += cloud
         return combined_cloud
