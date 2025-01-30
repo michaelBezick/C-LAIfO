@@ -151,9 +151,8 @@ class PointCloudGenerator(object):
 
         self.sim = sim
 
-        # I think these can be set to anything
-        self.img_width = 640
-        self.img_height = 480
+        self.img_width = 64
+        self.img_height = 48
 
         self.cam_names = [i for i in range(len(self.sim.model.cam_bodyid))]
 
@@ -228,7 +227,6 @@ class PointCloudGenerator(object):
             #    x-axis by 180 degrees to align it with the world frame.
             """"""
             b2w_r = quat2Mat([0, 1, 0, 0])
-            #b2w_r = np.eye(3)
             """"""
             c2w_r = np.matmul(c2b_r, b2w_r)
             c2w = posRotMat2Mat(cam_pos, c2w_r)
