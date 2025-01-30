@@ -203,7 +203,12 @@ class PointCloudGenerator(object):
                 od_depth, od_cammat
             )
 
-            o3d_cloud.voxel_down_sample(0.25)
+            print("Original point count:", np.asarray(o3d_cloud.points).shape[0])
+
+            o3d_cloud = o3d_cloud.voxel_down_sample(voxel_size=0.10)
+
+            print("Downsampled point count:", np.asarray(o3d_cloud.points).shape[0])
+
 
             # Compute world to camera transformation matrix
 
