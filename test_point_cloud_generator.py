@@ -256,7 +256,7 @@ class PointCloudGenerator(object):
                 ])
 
 
-                cloud = cloud.transform(R)
+                cloud = cloud.rotate(R)
 
             combined_cloud += cloud
         return combined_cloud
