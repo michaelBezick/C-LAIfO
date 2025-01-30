@@ -10,6 +10,7 @@ import open3d as o3d
 from dm_control import suite
 from dm_control._render.executor import render_executor
 from PIL import Image as PIL_Image
+import pdb
 
 
 
@@ -253,7 +254,8 @@ class PointCloudGenerator(object):
         return image
 
     def verticalFlip(self, img):
-        return np.flip(img, axis=0)
+        return img
+        #return np.flip(img, axis=0)
 
     # Render and process an image
     def captureImage(self, cam_ind, capture_depth=True):
