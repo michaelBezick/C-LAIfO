@@ -243,7 +243,10 @@ class PointCloudGenerator(object):
             o3d_clouds.append(transformed_cloud)
 
         combined_cloud = o3d.geometry.PointCloud()
-        for cloud in o3d_clouds:
+        for i, cloud in enumerate(o3d_clouds):
+            if i == 0:
+                cloud = cloud.translate(np.array([0,0,0.25]))
+
             combined_cloud += cloud
         return combined_cloud
 
@@ -341,6 +344,8 @@ if __name__ == "__main__":
     # print("physics.model.cam_user:", physics.model.cam_user)
     # print("physics.model.camera:", physics.model.camera)
     # print("physics.model.ncam:", physics.model.ncam)
+    # print("physics.model.body_pos:", physics.model.body_pos)
+    # exit()
 
 
 
