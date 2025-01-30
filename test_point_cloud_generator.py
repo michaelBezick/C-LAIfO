@@ -209,6 +209,14 @@ class PointCloudGenerator(object):
 
             print("Downsampled point count:", np.asarray(o3d_cloud.points).shape[0])
 
+            #scale the point cloud to have max magnitude of 1
+            points = np.asarray(o3d_cloud.points)
+            magnitudes = np.linalg.norm(points, axis=1)
+            max_magnitude = np.max(magnitudes)
+            if max_magnitude > 0:
+                normalized_points = points / max_magnitude
+                o3d_cloud.points = o3d.utility.Vector3dVector(normalized_points)
+
 
             # Compute world to camera transformation matrix
 
