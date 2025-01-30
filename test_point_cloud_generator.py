@@ -192,6 +192,7 @@ class PointCloudGenerator(object):
             )
 
             max_depth = 6
+
             depth_img[depth_img >= max_depth] = 0
 
             od_depth = o3d.geometry.Image(np.ascontiguousarray(depth_img))
@@ -202,15 +203,22 @@ class PointCloudGenerator(object):
             )
 
             # Compute world to camera transformation matrix
+
             cam_body_id = self.sim.model.cam_bodyid[cam_i]
+
             cam_pos = self.sim.model.body_pos[cam_body_id]
+
             c2b_r = rotMatList2NPRotMat(self.sim.model.cam_mat0[cam_i])
+
             # In MuJoCo, we assume that a camera is specified in XML as a body
             #    with pose p, and that that body has a camera sub-element
             #    with pos and euler 0.
             #    Therefore, camera frame with body euler 0 must be rotated about
             #    x-axis by 180 degrees to align it with the world frame.
-            b2w_r = quat2Mat([0, 1, 0, 0])
+            """"""
+            # b2w_r = quat2Mat([0, 1, 0, 0])
+            b2w_r = np.eye(3)
+            """"""
             c2w_r = np.matmul(c2b_r, b2w_r)
             c2w = posRotMat2Mat(cam_pos, c2w_r)
             transformed_cloud = o3d_cloud.transform(c2w)
