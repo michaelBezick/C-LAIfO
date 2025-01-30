@@ -11,6 +11,7 @@ from dm_control import suite
 from dm_control._render.executor import render_executor
 from PIL import Image as PIL_Image
 import pdb
+import time
 
 
 
@@ -374,6 +375,9 @@ if __name__ == "__main__":
 
 
     point_cloud_generator = PointCloudGenerator(physics)
+    time1 = time.time()
     point_cloud = point_cloud_generator.generateCroppedPointCloud(save_img_dir="./depth_test/")
+    time2 = time.time()
+    print(time2 - time1)
     point_cloud_generator.save_point_cloud(point_cloud)
     #point_cloud_generator.save_point_cloud_as_image(point_cloud)
