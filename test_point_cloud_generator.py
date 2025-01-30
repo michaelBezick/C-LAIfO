@@ -253,6 +253,7 @@ class PointCloudGenerator(object):
         return image
 
     def verticalFlip(self, img):
+        return img
         return np.flip(img, axis=0)
 
     # Render and process an image
