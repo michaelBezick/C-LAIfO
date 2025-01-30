@@ -205,7 +205,9 @@ class PointCloudGenerator(object):
 
             # Compute world to camera transformation matrix
 
-            cam_body_id = self.sim.model.cam_bodyid[cam_i]
+            #cam_body_id = self.sim.model.cam_bodyid[cam_i]
+            cam_body_id = cam_i
+
 
             cam_pos = self.sim.model.body_pos[cam_body_id]
 
@@ -217,8 +219,8 @@ class PointCloudGenerator(object):
             #    Therefore, camera frame with body euler 0 must be rotated about
             #    x-axis by 180 degrees to align it with the world frame.
             """"""
-            # b2w_r = quat2Mat([0, 1, 0, 0])
-            b2w_r = np.eye(3)
+            b2w_r = quat2Mat([0, 1, 0, 0])
+            #b2w_r = np.eye(3)
             """"""
             c2w_r = np.matmul(c2b_r, b2w_r)
             c2w = posRotMat2Mat(cam_pos, c2w_r)
