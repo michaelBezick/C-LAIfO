@@ -246,8 +246,8 @@ class PointCloudGenerator(object):
 
         combined_cloud = o3d.geometry.PointCloud()
         for i, cloud in enumerate(o3d_clouds):
-            if i == 0:
-                cloud = cloud.translate(np.array([2,-2,0.25]))
+            # if i == 0:
+                # cloud = cloud.translate(np.array([2,-2,0.25]))
                 #
                 # theta = - np.pi/2
                 #
