@@ -5,7 +5,7 @@ import dm_env
 import numpy as np
 from dm_control import manipulation, suite
 from dm_control.suite.wrappers import action_scale
-from DeepMind_control import pixels
+from DeepMind_control import pixels_3d
 from dm_env import StepType, specs
 
 from dmc_remastered import ALL_ENVS
@@ -279,7 +279,7 @@ def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84
             camera_id = 0
         
         render_kwargs = dict(height=image_height, width=image_width, camera_id=camera_id)
-        env = pixels.Wrapper(env,
+        env = pixels_3d.Wrapper(env,
                              pixels_only=True,
                              render_kwargs=render_kwargs)
     # stack several frames
@@ -312,7 +312,7 @@ def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, d
         if depth_flag:
             segm_flag=False
                 
-        if depth_flag == True and domain == 'walker_walk':
+        if depth_flag == True and domain == 'walker':
             render_kwargs = [dict(height=image_height, width=image_width, camera_id=0,
                                  depth=depth_flag, segmentation=segm_flag),
                              dict(height=image_height, width=image_width, camera_id=1,
@@ -321,7 +321,7 @@ def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, d
             render_kwargs = [dict(height=image_height, width=image_width, camera_id=camera_id,
                                  depth=depth_flag, segmentation=segm_flag)]
         
-        env = pixels.Wrapper(env,
+        env = pixels_3d.Wrapper(env,
                              pixels_only=True,
                              render_kwargs=render_kwargs)
     except:
