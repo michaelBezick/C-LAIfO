@@ -306,11 +306,20 @@ def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, d
         else:
             camera_id = 0
 
+        breakpoint()
+
+
         if depth_flag:
             segm_flag=False
                 
-        render_kwargs = dict(height=image_height, width=image_width, camera_id=camera_id,
-                             depth=depth_flag, segmentation=segm_flag)
+        if depth_flag == True and domain == 'walker_walk':
+            render_kwargs = [dict(height=image_height, width=image_width, camera_id=0,
+                                 depth=depth_flag, segmentation=segm_flag),
+                             dict(height=image_height, width=image_width, camera_id=1,
+                                 depth=depth_flag, segmentation=segm_flag)]
+        else:
+            render_kwargs = [dict(height=image_height, width=image_width, camera_id=camera_id,
+                                 depth=depth_flag, segmentation=segm_flag)]
         
         env = pixels.Wrapper(env,
                              pixels_only=True,
