@@ -226,7 +226,6 @@ class DMC_Remastered_Wrapper(core.Env):
         if self._depth_flag:
             self._segm_flag=False
 
-        breakpoint()
         return self._env.physics.render(height=height, width=width, camera_id=camera_id, depth=self._depth_flag, segmentation=self._segm_flag)
     
     def step_learn_from_pixels(self, time_step, action=None):
