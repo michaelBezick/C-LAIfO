@@ -577,10 +577,12 @@ class LailClAgent:
 
         if depth_flag or segm_flag:
             self.apply_aug = "nowhere"
+        
+        # self.encoder = Encoder(
+        #     obs_shape, feature_dim, stochastic_encoder, log_std_bounds
+        # ).to(device)
 
-        self.encoder = Encoder(
-            obs_shape, feature_dim, stochastic_encoder, log_std_bounds
-        ).to(device)
+        self.encoder = PointNetEncoder(feature_dim).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)

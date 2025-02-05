@@ -106,6 +106,8 @@ class Wrapper(dm_env.Environment):
       observation = collections.OrderedDict()
       observation[STATE_KEY] = time_step.observation
 
+    print("pixels.py")
+    exit()
     pixels = self._env.physics.render(**self._render_kwargs)
     observation[self._observation_key] = pixels
     return time_step._replace(observation=observation)

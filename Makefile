@@ -31,7 +31,8 @@ push-message:
 
 # Rule to run the training command
 train:
-	nohup python -u train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug='CL-Q' aug_type='brightness' CL_data_type=agent batch_size=512 > output.log 2>&1 &
+	# nohup python -u 3d_train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug='CL-Q' aug_type='brightness' CL_data_type=agent batch_size=512 > output.log 2>&1 &
+	nohup python -u 3d_train_LAIL_MI.py task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug='CL-Q' aug_type='brightness' CL_data_type=agent batch_size=512 depth=True > output.log 2>&1 &
 
 # Rule to check if the training script is running
 check:
