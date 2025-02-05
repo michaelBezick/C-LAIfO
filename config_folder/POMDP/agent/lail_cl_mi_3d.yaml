@@ -1,0 +1,38 @@
+
+agent_name: lail_cl_mi_3d
+
+agent:
+  _target_: agents.mutual_information.lail_cl_3d.LailClAgent
+  obs_shape: ??? # to be specified later
+  action_shape: ??? # to be specified later
+  device: ${device}
+  lr: ${lr}
+  feature_dim: ${feature_dim}
+  hidden_dim: 1024
+  critic_target_tau: 0.01
+  num_expl_steps: 2000
+  update_every_steps: 2
+  stddev_schedule: ${stddev_schedule}
+  stddev_clip: 0.3
+  use_tb: ${use_tb}
+  dual_mi_constant: ${dual_mi_constant}
+  dual_max_mi: ${dual_max_mi}
+  dual_min_mi_constant: ${dual_min_mi_constant}
+  max_mi: ${max_mi}
+  min_mi: ${min_mi}
+  min_mi_constant: ${min_mi_constant}
+  max_mi_constant: ${max_mi_constant}
+  mi_constant: ${mi_constant}
+  unbiased_mi_decay: ${unbiased_mi_decay}
+  reward_d_coef: 2.0
+  discriminator_lr: ${discriminator_lr}
+  spectral_norm_bool: ${spectral_norm_bool}
+  check_every_steps: ${check_every_steps}
+  log_std_bounds: [-5, 2]
+  GAN_loss: ${GAN_loss}
+  stochastic_encoder: ${stochastic_encoder}
+  from_dem: ${from_dem}
+  add_aug: ${add_aug}
+  depth_flag: ${depth_flag}
+  segm_flag: ${segm_flag}
+

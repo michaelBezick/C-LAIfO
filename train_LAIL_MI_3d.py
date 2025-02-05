@@ -18,6 +18,8 @@ from utils_folder import utils
 from logger_folder.logger import Logger
 from video import TrainVideoRecorder, VideoRecorder, VideoRecorder_bio_expert
 
+import pdb
+
 torch.backends.cudnn.benchmark = True
 
 def make_agent(obs_spec, action_spec, cfg):
@@ -352,9 +354,9 @@ class Workspace:
             payload = torch.load(f)
         self.expert = payload['agent']
 
-@hydra.main(config_path='config_folder/POMDP', config_name='config_lail_MI')
+@hydra.main(config_path='config_folder/POMDP', config_name='config_lail_MI_3d')
 def main(cfg):
-    from train_LAIL_MI import Workspace as W
+    from train_LAIL_MI_3d import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)
     parent_dir = root_dir.parents[3]

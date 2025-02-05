@@ -90,7 +90,9 @@ class DMC_Remastered_Wrapper(core.Env):
         
         self._env = self._task_builder(dynamics_seed=0, visual_seed=0, delta=0, vary=vary)
         self._vary = vary
-        self._depth_flag = depth_flag
+        #IMPORTANT CHANGE - depth_flag to false because want expert to learn from pretained policy
+        #self._depth_flag = depth_flag
+        self._depth_flag = False
         self._segm_flag = segm_flag
         
         self.make_new_env()
@@ -224,8 +226,7 @@ class DMC_Remastered_Wrapper(core.Env):
         if self._depth_flag:
             self._segm_flag=False
 
-        print("dmc_expert_3d.py")
-        exit()
+        breakpoint()
         return self._env.physics.render(height=height, width=width, camera_id=camera_id, depth=self._depth_flag, segmentation=self._segm_flag)
     
     def step_learn_from_pixels(self, time_step, action=None):
