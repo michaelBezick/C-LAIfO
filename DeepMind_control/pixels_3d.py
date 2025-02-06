@@ -74,7 +74,6 @@ class Wrapper(dm_env.Environment):
       self._observation_spec[STATE_KEY] = wrapped_observation_spec
 
     # Extend observation spec.
-    breakpoint()
     pixels_list = []
     for kwarg in render_kwargs:
         pixels_list.append(env.physics.render(**kwarg))
@@ -112,7 +111,6 @@ class Wrapper(dm_env.Environment):
       observation = collections.OrderedDict()
       observation[STATE_KEY] = time_step.observation
 
-    breakpoint()
     pixels = []
     for render_kwarg in self._render_kwargs:
         pixels.append(self._env.physics.render(**render_kwarg))

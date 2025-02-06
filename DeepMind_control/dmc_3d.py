@@ -143,34 +143,44 @@ class FrameStackWrapper(dm_env.Environment):
         return time_step._replace(observation=obs)
 
     def _extract_pixels(self, time_step):
-        obs = time_step.observation[self._pixels_key]
+        obs_list = time_step.observation[self._pixels_key]
 
-        # remove batch dim
-        if len(obs.shape) == 4:
-            obs = obs[0]
+        breakpoint()
 
-        if self._depth_flag:
-            # Shift nearest values to the origin.
-            obs -= obs.min()
-            # Scale by 2 mean distances of near rays.
-            obs /= 2*obs[obs <= 1].mean()
-            # Scale to [0, 255]
-            obs = 255*np.clip(obs, 0, 1).astype(np.uint8)
-            obs = obs.reshape((1,)+obs.shape).copy()
+        for i, obs in enumerate(obs_list):
 
-        elif self._segm_flag:
-            obs = obs[:, :, 0]
-            # Infinity is mapped to -1
-            obs = obs.astype(np.float64) + 1
-            # Scale to [0, 1]
-            obs = obs / obs.max()
-            obs = (255*obs).astype(np.uint8)
-            obs = obs.reshape((1,)+obs.shape).copy()
+            # remove batch dim
+            if len(obs.shape) == 3:
+                obs = obs[0]
 
-        else:
-            obs = obs.transpose(2, 0, 1).copy()
+            #IMPORTANT, changing this
+            #if self._depth_flag:
+            if False:
+                # Shift nearest values to the origin.
+                obs -= obs.min()
+                # Scale by 2 mean distances of near rays.
+                obs /= 2*obs[obs <= 1].mean()
+                # Scale to [0, 255]
+                obs = 255*np.clip(obs, 0, 1).astype(np.uint8)
+                obs = obs.reshape((1,)+obs.shape).copy()
 
-        return obs
+            elif self._segm_flag:
+                obs = obs[:, :, 0]
+                # Infinity is mapped to -1
+                obs = obs.astype(np.float64) + 1
+                # Scale to [0, 1]
+                obs = obs / obs.max()
+                obs = (255*obs).astype(np.uint8)
+                obs = obs.reshape((1,)+obs.shape).copy()
+
+            else:
+                pass
+                #obs = obs.transpose(2, 0, 1).copy()
+
+            obs_list[i] = obs
+
+
+        return obs_list
 
     def reset(self):
         time_step = self._env.reset()
@@ -305,8 +315,6 @@ def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, d
             camera_id = 2
         else:
             camera_id = 0
-
-        breakpoint()
 
 
         if depth_flag:
