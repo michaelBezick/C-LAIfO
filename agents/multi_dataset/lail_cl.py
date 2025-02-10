@@ -50,7 +50,11 @@ class PointNetEncoder(nn.Module):
 
         self.point_cloud_generator = PointCloudGenerator(physics)
 
-    def forward(self, depth_image):
+    def forward(self, depth_image: torch.Tensor):
+        breakpoint()
+
+        depth_image = depth_image.cpu().numpy()
+        print(depth_image.flags["C_CONTIGUOUS"])
 
         point_cloud = self.point_cloud_generator.depthImageToPointCloud(depth_image, 0)
 
