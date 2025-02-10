@@ -17,7 +17,7 @@ from torchvision.utils import save_image
 from utils_folder import utils
 from utils_folder.byol_pytorch import RandomApply, default
 from utils_folder.utils_dreamer import Bernoulli
-from point_cloud_generator import PointCloudGenerator
+from agents.multi_dataset.point_cloud_generator import PointCloudGenerator
 
 
 class PointNetEncoder(nn.Module):
