@@ -29,7 +29,7 @@ save_replay_buffers: false
 replay_buffer_size: 1000000
 replay_buffer_num_workers: 4
 nstep: 3
-batch_size: 128
+batch_size: 256
 # misc
 seed: 1
 device: cuda
@@ -68,7 +68,7 @@ unbiased_mi_decay: 0.99
 
 # other
 check_every_steps: 5000
-depth_flag: false # Enables learning from perfect depth
+depth_flag: True # Enables learning from perfect depth
 segm_flag: false # Enables learning from perfect segmentation
 apply_aug: 'everywhere' # adds additional augmentations to BYOL and CL agents
 add_aug_anchor_and_positive: false # adds augmentations to both anchors and positives
