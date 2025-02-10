@@ -107,9 +107,7 @@ class Wrapper(dm_env.Environment):
       observation[STATE_KEY] = time_step.observation
 
     breakpoint()
-    pixels = []
-    for render_kwarg in self._render_kwargs:
-        pixels.append(self._env.physics.render(**render_kwarg))
+    pixels = self._env.physics.render(**self._render_kwargs)
 
     observation[self._observation_key] = pixels
     return time_step._replace(observation=observation)

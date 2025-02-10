@@ -352,7 +352,7 @@ class Workspace:
             payload = torch.load(f)
         self.expert = payload['agent']
 
-@hydra.main(config_path='config_folder/POMDP', config_name='config_lail_MI')
+@hydra.main(config_path='config_folder/POMDP', config_name='debug_config_lail_MI')
 def main(cfg):
     from train_LAIL_MI import Workspace as W
     root_dir = Path.cwd()
