@@ -17,10 +17,11 @@ from torchvision.utils import save_image
 from utils_folder import utils
 from utils_folder.byol_pytorch import RandomApply, default
 from utils_folder.utils_dreamer import Bernoulli
+from point_cloud_generator import PointCloudGenerator
 
 
 class PointNetEncoder(nn.Module):
-    def __init__(self, latent_dim):
+    def __init__(self, latent_dim, physics):
         super().__init__()
 
         self.h = nn.Sequential(
@@ -47,10 +48,18 @@ class PointNetEncoder(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, x):
-        print(x)
-        print(x.size())
-        exit()
+        self.point_cloud_generator = PointCloudGenerator(physics)
+
+    def forward(self, depth_image):
+        breakpoint()
+
+        point_cloud = self.point_cloud_generator.depthImageToPointCloud(depth_image, 0)
+
+        point_cloud = np.asarray(point_cloud.points)
+
+        point_cloud = torch.tensor(point_cloud, dtype=torch.float32, device="cuda")
+
+        x = point_cloud
 
         """I don't think I need to transform because it is the same"""
 
@@ -68,6 +77,9 @@ class PointNetEncoder(nn.Module):
         x = torch.max(x, dim=2)  # x -> [b, 128]
 
         x = self.mlp3(x)
+
+        print(x.size())
+        exit()
 
         return x
 
@@ -544,6 +556,7 @@ class LailClAgent:
         check_every_steps,
         log_std_bounds,
         GAN_loss="bce",
+        physics,
         stochastic_encoder=False,
         train_encoder_w_critic=True,
         CL_data_type="all",
@@ -586,7 +599,7 @@ class LailClAgent:
         """
 
         self.encoder = PointNetEncoder(
-            feature_dim
+            feature_dim, physics
         ).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
