@@ -355,7 +355,6 @@ class Workspace:
 
 @hydra.main(config_path='config_folder/POMDP', config_name='debug_config_lail_MI')
 def main(cfg):
-    breakpoint()
     from train_LAIL_MI import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)

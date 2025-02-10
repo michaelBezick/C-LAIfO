@@ -51,7 +51,6 @@ class PointNetEncoder(nn.Module):
         self.point_cloud_generator = PointCloudGenerator(physics)
 
     def forward(self, depth_image):
-        breakpoint()
 
         point_cloud = self.point_cloud_generator.depthImageToPointCloud(depth_image, 0)
 

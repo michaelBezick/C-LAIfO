@@ -145,7 +145,6 @@ class FrameStackWrapper(dm_env.Environment):
     def _extract_pixels(self, time_step):
         obs_list = time_step.observation[self._pixels_key]
 
-        breakpoint()
 
         for i, obs in enumerate(obs_list):
 
