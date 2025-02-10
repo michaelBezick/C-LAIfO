@@ -363,13 +363,13 @@ def main(cfg):
     snapshot = parent_dir / f'expert_policies/snapshot_{cfg.task_name_expert}_frame_skip_{cfg.frame_skip}.pt'
     assert snapshot.exists()
     print(f'loading expert target: {snapshot}')
-    #workspace.load_expert(snapshot)
-    #workspace.store_expert_transitions()
-    #workspace.store_random_expert_transitions()
+    workspace.load_expert(snapshot)
+    workspace.store_expert_transitions()
+    workspace.store_random_expert_transitions()
 
-    #if cfg.save_replay_buffers:
-    #    workspace.save_expert_buffer()
-    #    workspace.save_expert_buffer_random()
+    if cfg.save_replay_buffers:
+        workspace.save_expert_buffer()
+        workspace.save_expert_buffer_random()
 
     workspace.train()
 
