@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import torch
 import math
 
 
@@ -173,9 +174,10 @@ class PointCloudGenerator(object):
             )
             self.cam_mats.append(cam_mat)
 
-    def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6):
+    def depthImageToPointCloud(self, depth_img: torch.Tensor, cam_id, max_depth = 6):
 
-        breakpoint()
+        depth_img = depth_img.numpy()
+
         od_cammat = cammat2o3d(
             self.cam_mats[cam_id], self.img_width, self.img_height
         )
