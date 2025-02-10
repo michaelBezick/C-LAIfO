@@ -111,6 +111,8 @@ class Wrapper(dm_env.Environment):
       observation = collections.OrderedDict()
       observation[STATE_KEY] = time_step.observation
 
+    #actually let's just append the pixels channel-wise
+
     pixels = []
     for render_kwarg in self._render_kwargs:
         pixels.append(self._env.physics.render(**render_kwarg))

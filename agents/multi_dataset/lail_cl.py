@@ -48,9 +48,10 @@ class PointNetEncoder(nn.Module):
         )
 
     def forward(self, x):
-
         print(x)
+        print(x.size())
         exit()
+
         """I don't think I need to transform because it is the same"""
 
         """Input size: [b, n, 3]"""
