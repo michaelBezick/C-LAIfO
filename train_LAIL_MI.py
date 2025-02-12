@@ -167,8 +167,6 @@ class Workspace:
         
         while eval_until_episode(episode):
             obs, time_step = self.expert_env.reset()
-            print(time_step.observation)
-            exit()
             self.expert.reset()
             self.video_recorder.init(self.expert_env, enabled=(episode == 0))
             
@@ -182,7 +180,10 @@ class Workspace:
                     action = self.expert.act(obs, self.global_step, eval_mode=True)
                 obs, reward, done, _, time_step = self.expert_env.step(action)    
                 
+                breakpoint()
                 extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
+                print(extended_time_step.observation.shape)
+                exit()
                 self.replay_buffer_expert.add(extended_time_step)
                 self.video_recorder.record(self.expert_env)
                 
