@@ -554,6 +554,7 @@ class LailClAgent:
         grayscale=False,
         depth_flag=False,
         segm_flag=False,
+        physics=None,
     ):
 
         self.device = device
@@ -572,6 +573,7 @@ class LailClAgent:
         self.apply_aug = apply_aug
         self.grayscale = grayscale
         self.grayscale_aug = Grayscale()
+        self.point_cloud_generator = PointCloudGenerator(physics)
 
         # data augmentation
         self.select_aug_type(aug_type, apply_aug, obs_shape)
@@ -754,6 +756,8 @@ class LailClAgent:
 
     def act(self, obs, step, eval_mode):
         breakpoint()
+        obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
+        """I BELIEVE IF EVAL MODE = TRUE THEN IT SHOULD ALWAYS BE DEPTH"""
         obs = torch.as_tensor(obs, device=self.device)
 
         if self.grayscale:
