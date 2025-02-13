@@ -53,9 +53,14 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
 
         if point_cloud == False:
             # need to convert depth image to point cloud
-            assert np.shape(latest_obs)[0] == 1
+            print(np.shape(latest_obs)[0])
+            if len(np.shape(latest_obs)) == 3:
+                if np.shape(latest_obs)[0] == 1:
+                    latest_obs = np.squeeze(latest_obs)
+                else:
+                    print(np.shape(latest_obs))
+                    exit()
             latest_obs = np.float32(latest_obs)
-            latest_obs = np.squeeze(latest_obs)
             latest_obs = self.point_cloud_generator.depthImageToPointCloud(latest_obs, cam_id=0)
             
 

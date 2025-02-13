@@ -309,7 +309,7 @@ class Workspace:
 
                 # reset env
                 time_step = self.train_env.reset()
-                self.replay_buffer.add(time_step)
+                self.replay_buffer.add(time_step, point_cloud=False)
 
                 if random_until_step(self.global_step):
                     self.replay_buffer_random.add(time_step)
@@ -351,7 +351,7 @@ class Workspace:
             breakpoint()
             time_step = self.train_env.step(action)
             episode_reward += time_step.reward
-            self.replay_buffer.add(time_step)
+            self.replay_buffer.add(time_step, point_cloud=False)
 
             if random_until_step(self.global_step):
                 self.replay_buffer_random.add(time_step)
