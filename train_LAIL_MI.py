@@ -138,8 +138,8 @@ class Workspace:
                       specs.Array((1,), np.float32, 'discount'),
                       )
 
-        self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs)
-        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert) #don't need
+        self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs, physics=self.train_physics)
+        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics) #don't need
 
         #create source envs and agent
         self.expert_env = make_env_expert(self.cfg, self.train_env.physics)
@@ -150,8 +150,8 @@ class Workspace:
                                         float(self.expert_env.action_space.high.max())]
         
         self.expert = hydra.utils.instantiate(self.cfg.expert)
-        self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert)
-        self.replay_buffer_random_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert)#don't need
+        self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics)
+        self.replay_buffer_random_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics)#don't need
 
         self.video_recorder = VideoRecorder(self.work_dir if self.cfg.save_video else None)
         self.train_video_recorder = TrainVideoRecorder(self.work_dir if self.cfg.save_train_video else None)
@@ -280,7 +280,7 @@ class Workspace:
         breakpoint()
         time_step = self.train_env.reset()
 
-        self.replay_buffer.add(time_step)
+        self.replay_buffer.add(time_step, point_cloud=False)
         self.replay_buffer_random.add(time_step)
 
         self.train_video_recorder.init(time_step.observation)

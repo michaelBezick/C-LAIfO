@@ -1,8 +1,9 @@
 import numpy as np
 from buffers.replay_buffer import AbstractReplayBuffer
+from point_cloud_generator import PointCloudGenerator
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
-    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack,
+    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, physics,
                  data_specs=None):
         self.buffer_size = buffer_size
         self.data_dict = {}
@@ -14,6 +15,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.nstep = nstep
         self.discount = discount
         self.full = False
+        self.point_cloud_generator = PointCloudGenerator(physics)
         # fixed since we can only sample transitions that occur nstep earlier
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype('float32')
@@ -41,14 +43,18 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # an episode or last recorded observation)
         self.valid = np.zeros([self.buffer_size], dtype=np.bool_)
 
-    def add_data_point(self, time_step):
+    def add_data_point(self, time_step, point_cloud):
         """
         Expecting each time step to have depth information
         """
 
         first = time_step.first()
-        latest_obs = time_step.observation[-self.ims_channels:] # this is a point cloud in numpy array form
+        latest_obs = time_step.observation[-self.ims_channels:]
 
+        if point_cloud == False:
+            # need to convert depth image to point cloud
+            latest_obs = self.point_cloud_generator.depthImageToPointCloud(latest_obs, cam_id=0)
+            
 
 
         if first:
@@ -86,10 +92,10 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
                 self.index = 0
                 self.full = True
 
-    def add(self, time_step):
+    def add(self, time_step, point_cloud=True):
         if self.index == -1:
             self._initial_setup(time_step)
-        self.add_data_point(time_step)
+        self.add_data_point(time_step, point_cloud)
 
     def __next__(self, ):
         # sample only valid indices
