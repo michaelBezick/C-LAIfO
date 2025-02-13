@@ -92,6 +92,7 @@ CL_data_type: all # agent, expert, all, random-only
 num_aug_envs: 10
 aug: true
 
+
 hydra:
   run:
     dir: ./experiments/exp_${task_name_agent}_${task_name_expert}_difficulty=${difficulty_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_apply_aug=${apply_aug}_aug_type=${aug_type}_CL_data_type=${CL_data_type}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}

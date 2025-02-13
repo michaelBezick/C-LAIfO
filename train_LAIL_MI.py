@@ -7,6 +7,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 import os
 os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 os.environ['MUJOCO_GL'] = 'egl'
+os.environ['HYDRA_FULL_ERROR'] = '1'
 
 from pathlib import Path
 
@@ -128,27 +129,30 @@ class Workspace:
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
                                             self.cfg.depth_flag, self.cfg.segm_flag)
 
-        # create replay buffer
         breakpoint()
+        self.train_physics = self.train_env.physics
+        self.eval_physics = self.eval_env.physics
+        # create replay buffer
         data_specs = (self.train_env.observation_spec(),
                       self.train_env.action_spec(),
                       specs.Array((1,), np.float32, 'reward'),
                       specs.Array((1,), np.float32, 'discount'),
-                      self.train_env.physics)
+                      )
 
-        self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs)
-        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_env.physics)
+        self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs, physics=self.train_physics)
+        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_env.physics) #don't need
 
         #create source envs and agent
         self.expert_env = make_env_expert(self.cfg)
+        self.expert_physics = self.expert_env.physics
         self.cfg.expert.obs_dim = self.expert_env.observation_space.shape[0]
         self.cfg.expert.action_dim = self.expert_env.action_space.shape[0]
         self.cfg.expert.action_range = [float(self.expert_env.action_space.low.min()),
                                         float(self.expert_env.action_space.high.max())]
         
         self.expert = hydra.utils.instantiate(self.cfg.expert)
-        self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert)
-        self.replay_buffer_random_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert)
+        self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.expert_physics)
+        self.replay_buffer_random_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert)#don't need
 
         self.video_recorder = VideoRecorder(self.work_dir if self.cfg.save_video else None)
         self.train_video_recorder = TrainVideoRecorder(self.work_dir if self.cfg.save_train_video else None)
