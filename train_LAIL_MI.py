@@ -68,7 +68,7 @@ def make_agent(obs_spec, action_spec, env, cfg):
     cfg.action_shape = action_spec.shape
     return hydra.utils.instantiate(cfg, physics=env.physics)
 
-def make_env_expert(cfg):
+def make_env_expert(cfg, expert_physics):
     breakpoint()
     """Helper function to create dm_control environment"""
     domain, task = cfg.task_name_expert.split('_', 1)
@@ -88,6 +88,7 @@ def make_env_expert(cfg):
                                                  vary = cfg.vary,
                                                  depth_flag = cfg.depth_flag,
                                                  segm_flag = cfg.segm_flag,
+                                                 physics=expert_physics
                                                 )
     env.seed(cfg.seed)
     assert env.action_space.low.min() >= -1
@@ -129,6 +130,7 @@ class Workspace:
                                             self.cfg.depth_flag, self.cfg.segm_flag)
 
         breakpoint()
+        """ACTUALLY PHYSICS ARE THE SAME, WHAT CHANGES IS CAMERA ID"""
         self.train_physics = self.train_env.physics
         self.eval_physics = self.eval_env.physics
         # create replay buffer
@@ -142,7 +144,7 @@ class Workspace:
         self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_env.physics) #don't need
 
         #create source envs and agent
-        self.expert_env = make_env_expert(self.cfg)
+        self.expert_env = make_env_expert(self.cfg, self.train_env.physics)
         self.expert_physics = self.expert_env.physics
         self.cfg.expert.obs_dim = self.expert_env.observation_space.shape[0]
         self.cfg.expert.action_dim = self.expert_env.action_space.shape[0]
