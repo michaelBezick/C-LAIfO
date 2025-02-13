@@ -1,10 +1,8 @@
 import numpy as np
 from buffers.replay_buffer import AbstractReplayBuffer
-# from buffers.point_cloud_generator import PointCloudGenerator
-from point_cloud_generator import PointCloudGenerator
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
-    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, physics,
+    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack,
                  data_specs=None):
         self.buffer_size = buffer_size
         self.data_dict = {}
@@ -20,13 +18,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype('float32')
         self.next_dis = discount**nstep
-        self.physics = physics
-        self.point_cloud_generator = PointCloudGenerator(physics)
 
-        """
-        IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
-        Actions are fixed size, so can stay
-        """
 
     def _initial_setup(self, time_step):
         self.index = 0
@@ -34,10 +26,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.ims_channels = self.obs_shape[0] // self.frame_stack
         self.act_shape = time_step.action.shape
 
-        # self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
-        """THIS IS GOING TO STORE NUMPY ARRAYS FOR POINT CLOUDS"""
-        self.obs = [None] * self.buffer_size
-
+        self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
         self.act = np.zeros([self.buffer_size, *self.act_shape], dtype=np.float32)
         self.rew = np.zeros([self.buffer_size], dtype=np.float32)
         self.dis = np.zeros([self.buffer_size], dtype=np.float32)
@@ -46,17 +35,8 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.valid = np.zeros([self.buffer_size], dtype=np.bool_)
 
     def add_data_point(self, time_step):
-        """
-        Expecting each time step to have depth information
-        """
-
         first = time_step.first()
         latest_obs = time_step.observation[-self.ims_channels:]
-
-        #convert to point cloud
-        point_cloud = self.point_cloud_generator.depthImageToPointCloud(latest_obs, cam_id=0)
-
-
         if first:
             # if first observation in a trajectory, record frame_stack copies of it
             end_index = self.index + self.frame_stack

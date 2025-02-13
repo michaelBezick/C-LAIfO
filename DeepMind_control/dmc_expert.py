@@ -7,6 +7,7 @@ import numpy as np
 
 from dmc_remastered import ALL_ENVS
 from dmc_remastered import DMCR_VARY
+from point_cloud_generator import PointCloudGenerator
 
 def _spec_to_box(spec, dtype):
     def extract_min_max(s):
@@ -73,13 +74,15 @@ class DMC_Remastered_Wrapper(core.Env):
                  max_episode_steps = 1000,
                  vary=DMCR_VARY,
                  depth_flag=False,
-                 segm_flag=False):
+                 segm_flag=False,
+                 physics=None):
         
         self._task_builder = task_builder
         self._env_seed = env_seed
         self._visual_seed = visual_seed
         self._max_episode_steps = max_episode_steps
         self._delta = delta
+        self.point_cloud_generator = PointCloudGenerator(physics)
         
         self._height = height
         self._width = width
@@ -136,10 +139,14 @@ class DMC_Remastered_Wrapper(core.Env):
         return action
     
     def _extract_pixels(self):
-
+        
         obs = self.render(height=self._height, width=self._width, camera_id=self._camera_id)
 
+        """I have confirmed obs is a depth measurement"""
+
         if self._depth_flag:
+            point_cloud = self.point_cloud_generator.depthImageToPointCloud(obs, self._camera_id) #now returns numpy array
+            return point_cloud
             # Shift nearest values to the origin.
             obs -= obs.min()
             # Scale by 2 mean distances of near rays.
@@ -229,7 +236,11 @@ class DMC_Remastered_Wrapper(core.Env):
         return self._env.physics.render(height=height, width=width, camera_id=camera_id, depth=self._depth_flag, segmentation=self._segm_flag)
     
     def step_learn_from_pixels(self, time_step, action=None):
-        pixels = self._extract_pixels()
+        """
+        THOUGHTS:
+        Because the self._frames can hold variable types, can just do point cloud here
+        """
+        pixels = self._extract_pixels() #THIS IS A POINT CLOUD NOW
         self._frames.append(pixels)
         assert len(self._frames) == self._num_frames
         obs = np.concatenate(list(self._frames), axis=0)
@@ -258,7 +269,8 @@ def make_remastered_states_only(domain_name,
                                 max_episode_steps = 1000,
                                 vary=DMCR_VARY,
                                 depth_flag = False,
-                                segm_flag = False
+                                segm_flag = False,
+                                physics=None
                                 ):
 
     if domain_name == 'quadruped':
@@ -278,7 +290,8 @@ def make_remastered_states_only(domain_name,
                                  max_episode_steps=max_episode_steps,
                                  vary = vary,
                                  depth_flag=depth_flag,
-                                 segm_flag=segm_flag)
+                                 segm_flag=segm_flag,
+                                 physics=physics)
 
     return env
 

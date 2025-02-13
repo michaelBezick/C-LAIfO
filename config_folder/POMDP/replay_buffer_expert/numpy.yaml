@@ -5,3 +5,4 @@ replay_buffer_expert:
   nstep: ${nstep}
   discount: ${discount}
   frame_stack: ${frame_stack}
+  physics: ???
