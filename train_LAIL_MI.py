@@ -277,7 +277,6 @@ class Workspace:
                                       self.cfg.action_repeat)
 
         episode_step, episode_reward = 0, 0
-        breakpoint()
         time_step = self.train_env.reset()
 
         self.replay_buffer.add(time_step)
@@ -285,6 +284,9 @@ class Workspace:
 
         self.train_video_recorder.init(time_step.observation)
         metrics = None
+        """
+        ISSUE, self.env.step_learn_from_pixels(time_step, action) is where expert piont cloud is made
+        """
         while train_until_step(self.global_step):
             if time_step.last():
                 self._global_episode += 1
@@ -345,6 +347,7 @@ class Workspace:
                 self.logger.log_metrics(metrics, self.global_frame, ty='train')
 
             # take env step
+            breakpoint()
             time_step = self.train_env.step(action)
             episode_reward += time_step.reward
             self.replay_buffer.add(time_step)
