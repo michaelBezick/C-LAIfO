@@ -19,10 +19,6 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.discount_vec = np.power(discount, np.arange(nstep)).astype('float32')
         self.next_dis = discount**nstep
 
-        """
-        IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
-        Actions are fixed size, so can stay
-        """
 
     def _initial_setup(self, time_step):
         self.index = 0
@@ -30,10 +26,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.ims_channels = self.obs_shape[0] // self.frame_stack
         self.act_shape = time_step.action.shape
 
-        # self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
-        """THIS IS GOING TO STORE NUMPY ARRAYS FOR POINT CLOUDS"""
-        self.obs = [None] * self.buffer_size
-
+        self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
         self.act = np.zeros([self.buffer_size, *self.act_shape], dtype=np.float32)
         self.rew = np.zeros([self.buffer_size], dtype=np.float32)
         self.dis = np.zeros([self.buffer_size], dtype=np.float32)
@@ -42,17 +35,8 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.valid = np.zeros([self.buffer_size], dtype=np.bool_)
 
     def add_data_point(self, time_step):
-        """
-        NOW we are expecting that time_step has point clouds
-        """
-
-
         first = time_step.first()
         latest_obs = time_step.observation[-self.ims_channels:]
-
-        #convert to point cloud
-
-
         if first:
             # if first observation in a trajectory, record frame_stack copies of it
             end_index = self.index + self.frame_stack
