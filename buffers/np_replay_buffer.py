@@ -1,8 +1,10 @@
 import numpy as np
 from buffers.replay_buffer import AbstractReplayBuffer
+# from buffers.point_cloud_generator import PointCloudGenerator
+from point_cloud_generator import PointCloudGenerator
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
-    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack,
+    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, physics,
                  data_specs=None):
         self.buffer_size = buffer_size
         self.data_dict = {}
@@ -18,6 +20,8 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype('float32')
         self.next_dis = discount**nstep
+        self.physics = physics
+        self.point_cloud_generator = PointCloudGenerator(physics)
 
         """
         IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
@@ -43,14 +47,14 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
 
     def add_data_point(self, time_step):
         """
-        NOW we are expecting that time_step has point clouds
+        Expecting each time step to have depth information
         """
-
 
         first = time_step.first()
         latest_obs = time_step.observation[-self.ims_channels:]
 
         #convert to point cloud
+        point_cloud = self.point_cloud_generator.depthImageToPointCloud(latest_obs, cam_id=0)
 
 
         if first:

@@ -174,7 +174,7 @@ class PointCloudGenerator(object):
             )
             self.cam_mats.append(cam_mat)
 
-    def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6):
+    def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6) -> np.ndarray:
 
         od_cammat = cammat2o3d(
             self.cam_mats[cam_id], self.img_width, self.img_height
@@ -211,7 +211,9 @@ class PointCloudGenerator(object):
         else:
             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
 
-        return transformed_cloud
+        points = np.asarray(transformed_cloud.points)
+
+        return points
 
     def generateCroppedPointCloud(self, save_img_dir=None, fast=True):
         o3d_clouds = []
