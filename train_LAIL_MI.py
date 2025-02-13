@@ -68,6 +68,7 @@ def make_agent(obs_spec, action_spec, env, cfg):
     return hydra.utils.instantiate(cfg, physics=env.physics)
 
 def make_env_expert(cfg):
+    breakpoint()
     """Helper function to create dm_control environment"""
     domain, task = cfg.task_name_expert.split('_', 1)
     # overwrite cup to ball_in_cup
@@ -102,6 +103,7 @@ class Workspace:
         utils.set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
         self.setup()
+        breakpoint()
 
         self.agent = make_agent(self.train_env.observation_spec(),
                                 self.train_env.action_spec(),
@@ -127,13 +129,15 @@ class Workspace:
                                             self.cfg.depth_flag, self.cfg.segm_flag)
 
         # create replay buffer
+        breakpoint()
         data_specs = (self.train_env.observation_spec(),
                       self.train_env.action_spec(),
                       specs.Array((1,), np.float32, 'reward'),
-                      specs.Array((1,), np.float32, 'discount'))
+                      specs.Array((1,), np.float32, 'discount'),
+                      self.train_env.physics)
 
         self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs)
-        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert)
+        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_env.physics)
 
         #create source envs and agent
         self.expert_env = make_env_expert(self.cfg)
