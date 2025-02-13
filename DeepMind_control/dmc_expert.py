@@ -136,16 +136,19 @@ class DMC_Remastered_Wrapper(core.Env):
         return action
     
     def _extract_pixels(self):
+        breakpoint()
+        #added depth flag
         obs = self.render(height=self._height, width=self._width, camera_id=self._camera_id)
 
         if self._depth_flag:
+            pass
             # Shift nearest values to the origin.
-            obs -= obs.min()
+            #obs -= obs.min()
             # Scale by 2 mean distances of near rays.
-            obs /= 2*obs[obs <= 1].mean()
+            #obs /= 2*obs[obs <= 1].mean()
             # Scale to [0, 255]
-            obs = 255*np.clip(obs, 0, 1).astype(np.uint8)
-            obs = obs.reshape((1,)+obs.shape).copy()
+            #obs = 255*np.clip(obs, 0, 1).astype(np.uint8)
+            #obs = obs.reshape((1,)+obs.shape).copy()
 
         elif self._segm_flag:
             obs = obs[:, :, 0]
@@ -160,6 +163,7 @@ class DMC_Remastered_Wrapper(core.Env):
         else:
             obs = obs.transpose(2, 0, 1).copy()
         return obs
+
 
     @property
     def observation_space(self):
@@ -240,6 +244,7 @@ class DMC_Remastered_Wrapper(core.Env):
                                 action=action,
                                 reward=new_time_step.reward or 0.0,
                                 discount=new_time_step.discount or 1.0)
+
 
 
 def make_remastered_states_only(domain_name,
