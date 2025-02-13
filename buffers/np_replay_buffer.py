@@ -1,7 +1,5 @@
 import numpy as np
 from buffers.replay_buffer import AbstractReplayBuffer
-# from buffers.point_cloud_generator import PointCloudGenerator
-from point_cloud_generator import PointCloudGenerator
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
     def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack,
@@ -49,10 +47,8 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         """
 
         first = time_step.first()
-        latest_obs = time_step.observation[-self.ims_channels:]
+        latest_obs = time_step.observation[-self.ims_channels:] # this is a point cloud in numpy array form
 
-        #convert to point cloud
-        point_cloud = self.point_cloud_generator.depthImageToPointCloud(latest_obs, cam_id=0)
 
 
         if first:
