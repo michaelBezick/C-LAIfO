@@ -253,6 +253,7 @@ class ExtendedTimeStepWrapper(dm_env.Environment):
         return getattr(self._env, name)
 
 def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84):
+    breakpoint()
     domain, task = name.split('_', 1)
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
@@ -279,10 +280,13 @@ def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84
         else:
             camera_id = 0
         
-        render_kwargs = dict(height=image_height, width=image_width, camera_id=camera_id)
-        env = pixels.Wrapper(env,
-                             pixels_only=True,
-                             render_kwargs=render_kwargs)
+        #render_kwargs = dict(height=image_height, width=image_width, camera_id=camera_id)
+        render_kwargs = dict(height=image_height, width=image_width, depth=True, camera_id=camera_id)
+
+        env = pixels.Wrapper(env, pixels_only=False,render_kwargs=render_kwargs)
+        #env = pixels.Wrapper(env,
+        #                     pixels_only=True,
+        #                     render_kwargs=render_kwargs)
     # stack several frames
     env = FrameStackWrapper(env, frame_stack, pixels_key)
     env = ExtendedTimeStepWrapper(env)

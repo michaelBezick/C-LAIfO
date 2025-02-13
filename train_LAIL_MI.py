@@ -277,6 +277,7 @@ class Workspace:
                                       self.cfg.action_repeat)
 
         episode_step, episode_reward = 0, 0
+        breakpoint()
         time_step = self.train_env.reset()
 
         self.replay_buffer.add(time_step)
