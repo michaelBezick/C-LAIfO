@@ -88,7 +88,6 @@ def make_env_expert(cfg):
                                                  vary = cfg.vary,
                                                  depth_flag = cfg.depth_flag,
                                                  segm_flag = cfg.segm_flag,
-                                                 physics=cfg.physics,
                                                 )
     env.seed(cfg.seed)
     assert env.action_space.low.min() >= -1
