@@ -49,6 +49,7 @@ class PointNetEncoder(nn.Module):
         )
 
     def forward(self, point_cloud: torch.Tensor):
+        breakpoint()
 
         x = point_cloud
 
@@ -542,7 +543,6 @@ class LailClAgent:
         spectral_norm_bool,
         check_every_steps,
         log_std_bounds,
-        physics,
         GAN_loss="bce",
         stochastic_encoder=False,
         train_encoder_w_critic=True,
@@ -586,7 +586,7 @@ class LailClAgent:
         """
 
         self.encoder = PointNetEncoder(
-            feature_dim, physics
+            feature_dim
         ).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
