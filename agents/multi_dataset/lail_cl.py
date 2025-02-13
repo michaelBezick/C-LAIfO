@@ -48,6 +48,8 @@ class PointNetEncoder(nn.Module):
             nn.Tanh()
         )
 
+        breakpoint()
+
         self.point_cloud_generator = PointCloudGenerator(physics)
 
     def forward(self, depth_image: torch.Tensor):

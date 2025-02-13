@@ -180,10 +180,10 @@ class Workspace:
                     action = self.expert.act(obs, self.global_step, eval_mode=True)
                 obs, reward, done, _, time_step = self.expert_env.step(action)    
                 
-                breakpoint()
                 extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
                 print(extended_time_step.observation.shape)
                 self.replay_buffer_expert.add(extended_time_step)
+                breakpoint()
                 self.video_recorder.record(self.expert_env)
                 
                 total_reward += extended_time_step.reward
@@ -192,7 +192,6 @@ class Workspace:
             episode += 1
             print(episode)
             self.video_recorder.save('expert.mp4')
-            exit()
 
         print(f'Average expert reward: {total_reward / episode}, Total number of samples: {step}')
 
