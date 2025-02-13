@@ -175,7 +175,6 @@ class PointCloudGenerator(object):
             self.cam_mats.append(cam_mat)
 
     def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6) -> np.ndarray:
-        breakpoint()
 
         od_cammat = cammat2o3d(
             self.cam_mats[cam_id], self.img_width, self.img_height

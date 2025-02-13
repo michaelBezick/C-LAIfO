@@ -47,7 +47,6 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         """
         Expecting each time step to have depth information
         """
-        breakpoint()
 
         first = time_step.first()
         latest_obs = time_step.observation[-self.ims_channels:]
