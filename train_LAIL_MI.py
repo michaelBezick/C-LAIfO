@@ -131,6 +131,7 @@ class Workspace:
 
         breakpoint()
         """ACTUALLY PHYSICS ARE THE SAME, WHAT CHANGES IS CAMERA ID"""
+        """ONLY THE ENVIRONMENTS NEED POINT CLOUD GENERATOR NOT REPLAY BUFFER"""
         self.train_physics = self.train_env.physics
         self.eval_physics = self.eval_env.physics
         # create replay buffer
@@ -140,8 +141,8 @@ class Workspace:
                       specs.Array((1,), np.float32, 'discount'),
                       )
 
-        self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs, physics=self.train_physics)
-        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_env.physics) #don't need
+        self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs)
+        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert) #don't need
 
         #create source envs and agent
         self.expert_env = make_env_expert(self.cfg, self.train_env.physics)
@@ -152,7 +153,7 @@ class Workspace:
                                         float(self.expert_env.action_space.high.max())]
         
         self.expert = hydra.utils.instantiate(self.cfg.expert)
-        self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.expert_physics)
+        self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert)
         self.replay_buffer_random_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert)#don't need
 
         self.video_recorder = VideoRecorder(self.work_dir if self.cfg.save_video else None)

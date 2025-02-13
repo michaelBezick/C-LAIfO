@@ -4,7 +4,7 @@ from buffers.replay_buffer import AbstractReplayBuffer
 from point_cloud_generator import PointCloudGenerator
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
-    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, physics,
+    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack,
                  data_specs=None):
         self.buffer_size = buffer_size
         self.data_dict = {}
@@ -20,8 +20,6 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype('float32')
         self.next_dis = discount**nstep
-        self.physics = physics
-        self.point_cloud_generator = PointCloudGenerator(physics)
 
         """
         IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
