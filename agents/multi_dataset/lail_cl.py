@@ -49,7 +49,6 @@ class PointNetEncoder(nn.Module):
         )
 
     def forward(self, point_cloud: torch.Tensor):
-        breakpoint()
 
         x = point_cloud
 
@@ -65,6 +64,9 @@ class PointNetEncoder(nn.Module):
         x = torch.max(x, dim=2, keepdim=True).values  # x -> [b, 128]
 
         x = self.mlp3(x)
+
+        if x.dim() == 3 and x.shape[2] == 1:
+            x = x.squeeze(2)
 
         return x
 
@@ -758,7 +760,7 @@ class LailClAgent:
         breakpoint()
         obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
         """I BELIEVE IF EVAL MODE = TRUE THEN IT SHOULD ALWAYS BE DEPTH"""
-        obs = torch.as_tensor(obs, device=self.device)
+        obs = torch.as_tensor(obs, device=self.device).float()
 
         if self.grayscale:
             obs = self.grayscale_aug(obs.unsqueeze(0))

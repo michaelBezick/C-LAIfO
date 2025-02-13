@@ -278,7 +278,6 @@ class Workspace:
                                       self.cfg.action_repeat)
 
         episode_step, episode_reward = 0, 0
-        breakpoint()
         time_step = self.train_env.reset()
 
         self.replay_buffer.add(time_step, point_cloud=False)
@@ -349,7 +348,6 @@ class Workspace:
                 self.logger.log_metrics(metrics, self.global_frame, ty='train')
 
             # take env step
-            breakpoint()
             time_step = self.train_env.step(action)
             episode_reward += time_step.reward
             self.replay_buffer.add(time_step, point_cloud=False)
