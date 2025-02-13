@@ -66,7 +66,7 @@ torch.backends.cudnn.benchmark = True
 def make_agent(obs_spec, action_spec, env, cfg):
     cfg.obs_shape = obs_spec.shape
     cfg.action_shape = action_spec.shape
-    return hydra.utils.instantiate(cfg, physics=env.physics)
+    return hydra.utils.instantiate(cfg)
 
 def make_env_expert(cfg, expert_physics):
     """Helper function to create dm_control environment"""
@@ -174,7 +174,6 @@ class Workspace:
         #eval_until_episode = utils.Until(1)
         
         while eval_until_episode(episode):
-            breakpoint()
             obs, time_step = self.expert_env.reset()
             self.expert.reset()
             self.video_recorder.init(self.expert_env, enabled=(episode == 0))
