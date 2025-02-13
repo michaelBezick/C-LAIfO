@@ -20,9 +20,8 @@ from utils_folder.utils_dreamer import Bernoulli
 # from agents.multi_dataset.point_cloud_generator import PointCloudGenerator
 from point_cloud_generator import PointCloudGenerator
 
-
 class PointNetEncoder(nn.Module):
-    def __init__(self, latent_dim, physics):
+    def __init__(self, latent_dim):
         super().__init__()
 
         self.h = nn.Sequential(
@@ -49,45 +48,27 @@ class PointNetEncoder(nn.Module):
             nn.Tanh()
         )
 
-        breakpoint()
-
-        self.point_cloud_generator = PointCloudGenerator(physics)
-
-    def forward(self, depth_image: torch.Tensor):
-        breakpoint()
-
-        depth_image = depth_image.cpu().numpy()
-        print(depth_image.flags["C_CONTIGUOUS"])
-
-        point_cloud = self.point_cloud_generator.depthImageToPointCloud(depth_image, 0)
-
-        point_cloud = np.asarray(point_cloud.points)
-
-        point_cloud = torch.tensor(point_cloud, dtype=torch.float32, device="cuda")
+    def forward(self, point_cloud: torch.Tensor):
 
         x = point_cloud
 
-        """I don't think I need to transform because it is the same"""
-
         """Input size: [b, n, 3]"""
 
-        # transform here
 
         x = torch.permute(x, (0, 2, 1))  # [b,3,n]
 
         x = self.h(x)  # x -> [b,64,n]
 
-        # transform here
         x = self.mlp2(x)  # x -> [b,128,n]
 
-        x = torch.max(x, dim=2)  # x -> [b, 128]
+        x = torch.max(x, dim=2, keepdim=True).values  # x -> [b, 128]
 
         x = self.mlp3(x)
 
-        print(x.size())
-        exit()
-
         return x
+
+
+
 
 
 
