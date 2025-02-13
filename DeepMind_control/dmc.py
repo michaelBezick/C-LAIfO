@@ -10,6 +10,7 @@ from dm_env import StepType, specs
 
 from dmc_remastered import ALL_ENVS
 from dmc_remastered import DMCR_VARY
+from point_cloud_generator import PointCloudGenerator
 
 class DMC_Remastered_Env(dm_env.Environment):
     def __init__(self, 
