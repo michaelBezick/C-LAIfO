@@ -72,7 +72,8 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
             self.index = end_index
             self.traj_index = 1
         else:
-            np.copyto(self.obs[self.index], latest_obs)
+            #np.copyto(self.obs[self.index], latest_obs)
+            self.obs[self.index] = latest_obs.copy()
             np.copyto(self.act[self.index], time_step.action)
             self.rew[self.index] = time_step.reward
             self.dis[self.index] = time_step.discount

@@ -7,7 +7,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 import os
 os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 os.environ['MUJOCO_GL'] = 'egl'
-os.environ['HYDRA_FULL_ERROR'] = '1'
+#os.environ['HYDRA_FULL_ERROR'] = '1'
 
 from pathlib import Path
 
@@ -69,7 +69,6 @@ def make_agent(obs_spec, action_spec, env, cfg):
     return hydra.utils.instantiate(cfg, physics=env.physics)
 
 def make_env_expert(cfg, expert_physics):
-    breakpoint()
     """Helper function to create dm_control environment"""
     domain, task = cfg.task_name_expert.split('_', 1)
     # overwrite cup to ball_in_cup
@@ -104,7 +103,6 @@ class Workspace:
         utils.set_seed_everywhere(cfg.seed)
         self.device = torch.device(cfg.device)
         self.setup()
-        breakpoint()
 
         self.agent = make_agent(self.train_env.observation_spec(),
                                 self.train_env.action_spec(),
@@ -129,7 +127,6 @@ class Workspace:
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
                                             self.cfg.depth_flag, self.cfg.segm_flag)
 
-        breakpoint()
         """ACTUALLY PHYSICS ARE THE SAME, WHAT CHANGES IS CAMERA ID"""
         """ONLY THE ENVIRONMENTS NEED POINT CLOUD GENERATOR NOT REPLAY BUFFER"""
         self.train_physics = self.train_env.physics
@@ -177,6 +174,7 @@ class Workspace:
         #eval_until_episode = utils.Until(1)
         
         while eval_until_episode(episode):
+            breakpoint()
             obs, time_step = self.expert_env.reset()
             self.expert.reset()
             self.video_recorder.init(self.expert_env, enabled=(episode == 0))
@@ -192,16 +190,13 @@ class Workspace:
                 obs, reward, done, _, time_step = self.expert_env.step(action)    
                 
                 extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
-                print(extended_time_step.observation.shape)
                 self.replay_buffer_expert.add(extended_time_step)
-                breakpoint()
                 self.video_recorder.record(self.expert_env)
                 
                 total_reward += extended_time_step.reward
                 step += 1
 
             episode += 1
-            print(episode)
             self.video_recorder.save('expert.mp4')
 
         print(f'Average expert reward: {total_reward / episode}, Total number of samples: {step}')
