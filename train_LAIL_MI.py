@@ -63,10 +63,10 @@ torch.backends.cudnn.benchmark = True
 #
 #         return transformed_cloud
 
-def make_agent(obs_spec, action_spec, env, cfg):
+def make_agent(obs_spec, action_spec, env, cfg, physics):
     cfg.obs_shape = obs_spec.shape
     cfg.action_shape = action_spec.shape
-    return hydra.utils.instantiate(cfg)
+    return hydra.utils.instantiate(cfg, physics=physics)
 
 def make_env_expert(cfg, expert_physics):
     """Helper function to create dm_control environment"""
@@ -107,7 +107,8 @@ class Workspace:
         self.agent = make_agent(self.train_env.observation_spec(),
                                 self.train_env.action_spec(),
                                 self.train_env,
-                                self.cfg.agent)
+                                self.cfg.agent,
+                                self.train_env.physics)
               
         self.timer = utils.Timer()
         self._global_step = 0
