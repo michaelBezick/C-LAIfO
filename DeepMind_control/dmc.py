@@ -151,6 +151,7 @@ class FrameStackWrapper(dm_env.Environment):
             obs = obs[0]
 
         if self._depth_flag:
+            return obs
             # Shift nearest values to the origin.
             obs -= obs.min()
             # Scale by 2 mean distances of near rays.
