@@ -5,4 +5,3 @@ replay_buffer:
   nstep: ${nstep}
   discount: ${discount}
   frame_stack: ${frame_stack}
-  physics: ???
