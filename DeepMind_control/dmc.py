@@ -293,7 +293,6 @@ def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84
 
 def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, delta, image_height=84, image_width=84, 
                     depth_flag=False, segm_flag=False):
-    breakpoint()
     domain, task = name.split('_', 1)
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
