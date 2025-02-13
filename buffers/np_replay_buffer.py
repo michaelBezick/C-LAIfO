@@ -47,6 +47,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         """
         Expecting each time step to have depth information
         """
+        breakpoint()
 
         first = time_step.first()
         latest_obs = time_step.observation[-self.ims_channels:]
@@ -54,6 +55,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         if point_cloud == False:
             # need to convert depth image to point cloud
             assert np.shape(latest_obs)[0] == 1
+            latest_obs = np.float32(latest_obs)
             latest_obs = np.squeeze(latest_obs)
             latest_obs = self.point_cloud_generator.depthImageToPointCloud(latest_obs, cam_id=0)
             
