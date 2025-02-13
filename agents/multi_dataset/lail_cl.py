@@ -753,6 +753,7 @@ class LailClAgent:
         self.CL.train(training)
 
     def act(self, obs, step, eval_mode):
+        breakpoint()
         obs = torch.as_tensor(obs, device=self.device)
 
         if self.grayscale:
