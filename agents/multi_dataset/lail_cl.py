@@ -757,7 +757,6 @@ class LailClAgent:
         self.CL.train(training)
 
     def act(self, obs, step, eval_mode):
-        breakpoint()
         obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
         """I BELIEVE IF EVAL MODE = TRUE THEN IT SHOULD ALWAYS BE DEPTH"""
         obs = torch.as_tensor(obs, device=self.device).float()

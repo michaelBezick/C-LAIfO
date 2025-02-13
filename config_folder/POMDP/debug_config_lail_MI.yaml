@@ -21,7 +21,7 @@ num_seed_frames: 4000
 num_expl_frames: 10000
 # eval
 eval_every_frames: 10000
-num_eval_episodes: 10
+num_eval_episodes: 1
 # snapshot
 save_snapshot: false
 save_replay_buffers: false
