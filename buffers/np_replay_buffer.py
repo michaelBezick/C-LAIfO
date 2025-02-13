@@ -65,6 +65,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
             
 
 
+        """LATEST OBS IS ALWAYS POINT CLOUD NO MATTER WHAT"""
         if first:
             # if first observation in a trajectory, record frame_stack copies of it
             end_index = self.index + self.frame_stack
@@ -72,16 +73,18 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
             if end_invalid > self.buffer_size:
                 if end_index > self.buffer_size:
                     end_index = end_index % self.buffer_size
-                    self.obs[self.index:self.buffer_size] = latest_obs
-                    self.obs[0:end_index] = latest_obs
+                    # self.obs[self.index:self.buffer_size] = latest_obs
+                    # self.obs[0:end_index] = latest_obs
+                    self.obs[self.index:self.buffer_size] = [latest_obs.copy() for _ in range(self.buffer_size - self.index)] 
+                    self.obs[0:end_index] = [latest_obs.copy() for _ in range(end_index)]
                     self.full = True
                 else:
-                    self.obs[self.index:end_index] = latest_obs
+                    self.obs[self.index:end_index] = [latest_obs.copy() for _ in range(end_index - self.index)]
                 end_invalid = end_invalid % self.buffer_size
                 self.valid[self.index:self.buffer_size] = False
                 self.valid[0:end_invalid] = False
             else:
-                self.obs[self.index:end_index] = latest_obs
+                self.obs[self.index:end_index] = [latest_obs.copy() for _ in range(end_index - self.index)]
                 self.valid[self.index:end_invalid] = False
             self.index = end_index
             self.traj_index = 1
