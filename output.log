@@ -1,43 +1,37 @@
-workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.05/1115_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=512,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk
-Error executing job with overrides: ['task_agent=walker_walk', 'task_expert=walker_walk', 'agent=lail_cl_multiset', 'difficulty=easy', 'delta_source=0.2', 'delta_target=-0.25', 'apply_aug=CL-Q', 'aug_type=brightness', 'CL_data_type=agent', 'batch_size=512', 'depth_flag=True']
+workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.13/1747_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk
+loading expert target: /home/michaelbezick/Repos/C-LAIfO/expert_policies/snapshot_walker_walk_frame_skip_1.pt
+Average expert reward: 982.8438958345919, Total number of samples: 1000
+Average random expert reward: 29.151766779583774, Total number of samples: 1000
+1
+| [32meval[0m  | F: 0 | S: 0 | E: 0 | L: 1000 | R: 30.2626 | T: 0:00:04
+Error executing job with overrides: ['task_agent=walker_walk', 'task_expert=walker_walk', 'agent=lail_cl_multiset', 'difficulty=easy', 'delta_source=0.2', 'delta_target=-0.25', 'apply_aug=CL-Q', 'aug_type=brightness', 'CL_data_type=agent', 'depth_flag=True']
 Traceback (most recent call last):
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/instantiate/_instantiate2.py", line 62, in _call_target
-    return target(*args, **kwargs)
-  File "/home/michaelbezick/Repos/C-LAIfO/agents/multi_dataset/lail_cl.py", line 581, in __init__
-    self.encoder = Encoder(
-  File "/home/michaelbezick/Repos/C-LAIfO/agents/multi_dataset/lail_cl.py", line 268, in __init__
-    self.initial_conv = nn.Conv3d(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 588, in __init__
-    super().__init__(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 134, in __init__
-    self.weight = Parameter(torch.empty(
-RuntimeError: Trying to create tensor with negative dimension -1: [32, -1, 3, 3, 3]
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI_3d.py", line 359, in main
-    workspace = W(cfg)
-  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI_3d.py", line 63, in __init__
-    self.agent = make_agent(self.train_env.observation_spec(),
-  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI_3d.py", line 26, in make_agent
-    return hydra.utils.instantiate(cfg)
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/instantiate/_instantiate2.py", line 180, in instantiate
-    return instantiate_node(config, *args, recursive=_recursive_, convert=_convert_)
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/instantiate/_instantiate2.py", line 249, in instantiate_node
-    return _call_target(target, *args, **kwargs)
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/instantiate/_instantiate2.py", line 64, in _call_target
-    raise type(e)(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/instantiate/_instantiate2.py", line 62, in _call_target
-    return target(*args, **kwargs)
-  File "/home/michaelbezick/Repos/C-LAIfO/agents/multi_dataset/lail_cl.py", line 581, in __init__
-    self.encoder = Encoder(
-  File "/home/michaelbezick/Repos/C-LAIfO/agents/multi_dataset/lail_cl.py", line 268, in __init__
-    self.initial_conv = nn.Conv3d(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 588, in __init__
-    super().__init__(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/torch/nn/modules/conv.py", line 134, in __init__
-    self.weight = Parameter(torch.empty(
-RuntimeError: Error instantiating 'agents.multi_dataset.lail_cl.LailClAgent' : Trying to create tensor with negative dimension -1: [32, -1, 3, 3, 3]
-
-Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
+  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 429, in <module>
+    main()
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/main.py", line 49, in decorated_main
+    _run_hydra(
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 367, in _run_hydra
+    run_and_report(
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 214, in run_and_report
+    raise ex
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 211, in run_and_report
+    return func()
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 368, in <lambda>
+    lambda: hydra.run(
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/hydra.py", line 110, in run
+    _ = ret.return_value
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/core/utils.py", line 233, in return_value
+    raise self._return_value
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/core/utils.py", line 160, in run_job
+    ret.return_value = task_function(task_cfg)
+  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 426, in main
+    workspace.train()
+  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 342, in train
+    metrics = self.agent.update(self.replay_buffer, 
+  File "/home/michaelbezick/Repos/C-LAIfO/agents/multi_dataset/lail_cl.py", line 1062, in update
+    batch = next(replay_iter)
+  File "/home/michaelbezick/Repos/C-LAIfO/buffers/np_replay_buffer.py", line 113, in __next__
+    return self.gather_nstep_indices(indices)
+  File "/home/michaelbezick/Repos/C-LAIfO/buffers/np_replay_buffer.py", line 129, in gather_nstep_indices
+    obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
+TypeError: only integer scalar arrays can be converted to a scalar index

@@ -1,6 +1,7 @@
 import numpy as np
 from buffers.replay_buffer import AbstractReplayBuffer
 from point_cloud_generator import PointCloudGenerator
+import torch
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
     def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, physics,
@@ -53,7 +54,6 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
 
         if point_cloud == False:
             # need to convert depth image to point cloud
-            print(np.shape(latest_obs)[0])
             if len(np.shape(latest_obs)) == 3:
                 if np.shape(latest_obs)[0] == 1:
                     latest_obs = np.squeeze(latest_obs)
@@ -114,6 +114,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         return self.gather_nstep_indices(indices)
 
     def gather_nstep_indices(self, indices):
+        breakpoint()
         n_samples = indices.shape[0]
         all_gather_ranges = np.stack([np.arange(indices[i] - self.frame_stack, indices[i] + self.nstep)
                                   for i in range(n_samples)], axis=0) % self.buffer_size
@@ -127,8 +128,34 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # marginal additional speed improvement
         rew = np.sum(all_rewards * self.discount_vec, axis=1, keepdims=True)
 
-        obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
-        nobs = np.reshape(self.obs[nobs_gather_ranges], [n_samples, *self.obs_shape])
+        #obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
+        #nobs = np.reshape(self.obs[nobs_gather_ranges], [n_samples, *self.obs_shape])
+
+        obs = np.array([[self.obs[i] for i in idx_row] for idx_row in obs_gather_ranges], dtype=object)
+        nobs = np.array([[self.obs[i] for i in idx_row] for idx_row in nobs_gather_ranges], dtype=object)
+
+        # Determine the max number of points across the batch
+        max_points = max(max(frame.shape[0] for sample in obs for frame in sample),
+                         max(frame.shape[0] for sample in nobs for frame in sample))
+
+        # Convert to tensor with padding
+        obs_tensor = torch.stack([
+            torch.stack([torch.cat([torch.tensor(frame), torch.zeros((max_points - frame.shape[0], 3))]) for frame in sample])
+            for sample in obs
+        ])
+
+        #obs_tensor = obs_tensor.detach().numpy()
+
+        nobs_tensor = torch.stack([
+            torch.stack([torch.cat([torch.tensor(frame), torch.zeros((max_points - frame.shape[0], 3))]) for frame in sample])
+            for sample in nobs
+        ])
+
+        #nobs_tensor = nobs_tensor.detach().numpy()
+
+        #obs = np.reshape(obs, [n_samples, *self.obs_shape])
+        #nobs = np.reshape(nobs, [n_samples, *self.obs_shape])
+
 
         act = self.act[indices]
         dis = np.expand_dims(self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1)

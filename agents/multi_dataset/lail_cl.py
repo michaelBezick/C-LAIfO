@@ -20,7 +20,7 @@ from utils_folder.utils_dreamer import Bernoulli
 # from agents.multi_dataset.point_cloud_generator import PointCloudGenerator
 from point_cloud_generator import PointCloudGenerator
 
-class PointNetEncoder(nn.Module):
+class PointNetHead(nn.Module):
     def __init__(self, latent_dim):
         super().__init__()
 
@@ -45,10 +45,10 @@ class PointNetEncoder(nn.Module):
             nn.ReLU(),
             nn.Conv1d(64, latent_dim, kernel_size=1),
             nn.BatchNorm1d(latent_dim),
-            nn.Tanh()
+            nn.ReLU(),
         )
 
-    def forward(self, point_cloud: torch.Tensor):
+    def forward(self, point_cloud):
 
         x = point_cloud
 
@@ -70,6 +70,48 @@ class PointNetEncoder(nn.Module):
 
         return x
 
+class PointNetEncoder(nn.Module):
+    def __init__(self, latent_dim):
+        super().__init__()
+
+        self.head1 = PointNetHead(latent_dim)
+        self.head2 = PointNetHead(latent_dim)
+        self.head3 = PointNetHead(latent_dim)
+
+        self.final = nn.Sequential(
+            nn.Linear(latent_dim * 3, latent_dim), nn.Tanh()
+        )
+
+
+    def forward(self, point_cloud):
+        """will be in form [b,3,n,3]"""
+
+        """Input size: [b, n, 3]"""
+
+
+        #first 3 is frame stack
+
+        """for now let's just pretend not batched"""
+        #unbatched = point_cloud[0] #[3,n,3]
+        unbatched=point_cloud
+        #unbatched = torch.permute(unbatched, (0, 2,1))
+
+        pc1 = unbatched[0].unsqueeze(0)
+        pc2 = unbatched[1].unsqueeze(0)
+        pc3 = unbatched[2].unsqueeze(0)
+
+        x1 = self.head1(pc1)
+        x2 = self.head2(pc2)
+        x3 = self.head3(pc3)
+
+        x = torch.cat([x1, x2, x3], dim=1)
+
+        x = self.final(x)
+
+        if x.dim() == 3 and x.shape[2] == 1:
+            x = x.squeeze(2)
+
+        return x
 
 
 
@@ -756,16 +798,24 @@ class LailClAgent:
         self.discriminator.train(training)
         self.CL.train(training)
 
-    def act(self, obs, step, eval_mode):
-        obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
-        """I BELIEVE IF EVAL MODE = TRUE THEN IT SHOULD ALWAYS BE DEPTH"""
-        obs = torch.as_tensor(obs, device=self.device).float()
+    def act(self, obs, step, eval_mode, from_buffer):
+        if from_buffer==False:
+            """I believe it is (192, 64)"""
+            #hard coding for now
+            obs_reshaped = obs.reshape(3, 64, 64)
+            point_clouds = []
+            for i in range(3):
+                obs = obs_reshaped[i, :, :]
+                obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
+                obs = torch.as_tensor(obs, device=self.device).float()
+                point_clouds.append(obs)
 
         if self.grayscale:
             obs = self.grayscale_aug(obs.unsqueeze(0))
             obs = self.encoder(obs)
         else:
-            obs = self.encoder(obs.unsqueeze(0))
+            #obs = self.encoder(obs.unsqueeze(0))
+            obs = self.encoder(point_clouds)
 
         stddev = utils.schedule(self.stddev_schedule, step)
         dist = self.actor(obs, stddev)
@@ -1058,9 +1108,12 @@ class LailClAgent:
 
         if step % self.update_every_steps != 0:
             return metrics
-
+        breakpoint()
         batch = next(replay_iter)
-        obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
+        obs_real = batch[0]
+        batch[0] = 1
+        obs_fake, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
+        obs = obs_real
 
         batch_expert = next(replay_iter_expert)
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(

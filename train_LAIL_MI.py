@@ -7,7 +7,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 import os
 os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 os.environ['MUJOCO_GL'] = 'egl'
-#os.environ['HYDRA_FULL_ERROR'] = '1'
+os.environ['HYDRA_FULL_ERROR'] = '1'
 
 from pathlib import Path
 
@@ -246,7 +246,7 @@ class Workspace:
                 with torch.no_grad(), utils.eval_mode(self.agent):
                     action = self.agent.act(time_step.observation,
                                             self.global_step,
-                                            eval_mode=True)
+                                            eval_mode=True, from_buffer=False)
                 
                 time_step = self.eval_env.step(action)
                 self.video_recorder.record(self.eval_env)
@@ -278,6 +278,7 @@ class Workspace:
                                       self.cfg.action_repeat)
 
         episode_step, episode_reward = 0, 0
+        breakpoint()
         time_step = self.train_env.reset()
 
         self.replay_buffer.add(time_step, point_cloud=False)
@@ -335,7 +336,7 @@ class Workspace:
             with torch.no_grad(), utils.eval_mode(self.agent):
                 action = self.agent.act(time_step.observation,
                                         self.global_step,
-                                        eval_mode=False)
+                                        eval_mode=False, from_buffer=False)
 
             # try to update the agent
             if not seed_until_step(self.global_step):

@@ -21,7 +21,8 @@ num_seed_frames: 4000
 num_expl_frames: 10000
 # eval
 eval_every_frames: 10000
-num_eval_episodes: 10
+#HELLO
+num_eval_episodes: 1
 # snapshot
 save_snapshot: false
 save_replay_buffers: false
@@ -46,7 +47,8 @@ feature_dim: 50
 stochastic_encoder: false
 stochastic_preprocessor: true
 # expert data
-num_expert_episodes: 100
+#HELLO
+num_expert_episodes: 1
 frame_skip: 1
 expert_replay_buffer_size: 100000
 #discriminator feat
