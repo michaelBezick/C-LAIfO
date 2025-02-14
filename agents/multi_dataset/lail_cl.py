@@ -1108,12 +1108,8 @@ class LailClAgent:
 
         if step % self.update_every_steps != 0:
             return metrics
-        breakpoint()
         batch = next(replay_iter)
-        obs_real = batch[0]
-        batch[0] = 1
-        obs_fake, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
-        obs = obs_real
+        obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
 
         batch_expert = next(replay_iter_expert)
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(
@@ -1162,10 +1158,13 @@ class LailClAgent:
             )
         )
 
+        #CHANGE THIS TO BE RANDOM ROTATION
+        """
         obs_e = self.aug_D(obs_e_raw)
         next_obs_e = self.aug_D(next_obs_e_raw)
         obs_a = self.aug_D(obs)
         next_obs_a = self.aug_D(next_obs)
+        """
 
         if step % self.check_every_steps == 0:
             self.check_aug(

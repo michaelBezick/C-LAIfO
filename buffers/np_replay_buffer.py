@@ -114,7 +114,56 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         return self.gather_nstep_indices(indices)
 
     def gather_nstep_indices(self, indices):
-        breakpoint()
+        n_samples = indices.shape[0]
+
+        # Compute gather indices
+        all_gather_ranges = np.stack([
+            np.arange(indices[i] - self.frame_stack, indices[i] + self.nstep)
+            for i in range(n_samples)
+        ], axis=0) % self.buffer_size
+
+        gather_ranges = all_gather_ranges[:, self.frame_stack:]  # bs x nstep
+        obs_gather_ranges = all_gather_ranges[:, :self.frame_stack]
+        nobs_gather_ranges = all_gather_ranges[:, -self.frame_stack:]
+
+        # Collect rewards
+        all_rewards = self.rew[gather_ranges]
+        rew = np.sum(all_rewards * self.discount_vec, axis=1, keepdims=True)
+
+        # Gather observations (variable-sized point clouds)
+        obs = [[self.obs[i] for i in idx_row] for idx_row in obs_gather_ranges]
+        nobs = [[self.obs[i] for i in idx_row] for idx_row in nobs_gather_ranges]
+
+        # ✅ Determine max number of points across batch
+        max_points = max(max(frame.shape[0] for sample in obs for frame in sample), 
+                         max(frame.shape[0] for sample in nobs for frame in sample))
+
+        # ✅ Pad and convert to NumPy arrays
+        def pad_point_clouds(data):
+            padded_data = []
+            for sample in data:
+                padded_sample = []
+                for frame in sample:
+                    N, D = frame.shape  # Get the number of points and dimensions (should be 3)
+                    pad_width = max_points - N
+                    if pad_width > 0:
+                        padded_frame = np.pad(frame, ((0, pad_width), (0, 0)), mode='constant')
+                    else:
+                        padded_frame = frame  # No padding needed if it's already max_points
+                    padded_sample.append(padded_frame)
+                padded_data.append(padded_sample)
+            return np.array(padded_data)
+
+        obs_padded = pad_point_clouds(obs)  # Shape: (batch_size, frame_stack, max_points, 3)
+        nobs_padded = pad_point_clouds(nobs)  # Shape: (batch_size, frame_stack, max_points, 3)
+
+        act = self.act[indices]
+        dis = np.expand_dims(self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1)
+
+        return obs_padded, act, rew, dis, nobs_padded 
+
+    """
+    def gather_nstep_indices(self, indices):
         n_samples = indices.shape[0]
         all_gather_ranges = np.stack([np.arange(indices[i] - self.frame_stack, indices[i] + self.nstep)
                                   for i in range(n_samples)], axis=0) % self.buffer_size
@@ -130,13 +179,31 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
 
         #obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
         #nobs = np.reshape(self.obs[nobs_gather_ranges], [n_samples, *self.obs_shape])
+        obs = [[self.obs[i] for i in idx_row] for idx_row in obs_gather_ranges]
+        nobs = [[self.obs[i] for i in idx_row] for idx_row in nobs_gather_ranges]
 
-        obs = np.array([[self.obs[i] for i in idx_row] for idx_row in obs_gather_ranges], dtype=object)
-        nobs = np.array([[self.obs[i] for i in idx_row] for idx_row in nobs_gather_ranges], dtype=object)
+        #obs = np.array([[self.obs[i] for i in idx_row] for idx_row in obs_gather_ranges], dtype=object)
+        #nobs = np.array([[self.obs[i] for i in idx_row] for idx_row in nobs_gather_ranges], dtype=object)
 
         # Determine the max number of points across the batch
         max_points = max(max(frame.shape[0] for sample in obs for frame in sample),
                          max(frame.shape[0] for sample in nobs for frame in sample))
+
+        def pad_point_clouds(data):
+
+            return np.array([
+                np.array([
+                    np.vstack([frame, np.zeros((max_points - frame.shape[0], 3))]) for frame in sample
+                ]) for sample in data
+            ])
+
+        obs_padded = pad_point_clouds(obs)  # Shape: (batch_size, frame_stack, max_points, 3)
+        nobs_padded = pad_point_clouds(nobs)  # Shape: (batch_size, frame_stack, max_points, 3)
+
+        act = self.act[indices]
+        dis = np.expand_dims(self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1)
+
+        return (obs_padded, act, rew, dis, nobs_padded)
 
         # Convert to tensor with padding
         obs_tensor = torch.stack([
@@ -144,14 +211,14 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
             for sample in obs
         ])
 
-        #obs_tensor = obs_tensor.detach().numpy()
+        obs_tensor = obs_tensor.detach().numpy()
 
         nobs_tensor = torch.stack([
             torch.stack([torch.cat([torch.tensor(frame), torch.zeros((max_points - frame.shape[0], 3))]) for frame in sample])
             for sample in nobs
         ])
 
-        #nobs_tensor = nobs_tensor.detach().numpy()
+        nobs_tensor = nobs_tensor.detach().numpy()
 
         #obs = np.reshape(obs, [n_samples, *self.obs_shape])
         #nobs = np.reshape(nobs, [n_samples, *self.obs_shape])
@@ -160,8 +227,9 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         act = self.act[indices]
         dis = np.expand_dims(self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1)
 
-        ret = (obs, act, rew, dis, nobs)
+        ret = (obs_tensor, act, rew, dis, nobs_tensor)
         return ret
+        """
     
     def gather_images(self):
         indices = np.random.choice(self.valid.nonzero()[0], size=self.batch_size)

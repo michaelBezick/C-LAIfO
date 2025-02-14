@@ -24,44 +24,6 @@ from video import TrainVideoRecorder, VideoRecorder, VideoRecorder_bio_expert
 
 torch.backends.cudnn.benchmark = True
 
-# def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6):
-#
-#         od_cammat = cammat2o3d(
-#             self.cam_mats[cam_id], self.img_width, self.img_height
-#         )
-#
-#         depth_img[depth_img >= max_depth] = 0
-#
-#         od_depth = o3d.geometry.Image(np.ascontiguousarray(depth_img))
-#
-#         o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(
-#             od_depth, od_cammat
-#         )
-#
-#         cam_pos = self.sim.model.cam_pos[cam_id]
-#         c2b_r = rotMatList2NPRotMat(self.sim.model.cam_mat0[cam_id])
-#         b2w_r = quat2Mat([0, 1, 0, 0])
-#         c2w_r = np.matmul(c2b_r, b2w_r)
-#         c2w = posRotMat2Mat(cam_pos, c2w_r)
-#         transformed_cloud = o3d_cloud.transform(c2w)
-#         if self.target_bounds != None:
-#             transformed_cloud = transformed_cloud.crop(self.target_bounds)
-#
-#         points = np.asarray(transformed_cloud.points)
-#
-#         center = np.mean(points, axis=0)
-#         centered_points = points - center
-#
-#         magnitudes = np.linalg.norm(centered_points, axis=1)
-#         max_magnitude = np.max(magnitudes)
-#
-#         if max_magnitude > 0:
-#             normalized_points = centered_points / max_magnitude
-#             transformed_cloud.points = o3d.utility.Vector3dVector(normalized_points)
-#         else:
-#             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
-#
-#         return transformed_cloud
 
 def make_agent(obs_spec, action_spec, env, cfg, physics):
     cfg.obs_shape = obs_spec.shape
