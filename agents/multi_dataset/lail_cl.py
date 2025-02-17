@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.utils.rnn import pad_sequence
 import torchvision.transforms.functional as FT
 from torch import autograd
 from torch import distributions as torchd
@@ -819,9 +820,10 @@ class LailClAgent:
                 #obs = torch.as_tensor(obs, device=self.device).float()
                 point_clouds.append(obs)
 
-            #make this fully convert point_clouds into [b,3,n,3] pytorch tensor
-            point_clouds = torch.as_tensor(point_clouds, device=self.device).float()
+            tensors = [torch.tensor(arr,dtype=torch.float32) for arr in point_clouds]
+            padded_tensors = pad_sequence(tensors,batch_first=True,padding_value=0)
 
+            point_clouds = padded_tensors
 
 
         if self.grayscale:
