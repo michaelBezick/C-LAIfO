@@ -54,7 +54,6 @@ class PointNetHead(nn.Module):
 
         """Input size: [b, n, 3]"""
 
-
         x = torch.permute(x, (0, 2, 1))  # [b,3,n]
 
         x = self.h(x)  # x -> [b,64,n]
@@ -84,6 +83,10 @@ class PointNetEncoder(nn.Module):
 
 
     def forward(self, point_cloud):
+        breakpoint()
+
+        if len(point_cloud.size()) == 3:
+            point_cloud = point_cloud.unsqueeze(0)
         """will be in form [b,3,n,3]"""
 
         """Input size: [b, n, 3]"""
@@ -96,9 +99,9 @@ class PointNetEncoder(nn.Module):
         unbatched=point_cloud
         #unbatched = torch.permute(unbatched, (0, 2,1))
 
-        pc1 = unbatched[0].unsqueeze(0)
-        pc2 = unbatched[1].unsqueeze(0)
-        pc3 = unbatched[2].unsqueeze(0)
+        pc1 = unbatched[:, 0, :, :].unsqueeze(0)
+        pc2 = unbatched[:,1,:,:].unsqueeze(0)
+        pc3 = unbatched[:,2,:,:].unsqueeze(0)
 
         x1 = self.head1(pc1)
         x2 = self.head2(pc2)
@@ -1153,6 +1156,7 @@ class LailClAgent:
                 step,
             )
 
+        """
         metrics.update(
             self.update_CL(
                 obs,
@@ -1163,6 +1167,7 @@ class LailClAgent:
                 step,
             )
         )
+        """
 
         #CHANGE THIS TO BE RANDOM ROTATION
         """
