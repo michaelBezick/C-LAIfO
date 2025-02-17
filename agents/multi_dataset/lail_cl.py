@@ -1104,6 +1104,7 @@ class LailClAgent:
         replay_iter_expert_random,
         step,
     ):
+        breakpoint()
         """Get rid of expert stuff + Disc"""
         """Experiment with mismatch between train and eval"""
         metrics = dict()
@@ -1142,7 +1143,7 @@ class LailClAgent:
             obs_e_raw_random = self.grayscale_aug(obs_e_raw_random)
             next_obs_e_raw_random = self.grayscale_aug(next_obs_e_raw_random)
 
-        if step % self.check_every_steps == 0:
+        if step % self.check_every_steps == 0 and False:
             self.check_aug(
                 obs_random.float(),
                 next_obs_random.float(),
@@ -1171,7 +1172,13 @@ class LailClAgent:
         next_obs_a = self.aug_D(next_obs)
         """
 
-        if step % self.check_every_steps == 0:
+        #ADDED THIS
+        obs_e = obs_e_raw
+        next_obs_e = next_obs_e_raw
+        obs_a = obs
+        next_obs_a = next_obs
+
+        if step % self.check_every_steps == 0 and False:
             self.check_aug(
                 obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step
             )
@@ -1182,6 +1189,7 @@ class LailClAgent:
             z_a = self.encoder(obs_a)
             next_z_a = self.encoder(next_obs_a)
 
+        """
         # update critic
         if self.from_dem:
             metrics.update(self.update_discriminator(z_a, action, z_e, action_e))
@@ -1189,12 +1197,14 @@ class LailClAgent:
         else:
             metrics.update(self.update_discriminator(z_a, next_z_a, z_e, next_z_e))
             reward, metrics_r = self.compute_reward(obs, next_obs)
+        """
 
-        metrics.update(metrics_r)
+        # metrics.update(metrics_r)
 
         # augment
-        obs = self.aug_Q(obs)
-        next_obs = self.aug_Q(next_obs)
+        # obs = self.aug_Q(obs)
+        # next_obs = self.aug_Q(next_obs)
+
         # encode
         obs = self.encoder(obs)
         with torch.no_grad():
