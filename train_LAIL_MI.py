@@ -80,6 +80,7 @@ class Workspace:
         # create logger
         self.logger = Logger(self.work_dir, use_tb=self.cfg.use_tb)
         # create target envs and agent
+        """By changing visual seed targets, will change """
         self.train_env = dmc.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,

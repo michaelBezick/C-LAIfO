@@ -1104,12 +1104,16 @@ class LailClAgent:
         replay_iter_expert_random,
         step,
     ):
+        """Get rid of expert stuff + Disc"""
+        """Experiment with mismatch between train and eval"""
         metrics = dict()
 
         if step % self.update_every_steps != 0:
             return metrics
         batch = next(replay_iter)
-        obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
+        obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device) #reward_a unused
+        #[b, cx3, h,w]
+        #[b, 3, d, 3]
 
         batch_expert = next(replay_iter_expert)
         obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(
@@ -1127,6 +1131,7 @@ class LailClAgent:
             batch_expert_random, self.device
         )
 
+        #usually off, but would shift all to gray 
         if self.grayscale:
             obs = self.grayscale_aug(obs)
             next_obs = self.grayscale_aug(next_obs)
@@ -1180,7 +1185,7 @@ class LailClAgent:
         # update critic
         if self.from_dem:
             metrics.update(self.update_discriminator(z_a, action, z_e, action_e))
-            reward, metrics_r = self.compute_reward(obs, action)
+            reward, metrics_r = self.compute_reward(obs, action) #this function uses disc to compute reward
         else:
             metrics.update(self.update_discriminator(z_a, next_z_a, z_e, next_z_e))
             reward, metrics_r = self.compute_reward(obs, next_obs)
@@ -1200,7 +1205,7 @@ class LailClAgent:
 
         # update critic
         metrics.update(
-            self.update_critic(obs, action, reward, discount, next_obs, step)
+            self.update_critic(obs, action, reward_a, discount, next_obs, step) #replaced reward with reward_a
         )
 
         # update actor
