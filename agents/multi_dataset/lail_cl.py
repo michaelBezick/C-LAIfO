@@ -84,7 +84,6 @@ class PointNetEncoder(nn.Module):
 
 
     def forward(self, point_cloud):
-        breakpoint()
 
         if len(point_cloud.size()) == 3:
             point_cloud = point_cloud.unsqueeze(0)
@@ -803,7 +802,6 @@ class LailClAgent:
         self.CL.train(training)
 
     def act(self, obs, step, eval_mode, from_buffer):
-        breakpoint()
         if from_buffer == True:
             pass
             #it should already be good
@@ -820,10 +818,10 @@ class LailClAgent:
                 #obs = torch.as_tensor(obs, device=self.device).float()
                 point_clouds.append(obs)
 
-            tensors = [torch.tensor(arr,dtype=torch.float32) for arr in point_clouds]
+            tensors = [torch.tensor(arr,dtype=torch.float32, device=self.device) for arr in point_clouds]
             padded_tensors = pad_sequence(tensors,batch_first=True,padding_value=0)
 
-            point_clouds = padded_tensors
+            point_clouds = padded_tensors.unsqueeze(0)
 
 
         if self.grayscale:
@@ -1120,7 +1118,6 @@ class LailClAgent:
         replay_iter_expert_random,
         step,
     ):
-        breakpoint()
         """Get rid of expert stuff + Disc"""
         """Experiment with mismatch between train and eval"""
         metrics = dict()
@@ -1202,10 +1199,10 @@ class LailClAgent:
             )
 
         with torch.no_grad():
-            z_e = self.encoder(obs_e)
-            next_z_e = self.encoder(next_obs_e)
-            z_a = self.encoder(obs_a)
-            next_z_a = self.encoder(next_obs_a)
+            z_e = self.encoder(obs_e.float())
+            next_z_e = self.encoder(next_obs_e.float())
+            z_a = self.encoder(obs_a.float())
+            next_z_a = self.encoder(next_obs_a.float())
 
         """
         # update critic
@@ -1224,9 +1221,9 @@ class LailClAgent:
         # next_obs = self.aug_Q(next_obs)
 
         # encode
-        obs = self.encoder(obs)
+        obs = self.encoder(obs.float())
         with torch.no_grad():
-            next_obs = self.encoder(next_obs)
+            next_obs = self.encoder(next_obs.float())
 
         if self.use_tb:
             metrics["batch_reward"] = reward_a.mean().item()

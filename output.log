@@ -1,37 +1,89 @@
-workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.13/1747_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk
+workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.17/1046_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk
 loading expert target: /home/michaelbezick/Repos/C-LAIfO/expert_policies/snapshot_walker_walk_frame_skip_1.pt
 Average expert reward: 982.8438958345919, Total number of samples: 1000
 Average random expert reward: 29.151766779583774, Total number of samples: 1000
 1
-| [32meval[0m  | F: 0 | S: 0 | E: 0 | L: 1000 | R: 30.2626 | T: 0:00:04
-Error executing job with overrides: ['task_agent=walker_walk', 'task_expert=walker_walk', 'agent=lail_cl_multiset', 'difficulty=easy', 'delta_source=0.2', 'delta_target=-0.25', 'apply_aug=CL-Q', 'aug_type=brightness', 'CL_data_type=agent', 'depth_flag=True']
-Traceback (most recent call last):
-  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 429, in <module>
-    main()
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/main.py", line 49, in decorated_main
-    _run_hydra(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 367, in _run_hydra
-    run_and_report(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 214, in run_and_report
-    raise ex
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 211, in run_and_report
-    return func()
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 368, in <lambda>
-    lambda: hydra.run(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/hydra.py", line 110, in run
-    _ = ret.return_value
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/core/utils.py", line 233, in return_value
-    raise self._return_value
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/core/utils.py", line 160, in run_job
-    ret.return_value = task_function(task_cfg)
-  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 426, in main
-    workspace.train()
-  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 342, in train
-    metrics = self.agent.update(self.replay_buffer, 
-  File "/home/michaelbezick/Repos/C-LAIfO/agents/multi_dataset/lail_cl.py", line 1062, in update
-    batch = next(replay_iter)
-  File "/home/michaelbezick/Repos/C-LAIfO/buffers/np_replay_buffer.py", line 113, in __next__
-    return self.gather_nstep_indices(indices)
-  File "/home/michaelbezick/Repos/C-LAIfO/buffers/np_replay_buffer.py", line 129, in gather_nstep_indices
-    obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
-TypeError: only integer scalar arrays can be converted to a scalar index
+| [32meval[0m  | F: 0 | S: 0 | E: 0 | L: 1000 | R: 18.9486 | T: 0:00:04
+| [33mtrain[0m | F: 5000 | S: 5000 | E: 5 | L: 1000 | R: 16.7934 | BS: 5015 | FPS: 6.5975 | T: 0:02:31
+| [33mtrain[0m | F: 6000 | S: 6000 | E: 6 | L: 1000 | R: 23.9776 | BS: 6018 | FPS: 10.6089 | T: 0:04:05
+| [33mtrain[0m | F: 7000 | S: 7000 | E: 7 | L: 1000 | R: 38.9947 | BS: 7021 | FPS: 10.4193 | T: 0:05:41
+| [33mtrain[0m | F: 8000 | S: 8000 | E: 8 | L: 1000 | R: 40.2519 | BS: 8024 | FPS: 10.3983 | T: 0:07:17
+| [33mtrain[0m | F: 9000 | S: 9000 | E: 9 | L: 1000 | R: 62.7878 | BS: 9027 | FPS: 10.6287 | T: 0:08:52
+| [33mtrain[0m | F: 10000 | S: 10000 | E: 10 | L: 1000 | R: 51.6036 | BS: 10030 | FPS: 10.3783 | T: 0:10:28
+1
+| [32meval[0m  | F: 10000 | S: 10000 | E: 10 | L: 1000 | R: 31.4001 | T: 0:10:28
+| [33mtrain[0m | F: 11000 | S: 11000 | E: 11 | L: 1000 | R: 49.8611 | BS: 11033 | FPS: 8.7858 | T: 0:12:22
+| [33mtrain[0m | F: 12000 | S: 12000 | E: 12 | L: 1000 | R: 39.0257 | BS: 12036 | FPS: 9.9528 | T: 0:14:02
+| [33mtrain[0m | F: 13000 | S: 13000 | E: 13 | L: 1000 | R: 88.3250 | BS: 13039 | FPS: 10.8554 | T: 0:15:34
+| [33mtrain[0m | F: 14000 | S: 14000 | E: 14 | L: 1000 | R: 46.8543 | BS: 14042 | FPS: 10.3308 | T: 0:17:11
+| [33mtrain[0m | F: 15000 | S: 15000 | E: 15 | L: 1000 | R: 35.5847 | BS: 15045 | FPS: 10.2553 | T: 0:18:49
+| [33mtrain[0m | F: 16000 | S: 16000 | E: 16 | L: 1000 | R: 54.0349 | BS: 16048 | FPS: 10.3693 | T: 0:20:25
+| [33mtrain[0m | F: 17000 | S: 17000 | E: 17 | L: 1000 | R: 61.4361 | BS: 17051 | FPS: 10.6948 | T: 0:21:59
+| [33mtrain[0m | F: 18000 | S: 18000 | E: 18 | L: 1000 | R: 122.6400 | BS: 18054 | FPS: 10.8759 | T: 0:23:31
+| [33mtrain[0m | F: 19000 | S: 19000 | E: 19 | L: 1000 | R: 46.3597 | BS: 19057 | FPS: 10.0957 | T: 0:25:10
+| [33mtrain[0m | F: 20000 | S: 20000 | E: 20 | L: 1000 | R: 68.2202 | BS: 20060 | FPS: 10.0542 | T: 0:26:49
+1
+| [32meval[0m  | F: 20000 | S: 20000 | E: 20 | L: 1000 | R: 17.5799 | T: 0:26:49
+| [33mtrain[0m | F: 21000 | S: 21000 | E: 21 | L: 1000 | R: 62.5621 | BS: 21063 | FPS: 9.6128 | T: 0:28:33
+| [33mtrain[0m | F: 22000 | S: 22000 | E: 22 | L: 1000 | R: 133.6753 | BS: 22066 | FPS: 10.7205 | T: 0:30:06
+| [33mtrain[0m | F: 23000 | S: 23000 | E: 23 | L: 1000 | R: 113.9784 | BS: 23069 | FPS: 10.9732 | T: 0:31:37
+| [33mtrain[0m | F: 24000 | S: 24000 | E: 24 | L: 1000 | R: 30.4288 | BS: 24072 | FPS: 10.5552 | T: 0:33:12
+| [33mtrain[0m | F: 25000 | S: 25000 | E: 25 | L: 1000 | R: 29.4674 | BS: 25075 | FPS: 10.1882 | T: 0:34:50
+| [33mtrain[0m | F: 26000 | S: 26000 | E: 26 | L: 1000 | R: 133.6429 | BS: 26078 | FPS: 10.1043 | T: 0:36:29
+| [33mtrain[0m | F: 27000 | S: 27000 | E: 27 | L: 1000 | R: 14.9158 | BS: 27081 | FPS: 10.9168 | T: 0:38:01
+| [33mtrain[0m | F: 28000 | S: 28000 | E: 28 | L: 1000 | R: 101.3068 | BS: 28084 | FPS: 10.9518 | T: 0:39:32
+| [33mtrain[0m | F: 29000 | S: 29000 | E: 29 | L: 1000 | R: 132.9842 | BS: 29087 | FPS: 10.4940 | T: 0:41:08
+| [33mtrain[0m | F: 30000 | S: 30000 | E: 30 | L: 1000 | R: 64.0462 | BS: 30090 | FPS: 8.7654 | T: 0:43:02
+1
+| [32meval[0m  | F: 30000 | S: 30000 | E: 30 | L: 1000 | R: 18.8081 | T: 0:43:02
+| [33mtrain[0m | F: 31000 | S: 31000 | E: 31 | L: 1000 | R: 29.9175 | BS: 31093 | FPS: 8.7711 | T: 0:44:56
+| [33mtrain[0m | F: 32000 | S: 32000 | E: 32 | L: 1000 | R: 60.0781 | BS: 32096 | FPS: 9.8378 | T: 0:46:37
+| [33mtrain[0m | F: 33000 | S: 33000 | E: 33 | L: 1000 | R: 76.3198 | BS: 33099 | FPS: 10.3779 | T: 0:48:14
+| [33mtrain[0m | F: 34000 | S: 34000 | E: 34 | L: 1000 | R: 51.0796 | BS: 34102 | FPS: 10.0987 | T: 0:49:53
+| [33mtrain[0m | F: 35000 | S: 35000 | E: 35 | L: 1000 | R: 53.1773 | BS: 35105 | FPS: 11.2340 | T: 0:51:22
+| [33mtrain[0m | F: 36000 | S: 36000 | E: 36 | L: 1000 | R: 60.4064 | BS: 36108 | FPS: 10.9666 | T: 0:52:53
+| [33mtrain[0m | F: 37000 | S: 37000 | E: 37 | L: 1000 | R: 46.4097 | BS: 37111 | FPS: 10.2886 | T: 0:54:30
+| [33mtrain[0m | F: 38000 | S: 38000 | E: 38 | L: 1000 | R: 36.9673 | BS: 38114 | FPS: 10.3854 | T: 0:56:06
+| [33mtrain[0m | F: 39000 | S: 39000 | E: 39 | L: 1000 | R: 20.1871 | BS: 39117 | FPS: 10.3422 | T: 0:57:43
+| [33mtrain[0m | F: 40000 | S: 40000 | E: 40 | L: 1000 | R: 14.4410 | BS: 40120 | FPS: 10.3677 | T: 0:59:20
+1
+| [32meval[0m  | F: 40000 | S: 40000 | E: 40 | L: 1000 | R: 51.5193 | T: 0:59:20
+| [33mtrain[0m | F: 41000 | S: 41000 | E: 41 | L: 1000 | R: 117.1761 | BS: 41123 | FPS: 9.3652 | T: 1:01:06
+| [33mtrain[0m | F: 42000 | S: 42000 | E: 42 | L: 1000 | R: 59.6981 | BS: 42126 | FPS: 10.8093 | T: 1:02:39
+| [33mtrain[0m | F: 43000 | S: 43000 | E: 43 | L: 1000 | R: 114.2397 | BS: 43129 | FPS: 11.0732 | T: 1:04:09
+| [33mtrain[0m | F: 44000 | S: 44000 | E: 44 | L: 1000 | R: 174.9569 | BS: 44132 | FPS: 8.9648 | T: 1:06:01
+| [33mtrain[0m | F: 45000 | S: 45000 | E: 45 | L: 1000 | R: 138.1636 | BS: 45135 | FPS: 10.7663 | T: 1:07:34
+| [33mtrain[0m | F: 46000 | S: 46000 | E: 46 | L: 1000 | R: 104.9456 | BS: 46138 | FPS: 10.3778 | T: 1:09:10
+| [33mtrain[0m | F: 47000 | S: 47000 | E: 47 | L: 1000 | R: 52.5635 | BS: 47141 | FPS: 9.8911 | T: 1:10:51
+| [33mtrain[0m | F: 48000 | S: 48000 | E: 48 | L: 1000 | R: 69.7050 | BS: 48144 | FPS: 9.7718 | T: 1:12:33
+| [33mtrain[0m | F: 49000 | S: 49000 | E: 49 | L: 1000 | R: 183.1743 | BS: 49147 | FPS: 10.2666 | T: 1:14:11
+| [33mtrain[0m | F: 50000 | S: 50000 | E: 50 | L: 1000 | R: 33.6136 | BS: 50150 | FPS: 10.1943 | T: 1:15:49
+1
+| [32meval[0m  | F: 50000 | S: 50000 | E: 50 | L: 1000 | R: 122.5600 | T: 1:15:49
+| [33mtrain[0m | F: 51000 | S: 51000 | E: 51 | L: 1000 | R: 50.4039 | BS: 51153 | FPS: 9.4077 | T: 1:17:35
+| [33mtrain[0m | F: 52000 | S: 52000 | E: 52 | L: 1000 | R: 82.7743 | BS: 52156 | FPS: 10.7281 | T: 1:19:08
+| [33mtrain[0m | F: 53000 | S: 53000 | E: 53 | L: 1000 | R: 48.4805 | BS: 53159 | FPS: 10.0973 | T: 1:20:47
+| [33mtrain[0m | F: 54000 | S: 54000 | E: 54 | L: 1000 | R: 48.1444 | BS: 54162 | FPS: 9.8746 | T: 1:22:29
+| [33mtrain[0m | F: 55000 | S: 55000 | E: 55 | L: 1000 | R: 100.6912 | BS: 55165 | FPS: 9.7751 | T: 1:24:11
+| [33mtrain[0m | F: 56000 | S: 56000 | E: 56 | L: 1000 | R: 76.6911 | BS: 56168 | FPS: 9.8207 | T: 1:25:53
+| [33mtrain[0m | F: 57000 | S: 57000 | E: 57 | L: 1000 | R: 118.8302 | BS: 57171 | FPS: 9.6348 | T: 1:27:37
+| [33mtrain[0m | F: 58000 | S: 58000 | E: 58 | L: 1000 | R: 64.6168 | BS: 58174 | FPS: 9.8557 | T: 1:29:18
+| [33mtrain[0m | F: 59000 | S: 59000 | E: 59 | L: 1000 | R: 61.1855 | BS: 59177 | FPS: 10.1274 | T: 1:30:57
+| [33mtrain[0m | F: 60000 | S: 60000 | E: 60 | L: 1000 | R: 61.2887 | BS: 60180 | FPS: 10.7170 | T: 1:32:30
+1
+| [32meval[0m  | F: 60000 | S: 60000 | E: 60 | L: 1000 | R: 66.4764 | T: 1:32:30
+| [33mtrain[0m | F: 61000 | S: 61000 | E: 61 | L: 1000 | R: 69.0873 | BS: 61183 | FPS: 9.7302 | T: 1:34:13
+| [33mtrain[0m | F: 62000 | S: 62000 | E: 62 | L: 1000 | R: 41.8325 | BS: 62186 | FPS: 9.8955 | T: 1:35:54
+| [33mtrain[0m | F: 63000 | S: 63000 | E: 63 | L: 1000 | R: 105.2020 | BS: 63189 | FPS: 9.7971 | T: 1:37:36
+| [33mtrain[0m | F: 64000 | S: 64000 | E: 64 | L: 1000 | R: 40.3669 | BS: 64192 | FPS: 9.9291 | T: 1:39:17
+| [33mtrain[0m | F: 65000 | S: 65000 | E: 65 | L: 1000 | R: 55.4194 | BS: 65195 | FPS: 10.0432 | T: 1:40:56
+| [33mtrain[0m | F: 66000 | S: 66000 | E: 66 | L: 1000 | R: 102.8349 | BS: 66198 | FPS: 9.9346 | T: 1:42:37
+| [33mtrain[0m | F: 67000 | S: 67000 | E: 67 | L: 1000 | R: 72.7990 | BS: 67201 | FPS: 10.3322 | T: 1:44:14
+| [33mtrain[0m | F: 68000 | S: 68000 | E: 68 | L: 1000 | R: 83.1666 | BS: 68204 | FPS: 10.8085 | T: 1:45:46
+| [33mtrain[0m | F: 69000 | S: 69000 | E: 69 | L: 1000 | R: 72.0041 | BS: 69207 | FPS: 9.8638 | T: 1:47:28
+| [33mtrain[0m | F: 70000 | S: 70000 | E: 70 | L: 1000 | R: 68.0700 | BS: 70210 | FPS: 10.1409 | T: 1:49:06
+1
+| [32meval[0m  | F: 70000 | S: 70000 | E: 70 | L: 1000 | R: 71.8083 | T: 1:49:06
+| [33mtrain[0m | F: 71000 | S: 71000 | E: 71 | L: 1000 | R: 100.3086 | BS: 71213 | FPS: 9.1501 | T: 1:50:56
+| [33mtrain[0m | F: 72000 | S: 72000 | E: 72 | L: 1000 | R: 35.7701 | BS: 72216 | FPS: 10.1696 | T: 1:52:34
+| [33mtrain[0m | F: 73000 | S: 73000 | E: 73 | L: 1000 | R: 47.1364 | BS: 73219 | FPS: 10.1591 | T: 1:54:12
