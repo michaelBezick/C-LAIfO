@@ -99,9 +99,9 @@ class PointNetEncoder(nn.Module):
         unbatched=point_cloud
         #unbatched = torch.permute(unbatched, (0, 2,1))
 
-        pc1 = unbatched[:, 0, :, :].unsqueeze(0)
-        pc2 = unbatched[:,1,:,:].unsqueeze(0)
-        pc3 = unbatched[:,2,:,:].unsqueeze(0)
+        pc1 = unbatched[:, 0, :, :]
+        pc2 = unbatched[:,1,:,:]
+        pc3 = unbatched[:,2,:,:]
 
         x1 = self.head1(pc1)
         x2 = self.head2(pc2)
@@ -802,16 +802,27 @@ class LailClAgent:
         self.CL.train(training)
 
     def act(self, obs, step, eval_mode, from_buffer):
+        breakpoint()
+        if from_buffer == True:
+            pass
+            #it should already be good
         if from_buffer==False:
             """I believe it is (192, 64)"""
             #hard coding for now
             obs_reshaped = obs.reshape(3, 64, 64)
             point_clouds = []
+            max_obs_length = -1
             for i in range(3):
                 obs = obs_reshaped[i, :, :]
                 obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
-                obs = torch.as_tensor(obs, device=self.device).float()
+                max_obs_length = max(obs.shape[0], max_obs_length)
+                #obs = torch.as_tensor(obs, device=self.device).float()
                 point_clouds.append(obs)
+
+            #make this fully convert point_clouds into [b,3,n,3] pytorch tensor
+            point_clouds = torch.as_tensor(point_clouds, device=self.device).float()
+
+
 
         if self.grayscale:
             obs = self.grayscale_aug(obs.unsqueeze(0))
