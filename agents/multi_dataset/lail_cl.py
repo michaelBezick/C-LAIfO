@@ -1110,6 +1110,48 @@ class LailClAgent:
 
         return metrics
 
+    def rotate_aug(self, data):
+        batch_size = data.size()[0]
+
+        x_theta = torch.rand((batch_size)) * 2 * m.pi
+        y_theta = torch.rand((batch_size)) * 2 * m.pi
+        z_theta = torch.rand((batch_size)) * 2 * m.pi
+
+        cos_x, sin_x = torch.cos(x_theta), torch.sin(x_theta)
+        cos_y, sin_y = torch.cos(y_theta), torch.sin(y_theta)
+        cos_z, sin_z = torch.cos(z_theta), torch.sin(z_theta)
+
+        x_matrix = torch.zeros((batch_size, 3, 3), device=x_theta.device)
+        x_matrix[:, 0, 0] = 1.0
+        x_matrix[:, 1, 1] = cos_x
+        x_matrix[:, 1, 2] = -sin_x
+        x_matrix[:, 2, 1] = sin_x
+        x_matrix[:, 2, 2] = cos_x
+
+        y_matrix = torch.zeros((batch_size, 3, 3), device=y_theta.device)
+        y_matrix[:, 1, 1] = 1.0
+        y_matrix[:, 0, 0] = cos_y
+        y_matrix[:, 0, 2] = sin_y
+        y_matrix[:, 2, 0] = -sin_y
+        y_matrix[:, 2, 2] = cos_y
+
+        z_matrix = torch.zeros((batch_size, 3, 3), device=z_theta.device)
+        z_matrix[:, 2, 2] = 1.0
+        z_matrix[:, 0, 0] = cos_z
+        z_matrix[:, 0, 1] = -sin_z
+        z_matrix[:, 1, 0] = sin_z
+        z_matrix[:, 1, 1] = cos_z
+
+        z_matrix = z_matrix[:, None, :, :]
+        y_matrix = y_matrix[:, None, :, :]
+        x_matrix = x_matrix[:, None, :, :]
+
+        data = torch.matmul(data, z_matrix.transpose(-1, -2))
+        data = torch.matmul(data, y_matrix.transpose(-1, -2))
+        data = torch.matmul(data, x_matrix.transpose(-1, -2))
+
+        return data
+
     def update(
         self,
         replay_iter,
@@ -1129,10 +1171,10 @@ class LailClAgent:
         #[b, cx3, h,w]
         #[b, 3, d, 3]
 
-        batch_expert = next(replay_iter_expert)
-        obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(
-            batch_expert, self.device
-        )
+        # batch_expert = next(replay_iter_expert)
+        # obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(
+        #     batch_expert, self.device
+        # )
 
         # sample random data
         batch_agent_random = next(replay_iter_random)
@@ -1146,25 +1188,25 @@ class LailClAgent:
         )
 
         #usually off, but would shift all to gray 
-        if self.grayscale:
-            obs = self.grayscale_aug(obs)
-            next_obs = self.grayscale_aug(next_obs)
-            obs_e_raw = self.grayscale_aug(obs_e_raw)
-            next_obs_e_raw = self.grayscale_aug(next_obs_e_raw)
-            obs_random = self.grayscale_aug(obs_random)
-            next_obs_random = self.grayscale_aug(next_obs_random)
-            obs_e_raw_random = self.grayscale_aug(obs_e_raw_random)
-            next_obs_e_raw_random = self.grayscale_aug(next_obs_e_raw_random)
+        # if self.grayscale:
+        #     obs = self.grayscale_aug(obs)
+        #     next_obs = self.grayscale_aug(next_obs)
+        #     obs_e_raw = self.grayscale_aug(obs_e_raw)
+        #     next_obs_e_raw = self.grayscale_aug(next_obs_e_raw)
+        #     obs_random = self.grayscale_aug(obs_random)
+        #     next_obs_random = self.grayscale_aug(next_obs_random)
+        #     obs_e_raw_random = self.grayscale_aug(obs_e_raw_random)
+        #     next_obs_e_raw_random = self.grayscale_aug(next_obs_e_raw_random)
 
-        if step % self.check_every_steps == 0 and False:
-            self.check_aug(
-                obs_random.float(),
-                next_obs_random.float(),
-                obs_e_raw_random.float(),
-                next_obs_e_raw_random.float(),
-                "random_buffer",
-                step,
-            )
+        # if step % self.check_every_steps == 0 and False:
+        #     self.check_aug(
+        #         obs_random.float(),
+        #         next_obs_random.float(),
+        #         obs_e_raw_random.float(),
+        #         next_obs_e_raw_random.float(),
+        #         "random_buffer",
+        #         step,
+        #     )
 
         """
         metrics.update(
@@ -1187,20 +1229,21 @@ class LailClAgent:
         next_obs_a = self.aug_D(next_obs)
         """
 
-        #ADDED THIS
-        obs_e = obs_e_raw
-        next_obs_e = next_obs_e_raw
-        obs_a = obs
-        next_obs_a = next_obs
+        obs_a = self.rotate_aug(obs)
+        next_obs_a = self.rotate_aug(next_obs)
 
-        if step % self.check_every_steps == 0 and False:
-            self.check_aug(
-                obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step
-            )
+        #ADDED THIS
+        # obs_e = obs_e_raw
+        # next_obs_e = next_obs_e_raw
+
+        # if step % self.check_every_steps == 0 and False:
+        #     self.check_aug(
+        #         obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step
+        #     )
 
         with torch.no_grad():
-            z_e = self.encoder(obs_e.float())
-            next_z_e = self.encoder(next_obs_e.float())
+            # z_e = self.encoder(obs_e.float())
+            # next_z_e = self.encoder(next_obs_e.float())
             z_a = self.encoder(obs_a.float())
             next_z_a = self.encoder(next_obs_a.float())
 

@@ -2,9 +2,6 @@ import math as m
 
 import torch
 
-points = torch.randn((100, 3, 1500, 3))
-
-
 def rotate_aug(data):
     batch_size = data.size()[0]
 
@@ -47,7 +44,7 @@ def rotate_aug(data):
 
     return data
 
-
+points = torch.ones((1, 1, 1, 3))
 print(points)
-rotate_aug(points)
+points = rotate_aug(points)
 print(points)
