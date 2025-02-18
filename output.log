@@ -1,29 +1,6 @@
-libEGL warning: failed to open /dev/dri/renderD128: Permission denied
-
-libEGL warning: NEEDS EXTENSION: falling back to kms_swrast
-libEGL warning: MESA-LOADER: failed to open kms_swrast: /usr/lib/dri/kms_swrast_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
-
-libEGL warning: MESA-LOADER: failed to open swrast: /usr/lib/dri/swrast_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
-
-libEGL warning: MESA-LOADER: failed to open swrast: /usr/lib/dri/swrast_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
-
-Traceback (most recent call last):
-  File "/home/michael_bezick/Repos/C-LAIfO/train_LAIL_MI.py", line 4, in <module>
-    import point_cloud_generator
-  File "/home/michael_bezick/Repos/C-LAIfO/point_cloud_generator.py", line 6, in <module>
-    from dm_control.suite.walker import Physics
-  File "/home/michael_bezick/miniconda3/envs/combined/lib/python3.9/site-packages/dm_control/suite/__init__.py", line 24, in <module>
-    from dm_control.suite import acrobot
-  File "/home/michael_bezick/miniconda3/envs/combined/lib/python3.9/site-packages/dm_control/suite/acrobot.py", line 20, in <module>
-    from dm_control import mujoco
-  File "/home/michael_bezick/miniconda3/envs/combined/lib/python3.9/site-packages/dm_control/mujoco/__init__.py", line 18, in <module>
-    from dm_control.mujoco.engine import action_spec
-  File "/home/michael_bezick/miniconda3/envs/combined/lib/python3.9/site-packages/dm_control/mujoco/engine.py", line 41, in <module>
-    from dm_control import _render
-  File "/home/michael_bezick/miniconda3/envs/combined/lib/python3.9/site-packages/dm_control/_render/__init__.py", line 67, in <module>
-    Renderer = import_func()  # pylint: disable=invalid-name
-  File "/home/michael_bezick/miniconda3/envs/combined/lib/python3.9/site-packages/dm_control/_render/__init__.py", line 36, in _import_egl
-    from dm_control._render.pyopengl.egl_renderer import EGLContext
-  File "/home/michael_bezick/miniconda3/envs/combined/lib/python3.9/site-packages/dm_control/_render/pyopengl/egl_renderer.py", line 75, in <module>
-    raise ImportError('Cannot initialize a headless EGL display.')
-ImportError: Cannot initialize a headless EGL display.
+[2025-02-17 18:58:25,731][HYDRA] Submitit 'local' sweep output dir : ./experiments/exp_walker_walk_walker_walk_multirun_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent/
+[2025-02-17 18:58:25,733][HYDRA] 	#0 : seed=0 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-17 18:58:25,736][HYDRA] 	#1 : seed=1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-17 18:58:25,740][HYDRA] 	#2 : seed=2 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-17 18:58:25,743][HYDRA] 	#3 : seed=3 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-17 18:58:25,747][HYDRA] 	#4 : seed=4 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64

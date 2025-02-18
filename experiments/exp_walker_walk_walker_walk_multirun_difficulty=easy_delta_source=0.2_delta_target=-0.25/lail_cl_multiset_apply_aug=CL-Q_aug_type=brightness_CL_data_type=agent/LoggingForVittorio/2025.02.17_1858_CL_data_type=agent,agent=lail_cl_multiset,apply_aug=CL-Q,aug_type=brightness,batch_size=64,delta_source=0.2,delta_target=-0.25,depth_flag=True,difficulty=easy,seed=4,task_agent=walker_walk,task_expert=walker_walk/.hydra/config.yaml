@@ -1,0 +1,153 @@
+frame_stack: 3
+action_repeat: 1
+discount: 0.99
+image_height: 64
+image_width: 64
+num_seed_frames: 4000
+num_expl_frames: 10000
+eval_every_frames: 10000
+num_eval_episodes: 1
+save_snapshot: false
+save_replay_buffers: false
+replay_buffer_size: 1000000
+replay_buffer_num_workers: 4
+nstep: 1
+batch_size: 64
+seed: 4
+device: cuda
+save_video: false
+save_train_video: false
+use_tb: false
+experiment: exp
+lr: 0.0001
+lr_BYOL: 0.0001
+feature_dim: 50
+stochastic_encoder: false
+stochastic_preprocessor: true
+num_expert_episodes: 1
+frame_skip: 1
+expert_replay_buffer_size: 100000
+discriminator_lr: 0.0001
+spectral_norm_bool: false
+GAN_loss: bce
+from_dem: false
+dual_mi_constant: 1.0
+dual_max_mi: 0.001
+dual_min_mi_constant: 0.001
+max_mi: 0.99
+min_mi: 0.495
+min_mi_constant: 0.0001
+max_mi_constant: 5.0
+mi_constant: 0.5
+unbiased_mi_decay: 0.99
+check_every_steps: 5000
+depth_flag: true
+segm_flag: false
+apply_aug: CL-Q
+add_aug_anchor_and_positive: false
+aug_type: brightness
+deeper_head: false
+grayscale: false
+num_sub_policies: 5
+temperature: 0.05
+operation_count: 6
+operations_subset: color
+aug_policy_lr: 0.0001
+check_every_steps_aug_policy: 10
+train_encoder_w_critic: true
+CL_data_type: agent
+num_aug_envs: 10
+aug: true
+replay_buffer:
+  _target_: buffers.np_replay_buffer.EfficientReplayBuffer
+  buffer_size: ${replay_buffer_size}
+  batch_size: ${batch_size}
+  nstep: ${nstep}
+  discount: ${discount}
+  frame_stack: ${frame_stack}
+replay_buffer_expert:
+  _target_: buffers.np_replay_buffer.EfficientReplayBuffer
+  buffer_size: ${expert_replay_buffer_size}
+  batch_size: ${batch_size}
+  nstep: ${nstep}
+  discount: ${discount}
+  frame_stack: ${frame_stack}
+num_train_frames: 1100000
+stddev_schedule: linear(1.0,0.1,100000)
+task_name_agent: walker_walk
+task_name_expert: walker_walk
+agent_name: lail_cl_multiset
+agent:
+  _target_: agents.multi_dataset.lail_cl.LailClAgent
+  obs_shape: ???
+  action_shape: ???
+  device: ${device}
+  lr: ${lr}
+  feature_dim: ${feature_dim}
+  hidden_dim: 1024
+  critic_target_tau: 0.01
+  num_expl_steps: 2000
+  update_every_steps: 2
+  stddev_schedule: ${stddev_schedule}
+  stddev_clip: 0.3
+  use_tb: ${use_tb}
+  reward_d_coef: 2.0
+  discriminator_lr: ${discriminator_lr}
+  spectral_norm_bool: ${spectral_norm_bool}
+  check_every_steps: ${check_every_steps}
+  log_std_bounds:
+  - -5
+  - 2
+  GAN_loss: ${GAN_loss}
+  stochastic_encoder: ${stochastic_encoder}
+  train_encoder_w_critic: ${train_encoder_w_critic}
+  CL_data_type: ${CL_data_type}
+  from_dem: ${from_dem}
+  add_aug_anchor_and_positive: true
+  aug_type: ${aug_type}
+  apply_aug: ${apply_aug}
+  grayscale: ${grayscale}
+  depth_flag: ${depth_flag}
+  segm_flag: ${segm_flag}
+aug_policy:
+  _target_: agents.addp.ADDPAgent
+  device: ${device}
+  num_sub_policies: ${num_sub_policies}
+  temperature: ${temperature}
+  operation_count: ${operation_count}
+  operations_subset: ${operations_subset}
+  aug_policy_lr: ${aug_policy_lr}
+  check_every_steps: ${check_every_steps_aug_policy}
+expert:
+  _target_: agents.ddpg.DDPG_Agent
+  obs_dim: ???
+  action_dim: ???
+  action_range:
+  - -1.0
+  - 1.0
+  device: ${device}
+  hidden_dim: 1024
+  hidden_depth: 2
+  discount: 0.99
+  actor_lr: 0.0001
+  actor_betas:
+  - 0.9
+  - 0.999
+  actor_update_frequency: 1
+  critic_lr: 0.0001
+  critic_betas:
+  - 0.9
+  - 0.999
+  critic_tau: 0.005
+  critic_target_update_frequency: 2
+  batch_size: 1024
+  num_expl_steps: 2000
+  stddev_schedule: ${stddev_schedule}
+  stddev_clip: 0.3
+difficulty_name: easy
+visual_seed_target: 9577
+delta_target: -0.25
+visual_seed_source: 9577
+delta_source: 0.2
+vary:
+- light
