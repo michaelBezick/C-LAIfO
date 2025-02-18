@@ -1171,7 +1171,7 @@ class LailClAgent:
         batch = next(replay_iter)
         obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device) #reward_a unused
 
-        sample_cloud = obs[42, 0, :, :]
+        sample_cloud = obs[42, 0, :, :].detach().cpu().numpy()
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(sample_cloud)
         o3d.io.write_point_cloud("point_cloud.ply", pcd)
