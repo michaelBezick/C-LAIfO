@@ -1175,7 +1175,6 @@ class LailClAgent:
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(sample_cloud)
         o3d.io.write_point_cloud("point_cloud.ply", pcd)
-        exit()
 
 
         
