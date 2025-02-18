@@ -134,11 +134,11 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         obs = [[self.obs[i] for i in idx_row] for idx_row in obs_gather_ranges]
         nobs = [[self.obs[i] for i in idx_row] for idx_row in nobs_gather_ranges]
 
-        # ✅ Determine max number of points across batch
+        # Determine max number of points across batch
         max_points = max(max(frame.shape[0] for sample in obs for frame in sample), 
                          max(frame.shape[0] for sample in nobs for frame in sample))
 
-        # ✅ Pad and convert to NumPy arrays
+        # Pad and convert to NumPy arrays
         def pad_point_clouds(data):
             padded_data = []
             for sample in data:

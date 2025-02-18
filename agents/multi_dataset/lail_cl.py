@@ -20,6 +20,7 @@ from utils_folder.byol_pytorch import RandomApply, default
 from utils_folder.utils_dreamer import Bernoulli
 # from agents.multi_dataset.point_cloud_generator import PointCloudGenerator
 from point_cloud_generator import PointCloudGenerator
+import open3d as o3d
 
 class PointNetHead(nn.Module):
     def __init__(self, latent_dim):
@@ -1163,11 +1164,21 @@ class LailClAgent:
         """Get rid of expert stuff + Disc"""
         """Experiment with mismatch between train and eval"""
         metrics = dict()
+        breakpoint()
 
         if step % self.update_every_steps != 0:
             return metrics
         batch = next(replay_iter)
         obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device) #reward_a unused
+
+        sample_cloud = obs[42, 0, :, :]
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(sample_cloud)
+        o3d.io.write_point_cloud("point_cloud.ply", pcd)
+        exit()
+
+
+        
         #[b, cx3, h,w]
         #[b, 3, d, 3]
 
