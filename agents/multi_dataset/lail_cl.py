@@ -1175,7 +1175,7 @@ class LailClAgent:
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(sample_cloud)
         o3d.io.write_point_cloud("point_cloud.ply", pcd)
-        exit()
+        print("Saved successfully")
 
 
         
@@ -1192,6 +1192,7 @@ class LailClAgent:
         obs_random, _, _, _, next_obs_random = utils.to_torch(
             batch_agent_random, self.device
         )
+        exit()
 
         batch_expert_random = next(replay_iter_expert_random)
         obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(
@@ -1284,7 +1285,7 @@ class LailClAgent:
 
         # update critic
         metrics.update(
-            self.update_critic(obs, action, reward_a, discount, next_obs, step) #replaced reward with reward_a
+            self.update_critic(z_a, action, reward_a, discount, next_z_a, step) #replaced reward with reward_a
         )
 
         # update actor
