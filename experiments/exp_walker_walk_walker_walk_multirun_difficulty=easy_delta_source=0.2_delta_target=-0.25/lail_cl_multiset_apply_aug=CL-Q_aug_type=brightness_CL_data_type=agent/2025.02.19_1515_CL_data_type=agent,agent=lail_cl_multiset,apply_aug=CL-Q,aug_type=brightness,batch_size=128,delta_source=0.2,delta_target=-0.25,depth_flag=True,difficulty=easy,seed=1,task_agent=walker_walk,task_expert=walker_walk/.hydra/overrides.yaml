@@ -1,0 +1,12 @@
+- seed=1
+- task_agent=walker_walk
+- task_expert=walker_walk
+- agent=lail_cl_multiset
+- difficulty=easy
+- delta_source=0.2
+- delta_target=-0.25
+- apply_aug=CL-Q
+- aug_type=brightness
+- CL_data_type=agent
+- depth_flag=True
+- batch_size=128

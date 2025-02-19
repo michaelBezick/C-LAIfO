@@ -1,0 +1,176 @@
+hydra:
+  run:
+    dir: ./experiments/exp_${task_name_agent}_${task_name_expert}_difficulty=${difficulty_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_apply_aug=${apply_aug}_aug_type=${aug_type}_CL_data_type=${CL_data_type}_${now:%Y.%m.%d}/${now:%H%M}_${hydra.job.override_dirname}
+  sweep:
+    dir: ./experiments/exp_${task_name_agent}_${task_name_expert}_multirun_difficulty=${difficulty_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_apply_aug=${apply_aug}_aug_type=${aug_type}_CL_data_type=${CL_data_type}/
+    subdir: ${now:%Y.%m.%d}_${now:%H%M}_${hydra.job.override_dirname}
+  launcher:
+    submitit_folder: ./experiments/exp_${task_name_agent}_${task_name_expert}_multirun_difficulty=${difficulty_name}_delta_source=${delta_source}_delta_target=${delta_target}/${agent_name}_apply_aug=${apply_aug}_aug_type=${aug_type}_CL_data_type=${CL_data_type}/
+    timeout_min: 18000000
+    cpus_per_task: 10
+    gpus_per_node: 1
+    tasks_per_node: 1
+    mem_gb: 160
+    nodes: 1
+    name: ${hydra.job.name}
+    _target_: hydra_plugins.hydra_submitit_launcher.submitit_launcher.LocalLauncher
+  sweeper:
+    _target_: hydra._internal.core_plugins.basic_sweeper.BasicSweeper
+    max_batch_size: null
+  help:
+    app_name: ${hydra.job.name}
+    header: '${hydra.help.app_name} is powered by Hydra.
+
+      '
+    footer: 'Powered by Hydra (https://hydra.cc)
+
+      Use --hydra-help to view Hydra specific help
+
+      '
+    template: '${hydra.help.header}
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (group=option)
+
+
+      $APP_CONFIG_GROUPS
+
+
+      == Config ==
+
+      Override anything in the config (foo.bar=value)
+
+
+      $CONFIG
+
+
+      ${hydra.help.footer}
+
+      '
+  hydra_help:
+    template: 'Hydra (${hydra.runtime.version})
+
+      See https://hydra.cc for more info.
+
+
+      == Flags ==
+
+      $FLAGS_HELP
+
+
+      == Configuration groups ==
+
+      Compose your configuration from those groups (For example, append hydra/job_logging=disabled
+      to command line)
+
+
+      $HYDRA_CONFIG_GROUPS
+
+
+      Use ''--cfg hydra'' to Show the Hydra config.
+
+      '
+    hydra_help: ???
+  hydra_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][HYDRA] %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+    root:
+      level: INFO
+      handlers:
+      - console
+    loggers:
+      logging_example:
+        level: DEBUG
+    disable_existing_loggers: false
+  job_logging:
+    version: 1
+    formatters:
+      simple:
+        format: '[%(asctime)s][%(name)s][%(levelname)s] - %(message)s'
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: simple
+        stream: ext://sys.stdout
+      file:
+        class: logging.FileHandler
+        formatter: simple
+        filename: ${hydra.job.name}.log
+    root:
+      level: INFO
+      handlers:
+      - console
+      - file
+    disable_existing_loggers: false
+  env: {}
+  searchpath: []
+  callbacks: {}
+  output_subdir: .hydra
+  overrides:
+    hydra: []
+    task:
+    - seed=2
+    - task_agent=walker_walk
+    - task_expert=walker_walk
+    - agent=lail_cl_multiset
+    - difficulty=easy
+    - delta_source=0.2
+    - delta_target=-0.25
+    - apply_aug=CL-Q
+    - aug_type=brightness
+    - CL_data_type=agent
+    - depth_flag=True
+    - batch_size=128
+  job:
+    name: train_LAIL_MI
+    override_dirname: CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=128,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,seed=2,task_agent=walker_walk,task_expert=walker_walk
+    id: '24688'
+    num: 2
+    config_name: debug_config_lail_MI
+    env_set: {}
+    env_copy: []
+    config:
+      override_dirname:
+        kv_sep: '='
+        item_sep: ','
+        exclude_keys: []
+  runtime:
+    version: 1.1.0
+    cwd: /home/michaelbezick/Repos/C-LAIfO
+    config_sources:
+    - path: hydra.conf
+      schema: pkg
+      provider: hydra
+    - path: /home/michaelbezick/Repos/C-LAIfO/config_folder/POMDP
+      schema: file
+      provider: main
+    - path: ''
+      schema: structured
+      provider: schema
+    choices:
+      difficulty: easy
+      expert: ddpg
+      aug_policy: addp
+      agent: lail_cl_multiset
+      task_expert: walker_walk
+      task_agent: walker_walk
+      replay_buffer_expert: numpy
+      replay_buffer: numpy
+      hydra/env: default
+      hydra/callbacks: null
+      hydra/job_logging: default
+      hydra/hydra_logging: default
+      hydra/hydra_help: default
+      hydra/help: default
+      hydra/sweeper: basic
+      hydra/launcher: submitit_local
+      hydra/output: default
+  verbose: false

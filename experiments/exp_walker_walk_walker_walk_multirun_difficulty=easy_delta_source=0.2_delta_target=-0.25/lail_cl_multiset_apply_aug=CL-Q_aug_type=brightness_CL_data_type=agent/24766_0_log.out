@@ -1,0 +1,9 @@
+submitit INFO (2025-02-19 15:15:51,919) - Starting with JobEnvironment(job_id=24766, hostname=corallabs1-ASUS, local_rank=0(1), node=0(1), global_rank=0(1))
+submitit INFO (2025-02-19 15:15:51,919) - Loading pickle: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_multirun_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent/24766_submitted.pkl
+[2025-02-19 15:15:53,212][absl][INFO] - MUJOCO_GL=egl, attempting to import specified OpenGL backend.
+[2025-02-19 15:15:53,218][OpenGL.acceleratesupport][INFO] - OpenGL_accelerate module loaded
+[2025-02-19 15:15:53,221][OpenGL.arrays.arraydatatype][INFO] - Using accelerated ArrayDatatype
+[2025-02-19 15:15:53,316][absl][INFO] - MuJoCo library version is: 211
+workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_multirun_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent/2025.02.19_1515_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=128,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,seed=4,task_agent=walker_walk,task_expert=walker_walk
+submitit INFO (2025-02-19 15:15:57,089) - Job completed successfully
+[2025-02-19 15:15:57,089][submitit][INFO] - Job completed successfully
