@@ -249,7 +249,7 @@ class Workspace:
         self.train_video_recorder.init(time_step.observation)
         metrics = None
         """
-        ISSUE, self.env.step_learn_from_pixels(time_step, action) is where expert piont cloud is made
+        ISSUE, self.env.step_learn_from_pixels(time_step, action) is where expert point cloud is made
         """
         while train_until_step(self.global_step):
             if time_step.last():

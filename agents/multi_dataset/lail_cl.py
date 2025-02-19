@@ -26,20 +26,22 @@ class PointNetHead(nn.Module):
     def __init__(self, latent_dim):
         super().__init__()
 
+        h_dim=256
+
         self.h = nn.Sequential(
             nn.Conv1d(3, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
         )
 
         self.mlp2 = nn.Sequential(
-            nn.Conv1d(64, 128, kernel_size=1),
-            nn.BatchNorm1d(128),
+            nn.Conv1d(64, h_dim, kernel_size=1),
+            nn.BatchNorm1d(h_dim),
             nn.ReLU(),
-            nn.Conv1d(128, 128, kernel_size=1),
-            nn.BatchNorm1d(128),
+            nn.Conv1d(h_dim, h_dim, kernel_size=1),
+            nn.BatchNorm1d(h_dim),
         )
 
         self.mlp3 = nn.Sequential(
-            nn.Conv1d(128, 64, kernel_size=1),
+            nn.Conv1d(h_dim, 64, kernel_size=1),
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Conv1d(64, 64, kernel_size=1),
@@ -1164,18 +1166,18 @@ class LailClAgent:
         """Get rid of expert stuff + Disc"""
         """Experiment with mismatch between train and eval"""
         metrics = dict()
-        breakpoint()
 
         if step % self.update_every_steps != 0:
             return metrics
         batch = next(replay_iter)
         obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device) #reward_a unused
 
+        """
         sample_cloud = obs[42, 0, :, :].detach().cpu().numpy()
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(sample_cloud)
         o3d.io.write_point_cloud("point_cloud.ply", pcd)
-        print("Saved successfully")
+        """
 
 
         
@@ -1188,16 +1190,17 @@ class LailClAgent:
         # )
 
         # sample random data
+        """
         batch_agent_random = next(replay_iter_random)
         obs_random, _, _, _, next_obs_random = utils.to_torch(
             batch_agent_random, self.device
         )
-        exit()
 
         batch_expert_random = next(replay_iter_expert_random)
         obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(
             batch_expert_random, self.device
         )
+        """
 
         #usually off, but would shift all to gray 
         # if self.grayscale:
@@ -1241,8 +1244,6 @@ class LailClAgent:
         next_obs_a = self.aug_D(next_obs)
         """
 
-        obs_a = self.rotate_aug(obs.float())
-        next_obs_a = self.rotate_aug(next_obs.float())
 
         #ADDED THIS
         # obs_e = obs_e_raw
@@ -1253,11 +1254,13 @@ class LailClAgent:
         #         obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step
         #     )
 
+        """
         with torch.no_grad():
             # z_e = self.encoder(obs_e.float())
             # next_z_e = self.encoder(next_obs_e.float())
             z_a = self.encoder(obs_a.float())
             next_z_a = self.encoder(next_obs_a.float())
+        """
 
         """
         # update critic
@@ -1276,16 +1279,19 @@ class LailClAgent:
         # next_obs = self.aug_Q(next_obs)
 
         # encode
-        obs = self.encoder(obs.float())
+        obs_a = self.rotate_aug(obs)
+        next_obs_a = self.rotate_aug(next_obs)
+
+        obs = self.encoder(obs_a)
         with torch.no_grad():
-            next_obs = self.encoder(next_obs.float())
+            next_obs = self.encoder(next_obs_a)
 
         if self.use_tb:
             metrics["batch_reward"] = reward_a.mean().item()
 
         # update critic
         metrics.update(
-            self.update_critic(z_a, action, reward_a, discount, next_z_a, step) #replaced reward with reward_a
+            self.update_critic(obs, action, reward_a, discount, next_obs, step) #replaced reward with reward_a
         )
 
         # update actor

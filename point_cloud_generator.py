@@ -213,7 +213,7 @@ class PointCloudGenerator(object):
 
         points = np.asarray(transformed_cloud.points)
 
-        return points
+        return points.astype(np.float32)
 
     def generateCroppedPointCloud(self, save_img_dir=None, fast=True):
         o3d_clouds = []
