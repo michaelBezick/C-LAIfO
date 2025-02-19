@@ -82,7 +82,7 @@ class PointNetEncoder(nn.Module):
         self.head3 = PointNetHead(latent_dim)
 
         self.final = nn.Sequential(
-            nn.Linear(latent_dim * 3, latent_dim), nn.Tanh()
+            nn.Linear(latent_dim * 3, latent_dim),nn.BatchNorm1d(latent_dim), nn.Tanh()
         )
 
 
