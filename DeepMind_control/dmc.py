@@ -254,7 +254,6 @@ class ExtendedTimeStepWrapper(dm_env.Environment):
         return getattr(self._env, name)
 
 def make(name, frame_stack, action_repeat, seed, image_height=84, image_width=84):
-    breakpoint()
     domain, task = name.split('_', 1)
     # overwrite cup to ball_in_cup
     domain = dict(cup='ball_in_cup').get(domain, domain)
