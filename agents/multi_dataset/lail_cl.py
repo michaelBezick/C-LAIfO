@@ -3,30 +3,32 @@ import os
 
 import hydra
 import numpy as np
+import open3d as o3d
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils.rnn import pad_sequence
 import torchvision.transforms.functional as FT
 from torch import autograd
 from torch import distributions as torchd
 from torch.nn.utils import spectral_norm
+from torch.nn.utils.rnn import pad_sequence
 from torchvision.models.optical_flow import raft_small
 from torchvision.transforms import v2 as T
 from torchvision.transforms.functional import rgb_to_grayscale
 from torchvision.utils import save_image
+
+# from agents.multi_dataset.point_cloud_generator import PointCloudGenerator
+from point_cloud_generator import PointCloudGenerator
 from utils_folder import utils
 from utils_folder.byol_pytorch import RandomApply, default
 from utils_folder.utils_dreamer import Bernoulli
-# from agents.multi_dataset.point_cloud_generator import PointCloudGenerator
-from point_cloud_generator import PointCloudGenerator
-import open3d as o3d
+
 
 class PointNetHead(nn.Module):
     def __init__(self, latent_dim):
         super().__init__()
 
-        h_dim=128
+        h_dim = 128
 
         self.h = nn.Sequential(
             nn.Conv1d(3, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
@@ -73,6 +75,7 @@ class PointNetHead(nn.Module):
 
         return x
 
+
 class PointNetEncoder(nn.Module):
     def __init__(self, latent_dim):
         super().__init__()
@@ -82,9 +85,8 @@ class PointNetEncoder(nn.Module):
         self.head3 = PointNetHead(latent_dim)
 
         self.final = nn.Sequential(
-            nn.Linear(latent_dim * 3, latent_dim),nn.BatchNorm1d(latent_dim), nn.Tanh()
+            nn.Linear(latent_dim * 3, latent_dim), nn.BatchNorm1d(latent_dim), nn.Tanh()
         )
-
 
     def forward(self, point_cloud):
 
@@ -94,17 +96,16 @@ class PointNetEncoder(nn.Module):
 
         """Input size: [b, n, 3]"""
 
-
-        #first 3 is frame stack
+        # first 3 is frame stack
 
         """for now let's just pretend not batched"""
-        #unbatched = point_cloud[0] #[3,n,3]
-        unbatched=point_cloud
-        #unbatched = torch.permute(unbatched, (0, 2,1))
+        # unbatched = point_cloud[0] #[3,n,3]
+        unbatched = point_cloud
+        # unbatched = torch.permute(unbatched, (0, 2,1))
 
         pc1 = unbatched[:, 0, :, :]
-        pc2 = unbatched[:,1,:,:]
-        pc3 = unbatched[:,2,:,:]
+        pc2 = unbatched[:, 1, :, :]
+        pc3 = unbatched[:, 2, :, :]
 
         x1 = self.head1(pc1)
         x2 = self.head2(pc2)
@@ -120,7 +121,73 @@ class PointNetEncoder(nn.Module):
         return x
 
 
+class OneHotPointNetEncoder(nn.Module):
+    def __init__(self, latent_dim):
+        super().__init__()
 
+        h_dim = 128
+
+        self.h = nn.Sequential(
+            nn.Conv1d(3, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
+        )
+
+        self.mlp2 = nn.Sequential(
+            nn.Conv1d(64, h_dim, kernel_size=1),
+            nn.BatchNorm1d(h_dim),
+            nn.ReLU(),
+            nn.Conv1d(h_dim, h_dim, kernel_size=1),
+            nn.BatchNorm1d(h_dim),
+        )
+
+        self.mlp3 = nn.Sequential(
+            nn.Conv1d(h_dim, 64, kernel_size=1),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Conv1d(64, 64, kernel_size=1),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Conv1d(64, latent_dim, kernel_size=1),
+            nn.BatchNorm1d(latent_dim),
+            nn.ReLU(),
+        )
+
+    def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
+        batch_size, num_points, xyz = points.size()
+        one_hot = F.one_hot(torch.tensor([frame_id]), total_frames)
+        one_hot_expanded = one_hot.view(1,1,3).expand(batch_size, num_points, -1)
+        points_concat = torch.cat([points, one_hot_expanded], dim=-1)
+
+        return points_concat
+
+    def forward(self, point_cloud):
+
+        """Input size: [b, 3, n, 3]"""
+
+        points1 = self.add_one_hot_info(point_cloud[:,0,:,:],frame_id=0,total_frames=3)
+        points2 = self.add_one_hot_info(point_cloud[:,1,:,:],frame_id=1,total_frames=3)
+        points3 = self.add_one_hot_info(point_cloud[:,2,:,:],frame_id=2,total_frames=3)
+
+        all_points = torch.cat([points1,points2,points3], dim=1)
+
+        """Size now: [b, n', 3]"""
+
+        x = all_points
+
+
+        x = torch.permute(x, (0, 2, 1))  # [b,3,n']
+
+        x = self.h(x)  # x -> [b,64,n]
+
+        x = self.mlp2(x)  # x -> [b,128,n]
+
+        x = torch.max(x, dim=2, keepdim=True).values  # x -> [b, 128]
+
+        x = self.mlp3(x)
+
+        if x.dim() == 3 and x.shape[2] == 1:
+            x = x.squeeze(2)
+
+        return x
 
 
 class SinusoidalPositionalEmbeddings(nn.Module):
@@ -637,9 +704,8 @@ class LailClAgent:
         ).to(device)
         """
 
-        self.encoder = PointNetEncoder(
-            feature_dim
-        ).to(device)
+        # self.encoder = PointNetEncoder(feature_dim).to(device)
+        self.encoder = OneHotPointNetEncoder(feature_dim).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
@@ -807,10 +873,10 @@ class LailClAgent:
     def act(self, obs, step, eval_mode, from_buffer):
         if from_buffer == True:
             pass
-            #it should already be good
-        if from_buffer==False:
+            # it should already be good
+        if from_buffer == False:
             """I believe it is (192, 64)"""
-            #hard coding for now
+            # hard coding for now
             obs_reshaped = obs.reshape(3, 64, 64)
             point_clouds = []
             max_obs_length = -1
@@ -818,20 +884,22 @@ class LailClAgent:
                 obs = obs_reshaped[i, :, :]
                 obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
                 max_obs_length = max(obs.shape[0], max_obs_length)
-                #obs = torch.as_tensor(obs, device=self.device).float()
+                # obs = torch.as_tensor(obs, device=self.device).float()
                 point_clouds.append(obs)
 
-            tensors = [torch.tensor(arr,dtype=torch.float32, device=self.device) for arr in point_clouds]
-            padded_tensors = pad_sequence(tensors,batch_first=True,padding_value=0)
+            tensors = [
+                torch.tensor(arr, dtype=torch.float32, device=self.device)
+                for arr in point_clouds
+            ]
+            padded_tensors = pad_sequence(tensors, batch_first=True, padding_value=0)
 
             point_clouds = padded_tensors.unsqueeze(0)
-
 
         if self.grayscale:
             obs = self.grayscale_aug(obs.unsqueeze(0))
             obs = self.encoder(obs)
         else:
-            #obs = self.encoder(obs.unsqueeze(0))
+            # obs = self.encoder(obs.unsqueeze(0))
             obs = self.encoder(point_clouds)
 
         stddev = utils.schedule(self.stddev_schedule, step)
@@ -1124,21 +1192,27 @@ class LailClAgent:
         cos_y, sin_y = torch.cos(y_theta), torch.sin(y_theta)
         cos_z, sin_z = torch.cos(z_theta), torch.sin(z_theta)
 
-        x_matrix = torch.zeros((batch_size, 3, 3), device=self.device, dtype=torch.float32)
+        x_matrix = torch.zeros(
+            (batch_size, 3, 3), device=self.device, dtype=torch.float32
+        )
         x_matrix[:, 0, 0] = 1.0
         x_matrix[:, 1, 1] = cos_x
         x_matrix[:, 1, 2] = -sin_x
         x_matrix[:, 2, 1] = sin_x
         x_matrix[:, 2, 2] = cos_x
 
-        y_matrix = torch.zeros((batch_size, 3, 3), device=self.device, dtype=torch.float32)
+        y_matrix = torch.zeros(
+            (batch_size, 3, 3), device=self.device, dtype=torch.float32
+        )
         y_matrix[:, 1, 1] = 1.0
         y_matrix[:, 0, 0] = cos_y
         y_matrix[:, 0, 2] = sin_y
         y_matrix[:, 2, 0] = -sin_y
         y_matrix[:, 2, 2] = cos_y
 
-        z_matrix = torch.zeros((batch_size, 3, 3), device=self.device, dtype=torch.float32)
+        z_matrix = torch.zeros(
+            (batch_size, 3, 3), device=self.device, dtype=torch.float32
+        )
         z_matrix[:, 2, 2] = 1.0
         z_matrix[:, 0, 0] = cos_z
         z_matrix[:, 0, 1] = -sin_z
@@ -1152,8 +1226,8 @@ class LailClAgent:
         x_matrix = x_matrix[:, None, :, :]
 
         data = torch.matmul(data, z_matrix.transpose(-1, -2))
-        #data = torch.matmul(data, y_matrix.transpose(-1, -2))
-        #data = torch.matmul(data, x_matrix.transpose(-1, -2))
+        # data = torch.matmul(data, y_matrix.transpose(-1, -2))
+        # data = torch.matmul(data, x_matrix.transpose(-1, -2))
 
         return data
 
@@ -1172,7 +1246,9 @@ class LailClAgent:
         if step % self.update_every_steps != 0:
             return metrics
         batch = next(replay_iter)
-        obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device) #reward_a unused
+        obs, action, reward_a, discount, next_obs = utils.to_torch(
+            batch, self.device
+        )  # reward_a unused
 
         """
         sample_cloud = obs[42, 0, :, :].detach().cpu().numpy()
@@ -1181,10 +1257,8 @@ class LailClAgent:
         o3d.io.write_point_cloud("point_cloud.ply", pcd)
         """
 
-
-        
-        #[b, cx3, h,w]
-        #[b, 3, d, 3]
+        # [b, cx3, h,w]
+        # [b, 3, d, 3]
 
         # batch_expert = next(replay_iter_expert)
         # obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(
@@ -1204,7 +1278,7 @@ class LailClAgent:
         )
         """
 
-        #usually off, but would shift all to gray 
+        # usually off, but would shift all to gray
         # if self.grayscale:
         #     obs = self.grayscale_aug(obs)
         #     next_obs = self.grayscale_aug(next_obs)
@@ -1238,7 +1312,7 @@ class LailClAgent:
         )
         """
 
-        #CHANGE THIS TO BE RANDOM ROTATION
+        # CHANGE THIS TO BE RANDOM ROTATION
         """
         obs_e = self.aug_D(obs_e_raw)
         next_obs_e = self.aug_D(next_obs_e_raw)
@@ -1246,8 +1320,7 @@ class LailClAgent:
         next_obs_a = self.aug_D(next_obs)
         """
 
-
-        #ADDED THIS
+        # ADDED THIS
         # obs_e = obs_e_raw
         # next_obs_e = next_obs_e_raw
 
@@ -1293,7 +1366,9 @@ class LailClAgent:
 
         # update critic
         metrics.update(
-            self.update_critic(obs, action, reward_a, discount, next_obs, step) #replaced reward with reward_a
+            self.update_critic(
+                obs, action, reward_a, discount, next_obs, step
+            )  # replaced reward with reward_a
         )
 
         # update actor
