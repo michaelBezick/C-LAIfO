@@ -8,6 +8,7 @@ import os
 os.environ['MKL_SERVICE_FORCE_INTEL'] = '1'
 os.environ['MUJOCO_GL'] = 'egl'
 os.environ['HYDRA_FULL_ERROR'] = '1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '1'
 
 from pathlib import Path
 

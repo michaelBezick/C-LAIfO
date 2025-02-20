@@ -128,10 +128,10 @@ hydra:
     - aug_type=brightness
     - CL_data_type=agent
     - depth_flag=True
-    - batch_size=128
+    - batch_size=64
   job:
     name: train_LAIL_MI
-    override_dirname: CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=128,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,seed=0,1,2,3,4,task_agent=walker_walk,task_expert=walker_walk
+    override_dirname: CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=64,delta_source=0.2,delta_target=-0.25,depth_flag=True,difficulty=easy,seed=0,1,2,3,4,task_agent=walker_walk,task_expert=walker_walk
     id: ???
     num: ???
     config_name: debug_config_lail_MI
@@ -188,12 +188,12 @@ save_replay_buffers: false
 replay_buffer_size: 1000000
 replay_buffer_num_workers: 4
 nstep: 1
-batch_size: 128
+batch_size: 64
 seed: 1
 device: cuda
 save_video: false
 save_train_video: false
-use_tb: true
+use_tb: false
 experiment: exp
 lr: 0.0001
 lr_BYOL: 0.0001

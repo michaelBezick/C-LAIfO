@@ -26,7 +26,7 @@ class PointNetHead(nn.Module):
     def __init__(self, latent_dim):
         super().__init__()
 
-        h_dim=256
+        h_dim=128
 
         self.h = nn.Sequential(
             nn.Conv1d(3, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
@@ -1145,13 +1145,15 @@ class LailClAgent:
         z_matrix[:, 1, 0] = sin_z
         z_matrix[:, 1, 1] = cos_z
 
+        "ONLY ROTATING IN Z-DIM"
+
         z_matrix = z_matrix[:, None, :, :]
         y_matrix = y_matrix[:, None, :, :]
         x_matrix = x_matrix[:, None, :, :]
 
         data = torch.matmul(data, z_matrix.transpose(-1, -2))
-        data = torch.matmul(data, y_matrix.transpose(-1, -2))
-        data = torch.matmul(data, x_matrix.transpose(-1, -2))
+        #data = torch.matmul(data, y_matrix.transpose(-1, -2))
+        #data = torch.matmul(data, x_matrix.transpose(-1, -2))
 
         return data
 
