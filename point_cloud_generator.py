@@ -198,18 +198,25 @@ class PointCloudGenerator(object):
             transformed_cloud = transformed_cloud.crop(self.target_bounds)
 
         points = np.asarray(transformed_cloud.points)
+        #not centroid shifting and unit sphere scaling anymore
 
+        """
+
+        #centroid shift
         center = np.mean(points, axis=0)
         centered_points = points - center
 
+        #unit sphere magnitude
         magnitudes = np.linalg.norm(centered_points, axis=1)
         max_magnitude = np.max(magnitudes)
-
+        
         if max_magnitude > 0:
             normalized_points = centered_points / max_magnitude
             transformed_cloud.points = o3d.utility.Vector3dVector(normalized_points)
         else:
             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
+        """
+        transformed_cloud.points = o3d.utility.Vector3dVector(points)
 
         points = np.asarray(transformed_cloud.points)
 

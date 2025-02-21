@@ -33,7 +33,7 @@ batch_size: 256
 # misc
 seed: 1
 device: cuda
-save_video: false
+save_video: true
 save_train_video: false
 use_tb: false
 

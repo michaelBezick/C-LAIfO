@@ -1,6 +1,31 @@
-[2025-02-20 11:05:03,650][HYDRA] Submitit 'local' sweep output dir : ./experiments/exp_walker_walk_walker_walk_multirun_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent/
-[2025-02-20 11:05:03,652][HYDRA] 	#0 : seed=0 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 11:05:03,656][HYDRA] 	#1 : seed=1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 11:05:03,659][HYDRA] 	#2 : seed=2 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 11:05:03,662][HYDRA] 	#3 : seed=3 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 11:05:03,665][HYDRA] 	#4 : seed=4 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-20 21:30:48,483][HYDRA] Submitit 'local' sweep output dir : ./experiments/exp_walker_walk_walker_walk_multirun_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent/
+[2025-02-20 21:30:48,486][HYDRA] 	#0 : seed=0 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-20 21:30:48,490][HYDRA] 	#1 : seed=1 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-20 21:30:48,493][HYDRA] 	#2 : seed=2 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-20 21:30:48,497][HYDRA] 	#3 : seed=3 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+[2025-02-20 21:30:48,501][HYDRA] 	#4 : seed=4 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
+Error executing job with overrides: ['seed=0', 'device=cuda\\:1', 'task_agent=walker_walk', 'task_expert=walker_walk', 'agent=lail_cl_multiset', 'difficulty=easy', 'delta_source=0.2', 'delta_target=-0.25', 'apply_aug=CL-Q', 'aug_type=brightness', 'CL_data_type=agent', 'depth_flag=True', 'batch_size=64']
+Traceback (most recent call last):
+  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 393, in <module>
+    main()
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/main.py", line 49, in decorated_main
+    _run_hydra(
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 375, in _run_hydra
+    run_and_report(
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 214, in run_and_report
+    raise ex
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 211, in run_and_report
+    return func()
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 376, in <lambda>
+    lambda: hydra.multirun(
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/hydra.py", line 139, in multirun
+    ret = sweeper.sweep(arguments=task_overrides)
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/core_plugins/basic_sweeper.py", line 161, in sweep
+    _ = r.return_value
+  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/core/utils.py", line 233, in return_value
+    raise self._return_value
+RuntimeError: Error instantiating 'agents.ddpg.DDPG_Agent' : CUDA error: invalid device ordinal
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

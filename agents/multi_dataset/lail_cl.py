@@ -128,22 +128,22 @@ class OneHotPointNetEncoder(nn.Module):
         h_dim = 128
 
         self.h = nn.Sequential(
-            nn.Conv1d(3, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
+            nn.Conv1d(6, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
         )
 
         self.mlp2 = nn.Sequential(
-            nn.Conv1d(64, h_dim, kernel_size=1),
-            nn.BatchNorm1d(h_dim),
+            nn.Conv1d(64, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(h_dim, h_dim, kernel_size=1),
-            nn.BatchNorm1d(h_dim),
+            nn.Conv1d(128, 256, kernel_size=1),
+            nn.BatchNorm1d(256),
         )
 
         self.mlp3 = nn.Sequential(
-            nn.Conv1d(h_dim, 64, kernel_size=1),
-            nn.BatchNorm1d(64),
+            nn.Conv1d(256, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(64, 64, kernel_size=1),
+            nn.Conv1d(128, 64, kernel_size=1),
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Conv1d(64, latent_dim, kernel_size=1),
@@ -153,7 +153,7 @@ class OneHotPointNetEncoder(nn.Module):
 
     def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
         batch_size, num_points, xyz = points.size()
-        one_hot = F.one_hot(torch.tensor([frame_id]), total_frames)
+        one_hot = F.one_hot(torch.tensor([frame_id]), total_frames).to(points.device).to(points.dtype)
         one_hot_expanded = one_hot.view(1,1,3).expand(batch_size, num_points, -1)
         points_concat = torch.cat([points, one_hot_expanded], dim=-1)
 
@@ -169,12 +169,12 @@ class OneHotPointNetEncoder(nn.Module):
 
         all_points = torch.cat([points1,points2,points3], dim=1)
 
-        """Size now: [b, n', 3]"""
+        """Size now: [b, n', 6]"""
 
         x = all_points
 
 
-        x = torch.permute(x, (0, 2, 1))  # [b,3,n']
+        x = torch.permute(x, (0, 2, 1))  # [b,6,n']
 
         x = self.h(x)  # x -> [b,64,n]
 
