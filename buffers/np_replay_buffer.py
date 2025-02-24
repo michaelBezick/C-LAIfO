@@ -72,6 +72,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         first = time_step.first()
 
         """HELLO THIS SHOULDN'T BE DOING THIS, SHOULD BE GETTING ALL THE INFORMATION"""
+        """I assume originally timestep had all 3 frames. Need to see what is happening"""
 
         #latest_obs = time_step.observation[-self.ims_channels :]
         latest_obs = time_step.observation

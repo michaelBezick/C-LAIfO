@@ -134,6 +134,7 @@ class Workspace:
         return self.global_step * self.cfg.action_repeat
     
     def store_expert_transitions(self):
+        breakpoint()
         step, episode, total_reward = 0, 0, 0
         eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
         #eval_until_episode = utils.Until(1)
@@ -166,6 +167,7 @@ class Workspace:
         print(f'Average expert reward: {total_reward / episode}, Total number of samples: {step}')
 
     def store_random_expert_transitions(self):
+        breakpoint()
         step, episode, total_reward = 0, 0, 0
         eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
         # eval_until_episode = utils.Until(1)
@@ -228,6 +230,7 @@ class Workspace:
             log('step', self.global_step)
 
     def train(self):
+        breakpoint()
         # predicates
         train_until_step = utils.Until(self.cfg.num_train_frames,
                                        self.cfg.action_repeat)
