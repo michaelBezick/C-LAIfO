@@ -13,6 +13,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         nstep,
         discount,
         frame_stack,
+        max_length_point_cloud,
         physics,
         data_specs=None,
     ):
@@ -31,7 +32,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype("float32")
         self.next_dis = discount**nstep
-        self.max_length_point_cloud = 2000
+        self.max_length_point_cloud = max_length_point_cloud
 
         """
         IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT

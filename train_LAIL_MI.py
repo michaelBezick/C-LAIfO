@@ -104,7 +104,7 @@ class Workspace:
                       )
 
         self.replay_buffer = hydra.utils.instantiate(self.cfg.replay_buffer, data_specs=data_specs, physics=self.train_physics)
-        self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics) #don't need
+        # self.replay_buffer_random = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics) #don't need
 
         #create source envs and agent
         self.expert_env = make_env_expert(self.cfg, self.train_env.physics)
@@ -115,8 +115,8 @@ class Workspace:
                                         float(self.expert_env.action_space.high.max())]
         
         self.expert = hydra.utils.instantiate(self.cfg.expert)
-        self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics)
-        self.replay_buffer_random_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics)#don't need
+        # self.replay_buffer_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics)
+        # self.replay_buffer_random_expert = hydra.utils.instantiate(self.cfg.replay_buffer_expert, physics=self.train_physics)#don't need
 
         self.video_recorder = VideoRecorder(self.work_dir if self.cfg.save_video else None)
         self.train_video_recorder = TrainVideoRecorder(self.work_dir if self.cfg.save_train_video else None)
@@ -133,70 +133,70 @@ class Workspace:
     def global_frame(self):
         return self.global_step * self.cfg.action_repeat
     
-    def store_expert_transitions(self):
-        step, episode, total_reward = 0, 0, 0
-        eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
-        #eval_until_episode = utils.Until(1)
-        
-        while eval_until_episode(episode):
-            obs, time_step = self.expert_env.reset()
-            self.expert.reset()
-            self.video_recorder.init(self.expert_env, enabled=(episode == 0))
-            
-            extended_time_step = self.expert_env.step_learn_from_pixels(time_step)
-            self.replay_buffer_expert.add(extended_time_step)
-            
-            done = False
-            
-            while not done:
-                with torch.no_grad(), utils.eval_mode(self.expert):
-                    action = self.expert.act(obs, self.global_step, eval_mode=True)
-                obs, reward, done, _, time_step = self.expert_env.step(action)    
-                
-                extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
-                self.replay_buffer_expert.add(extended_time_step)
-                self.video_recorder.record(self.expert_env)
-                
-                total_reward += extended_time_step.reward
-                step += 1
+    # def store_expert_transitions(self):
+    #     step, episode, total_reward = 0, 0, 0
+    #     eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+    #     #eval_until_episode = utils.Until(1)
+    #     
+    #     while eval_until_episode(episode):
+    #         obs, time_step = self.expert_env.reset()
+    #         self.expert.reset()
+    #         self.video_recorder.init(self.expert_env, enabled=(episode == 0))
+    #         
+    #         extended_time_step = self.expert_env.step_learn_from_pixels(time_step)
+    #         self.replay_buffer_expert.add(extended_time_step)
+    #         
+    #         done = False
+    #         
+    #         while not done:
+    #             with torch.no_grad(), utils.eval_mode(self.expert):
+    #                 action = self.expert.act(obs, self.global_step, eval_mode=True)
+    #             obs, reward, done, _, time_step = self.expert_env.step(action)    
+    #             
+    #             extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
+    #             self.replay_buffer_expert.add(extended_time_step)
+    #             self.video_recorder.record(self.expert_env)
+    #             
+    #             total_reward += extended_time_step.reward
+    #             step += 1
+    #
+    #         episode += 1
+    #         self.video_recorder.save('expert.mp4')
+    #
+    #     print(f'Average expert reward: {total_reward / episode}, Total number of samples: {step}')
 
-            episode += 1
-            self.video_recorder.save('expert.mp4')
-
-        print(f'Average expert reward: {total_reward / episode}, Total number of samples: {step}')
-
-    def store_random_expert_transitions(self):
-        step, episode, total_reward = 0, 0, 0
-        eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
-        # eval_until_episode = utils.Until(1)
-        self.expert.num_expl_steps = 1.0
-        
-        while eval_until_episode(episode):
-            obs, time_step = self.expert_env.reset()
-            self.expert.reset()
-            self.video_recorder.init(self.expert_env, enabled=(episode == 0))
-            
-            extended_time_step = self.expert_env.step_learn_from_pixels(time_step)
-            self.replay_buffer_random_expert.add(extended_time_step)
-            
-            done = False
-            
-            while not done:
-                with torch.no_grad(), utils.eval_mode(self.expert):
-                    action = self.expert.act(obs, self.global_step, eval_mode=False)
-                obs, reward, done, _, time_step = self.expert_env.step(action)    
-                
-                extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
-                self.replay_buffer_random_expert.add(extended_time_step)
-                self.video_recorder.record(self.expert_env)
-                
-                total_reward += extended_time_step.reward
-                step += 1
-
-            episode += 1
-            self.video_recorder.save('random_expert.mp4')
-
-        print(f'Average random expert reward: {total_reward / episode}, Total number of samples: {step}')
+    # def store_random_expert_transitions(self):
+    #     step, episode, total_reward = 0, 0, 0
+    #     eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
+    #     # eval_until_episode = utils.Until(1)
+    #     self.expert.num_expl_steps = 1.0
+    #     
+    #     while eval_until_episode(episode):
+    #         obs, time_step = self.expert_env.reset()
+    #         self.expert.reset()
+    #         self.video_recorder.init(self.expert_env, enabled=(episode == 0))
+    #         
+    #         extended_time_step = self.expert_env.step_learn_from_pixels(time_step)
+    #         self.replay_buffer_random_expert.add(extended_time_step)
+    #         
+    #         done = False
+    #         
+    #         while not done:
+    #             with torch.no_grad(), utils.eval_mode(self.expert):
+    #                 action = self.expert.act(obs, self.global_step, eval_mode=False)
+    #             obs, reward, done, _, time_step = self.expert_env.step(action)    
+    #             
+    #             extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
+    #             self.replay_buffer_random_expert.add(extended_time_step)
+    #             self.video_recorder.record(self.expert_env)
+    #             
+    #             total_reward += extended_time_step.reward
+    #             step += 1
+    #
+    #         episode += 1
+    #         self.video_recorder.save('random_expert.mp4')
+    #
+    #     print(f'Average random expert reward: {total_reward / episode}, Total number of samples: {step}')
         
     def eval(self):
         step, episode, total_reward = 0, 0, 0
@@ -249,7 +249,7 @@ class Workspace:
         time_step = self.train_env.reset()
 
         self.replay_buffer.add(time_step, point_cloud=False)
-        self.replay_buffer_random.add(time_step, point_cloud=False)
+        # self.replay_buffer_random.add(time_step, point_cloud=False)
 
         self.train_video_recorder.init(time_step.observation)
         metrics = None
@@ -279,8 +279,8 @@ class Workspace:
                 time_step = self.train_env.reset()
                 self.replay_buffer.add(time_step, point_cloud=False)
 
-                if random_until_step(self.global_step):
-                    self.replay_buffer_random.add(time_step, point_cloud=False)
+                # if random_until_step(self.global_step):
+                #     self.replay_buffer_random.add(time_step, point_cloud=False)
 
                 self.train_video_recorder.init(time_step.observation)
                 episode_step = 0
@@ -308,10 +308,10 @@ class Workspace:
             # try to update the agent
             if not seed_until_step(self.global_step):
                 metrics = self.agent.update(self.replay_buffer, 
-                                            self.replay_buffer_expert, 
-                                            self.replay_buffer_random, 
-                                            self.replay_buffer_random_expert, 
-                                            self.global_step)
+                                            replay_iter_expert=None, 
+                                            replay_iter_random=None, 
+                                            replay_iter_expert_random=None, 
+                                            step=self.global_step)
                 
                 self.logger.log_metrics(metrics, self.global_frame, ty='train')
 
@@ -320,8 +320,8 @@ class Workspace:
             episode_reward += time_step.reward
             self.replay_buffer.add(time_step, point_cloud=False)
 
-            if random_until_step(self.global_step):
-                self.replay_buffer_random.add(time_step, point_cloud=False)
+            # if random_until_step(self.global_step):
+            #     self.replay_buffer_random.add(time_step, point_cloud=False)
 
             self.train_video_recorder.record(time_step.observation)
             episode_step += 1

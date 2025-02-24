@@ -5,3 +5,4 @@ replay_buffer:
   nstep: ${nstep}
   discount: ${discount}
   frame_stack: ${frame_stack}
+  max_length_point_cloud: ${max_length_point_cloud}
