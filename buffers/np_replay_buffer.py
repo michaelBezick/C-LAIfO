@@ -104,30 +104,32 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
                     end_index = end_index % self.buffer_size
                     self.obs[self.index:self.buffer_size] = latest_obs
                     self.obs[0:end_index] = latest_obs
-                    self.obs[self.index : self.buffer_size] = [
-                        latest_obs.copy() for _ in range(self.buffer_size - self.index)
-                    ]
-                    self.obs[0:end_index] = [
-                        latest_obs.copy() for _ in range(end_index)
-                    ]
+                    # self.obs[self.index : self.buffer_size] = [
+                    #     latest_obs.copy() for _ in range(self.buffer_size - self.index)
+                    # ]
+                    # self.obs[0:end_index] = [
+                    #     latest_obs.copy() for _ in range(end_index)
+                    # ]
                     self.full = True
                 else:
-                    self.obs[self.index : end_index] = [
-                        latest_obs.copy() for _ in range(end_index - self.index)
-                    ]
+                    # self.obs[self.index : end_index] = [
+                    #     latest_obs.copy() for _ in range(end_index - self.index)
+                    # ]
+                    self.obs[self.index:end_index] = latest_obs
                 end_invalid = end_invalid % self.buffer_size
                 self.valid[self.index : self.buffer_size] = False
                 self.valid[0:end_invalid] = False
             else:
-                self.obs[self.index : end_index] = [
-                    latest_obs.copy() for _ in range(end_index - self.index)
-                ]
+                # self.obs[self.index : end_index] = [
+                #     latest_obs.copy() for _ in range(end_index - self.index)
+                # ]
+                self.obs[self.index:end_index] = latest_obs
                 self.valid[self.index : end_invalid] = False
             self.index = end_index
             self.traj_index = 1
         else:
-            # np.copyto(self.obs[self.index], latest_obs)
-            self.obs[self.index] = latest_obs.copy()
+            np.copyto(self.obs[self.index], latest_obs)
+            # self.obs[self.index] = latest_obs.copy()
             np.copyto(self.act[self.index], time_step.action)
             self.rew[self.index] = time_step.reward
             self.dis[self.index] = time_step.discount
@@ -153,63 +155,30 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         return self.gather_nstep_indices(indices)
 
     def gather_nstep_indices(self, indices):
+        breakpoint()
         n_samples = indices.shape[0]
+        all_gather_ranges = np.stack([np.arange(indices[i] - self.frame_stack, indices[i] + self.nstep)
+                                  for i in range(n_samples)], axis=0) % self.buffer_size
+        gather_ranges = all_gather_ranges[:, self.frame_stack:] # bs x nstep
+        obs_gather_ranges = all_gather_ranges[:, :self.frame_stack]
+        nobs_gather_ranges = all_gather_ranges[:, -self.frame_stack:]
 
-        # Compute gather indices in a vectorized way
-        all_gather_ranges = (
-            np.arange(-self.frame_stack, self.nstep) + indices[:, None]
-        ) % self.buffer_size
+        all_rewards = self.rew[gather_ranges]
 
-        gather_ranges = all_gather_ranges[:, self.frame_stack :]  # bs x nstep
-        obs_gather_ranges = all_gather_ranges[:, : self.frame_stack]
-        nobs_gather_ranges = all_gather_ranges[:, -self.frame_stack :]
+        # Could implement reward computation as a matmul in pytorch for
+        # marginal additional speed improvement
+        rew = np.sum(all_rewards * self.discount_vec, axis=1, keepdims=True)
 
-        # Collect rewards efficiently
-        rew = np.sum(self.rew[gather_ranges] * self.discount_vec, axis=1, keepdims=True)
+        obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
+        nobs = np.reshape(self.obs[nobs_gather_ranges], [n_samples, *self.obs_shape])
 
-        # Convert `self.obs` to a NumPy array for fast slicing
-        obs_array = np.array(
-            self.obs, dtype=object
-        )  # Assumes self.obs is a list of NumPy arrays
-        nobs_array = np.array(self.obs, dtype=object)
-
-        # Vectorized fetching of observations
-        obs = obs_array[obs_gather_ranges]
-        nobs = nobs_array[nobs_gather_ranges]
-
-        # Determine max number of points in a vectorized manner
-        max_points = max(
-            max(np.max([frame.shape[0] for sample in obs for frame in sample])),
-            max(np.max([frame.shape[0] for sample in nobs for frame in sample])),
-        )
-
-        # Fast vectorized padding function
-        def pad_point_clouds(data, max_points):
-            batch_size, frame_stack = data.shape[:2]
-            padded_data = np.zeros(
-                (batch_size, frame_stack, max_points, 3), dtype=np.float32
-            )  # Preallocate
-
-            for i in range(batch_size):
-                for j in range(frame_stack):
-                    frame = data[i, j]
-                    N = frame.shape[0]
-                    padded_data[i, j, :N, :] = frame  # Copy only the valid points
-
-            return padded_data
-
-        # Apply vectorized padding
-        obs_padded = pad_point_clouds(obs, max_points)
-        nobs_padded = pad_point_clouds(nobs, max_points)
-
-        # Gather actions and distances
         act = self.act[indices]
-        dis = np.expand_dims(
-            self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1
-        )
+        dis = np.expand_dims(self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1)
 
-        return obs_padded, act, rew, dis, nobs_padded
+        ret = (obs, act, rew, dis, nobs)
 
+        return ret
+        
     def gather_nstep_indices2(self, indices):
         n_samples = indices.shape[0]
 
