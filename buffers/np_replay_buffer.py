@@ -31,7 +31,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype("float32")
         self.next_dis = discount**nstep
-        self.max_length_point_cloud = 3000
+        self.max_length_point_cloud = 5000
 
         """
         IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
@@ -68,8 +68,13 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         Expecting each time step to have depth information
         """
 
+        breakpoint()
         first = time_step.first()
-        latest_obs = time_step.observation[-self.ims_channels :]
+
+        """HELLO THIS SHOULDN'T BE DOING THIS, SHOULD BE GETTING ALL THE INFORMATION"""
+
+        #latest_obs = time_step.observation[-self.ims_channels :]
+        latest_obs = time_step.observation
 
         if point_cloud == False:
             # need to convert depth image to point cloud
@@ -151,6 +156,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         return self.gather_nstep_indices(indices)
 
     def gather_nstep_indices(self, indices):
+        breakpoint()
         n_samples = indices.shape[0]
 
         # Compute gather indices in a vectorized way
