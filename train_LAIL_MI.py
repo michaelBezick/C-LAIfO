@@ -251,7 +251,7 @@ class Workspace:
         time_step = self.train_env.reset()
 
         self.replay_buffer.add(time_step, point_cloud=False)
-        self.replay_buffer_random.add(time_step)
+        self.replay_buffer_random.add(time_step, point_cloud=False)
 
         self.train_video_recorder.init(time_step.observation)
         metrics = None
@@ -282,7 +282,7 @@ class Workspace:
                 self.replay_buffer.add(time_step, point_cloud=False)
 
                 if random_until_step(self.global_step):
-                    self.replay_buffer_random.add(time_step)
+                    self.replay_buffer_random.add(time_step, point_cloud=False)
 
                 self.train_video_recorder.init(time_step.observation)
                 episode_step = 0
@@ -323,7 +323,7 @@ class Workspace:
             self.replay_buffer.add(time_step, point_cloud=False)
 
             if random_until_step(self.global_step):
-                self.replay_buffer_random.add(time_step)
+                self.replay_buffer_random.add(time_step, point_cloud=False)
 
             self.train_video_recorder.record(time_step.observation)
             episode_step += 1

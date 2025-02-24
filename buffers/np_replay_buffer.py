@@ -31,7 +31,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype("float32")
         self.next_dis = discount**nstep
-        self.max_length_point_cloud = 5000
+        self.max_length_point_cloud = 1600
 
         """
         IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
@@ -41,7 +41,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
     def _initial_setup(self, time_step):
         self.index = 0
         self.obs_shape = list(time_step.observation.shape)
-        self.ims_channels = self.obs_shape[0] // self.frame_stack
+        self.ims_channels = self.obs_shape[0] // self.frame_stack #this is correct for normal buffer (not expert)
         self.act_shape = time_step.action.shape
 
         # self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
@@ -60,6 +60,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.valid = np.zeros([self.buffer_size], dtype=np.bool_)
 
     def add_data_point(self, time_step, point_cloud):
+        breakpoint()
         """
         BIG CHANGE, HAVING THE REPLAY BUFFER A NP ARRAY AND WILL 0 PAD / TRUNCATE TO
         MAKE EACH POINT CLOUD A FIXED SIZE
@@ -70,11 +71,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
 
         first = time_step.first()
 
-        """HELLO THIS SHOULDN'T BE DOING THIS, SHOULD BE GETTING ALL THE INFORMATION"""
-        """I assume originally timestep had all 3 frames. Need to see what is happening"""
-
-        #latest_obs = time_step.observation[-self.ims_channels :]
-        latest_obs = time_step.observation
+        latest_obs = time_step.observation[-self.ims_channels :] #this is okay ONLY for the normal buffer, doesn't work for expert
 
         if point_cloud == False:
             # need to convert depth image to point cloud
@@ -105,8 +102,8 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
             if end_invalid > self.buffer_size:
                 if end_index > self.buffer_size:
                     end_index = end_index % self.buffer_size
-                    # self.obs[self.index:self.buffer_size] = latest_obs
-                    # self.obs[0:end_index] = latest_obs
+                    self.obs[self.index:self.buffer_size] = latest_obs
+                    self.obs[0:end_index] = latest_obs
                     self.obs[self.index : self.buffer_size] = [
                         latest_obs.copy() for _ in range(self.buffer_size - self.index)
                     ]
