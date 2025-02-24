@@ -31,7 +31,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # than the end of each episode or the last recorded observation
         self.discount_vec = np.power(discount, np.arange(nstep)).astype("float32")
         self.next_dis = discount**nstep
-        self.max_length_point_cloud = 1600
+        self.max_length_point_cloud = 2000
 
         """
         IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
@@ -60,7 +60,6 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.valid = np.zeros([self.buffer_size], dtype=np.bool_)
 
     def add_data_point(self, time_step, point_cloud):
-        breakpoint()
         """
         BIG CHANGE, HAVING THE REPLAY BUFFER A NP ARRAY AND WILL 0 PAD / TRUNCATE TO
         MAKE EACH POINT CLOUD A FIXED SIZE
@@ -155,7 +154,6 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         return self.gather_nstep_indices(indices)
 
     def gather_nstep_indices(self, indices):
-        breakpoint()
         n_samples = indices.shape[0]
         all_gather_ranges = np.stack([np.arange(indices[i] - self.frame_stack, indices[i] + self.nstep)
                                   for i in range(n_samples)], axis=0) % self.buffer_size
@@ -169,8 +167,12 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # marginal additional speed improvement
         rew = np.sum(all_rewards * self.discount_vec, axis=1, keepdims=True)
 
-        obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
-        nobs = np.reshape(self.obs[nobs_gather_ranges], [n_samples, *self.obs_shape])
+        #obs = np.reshape(self.obs[obs_gather_ranges], [n_samples, *self.obs_shape])
+        #nobs = np.reshape(self.obs[nobs_gather_ranges], [n_samples, *self.obs_shape])
+
+        #not reshaping because (b,3,d,3) is okay
+        obs = self.obs[obs_gather_ranges]
+        nobs = self.obs[nobs_gather_ranges]
 
         act = self.act[indices]
         dis = np.expand_dims(self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1)

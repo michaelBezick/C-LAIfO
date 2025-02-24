@@ -132,24 +132,24 @@ class OneHotPointNetEncoder(nn.Module):
         )
 
         self.mlp2 = nn.Sequential(
+            nn.Conv1d(64, 64, kernel_size=1),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
             nn.Conv1d(64, 128, kernel_size=1),
             nn.BatchNorm1d(128),
             nn.ReLU(),
             nn.Conv1d(128, 256, kernel_size=1),
             nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Conv1d(256, 256, kernel_size=1),
-            nn.BatchNorm1d(256),
         )
 
         self.mlp3 = nn.Sequential(
-            nn.Conv1d(256, 256, kernel_size=1),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
             nn.Conv1d(256, 128, kernel_size=1),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(128, latent_dim, kernel_size=1),
+            nn.Conv1d(128, 64, kernel_size=1),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Conv1d(64, latent_dim, kernel_size=1),
             nn.BatchNorm1d(latent_dim),
             nn.Tanh(),
         )
