@@ -1,31 +1,18 @@
-[2025-02-20 21:30:48,483][HYDRA] Submitit 'local' sweep output dir : ./experiments/exp_walker_walk_walker_walk_multirun_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent/
-[2025-02-20 21:30:48,486][HYDRA] 	#0 : seed=0 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 21:30:48,490][HYDRA] 	#1 : seed=1 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 21:30:48,493][HYDRA] 	#2 : seed=2 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 21:30:48,497][HYDRA] 	#3 : seed=3 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-[2025-02-20 21:30:48,501][HYDRA] 	#4 : seed=4 device=cuda\:1 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug=CL-Q aug_type=brightness CL_data_type=agent depth_flag=True batch_size=64
-Error executing job with overrides: ['seed=0', 'device=cuda\\:1', 'task_agent=walker_walk', 'task_expert=walker_walk', 'agent=lail_cl_multiset', 'difficulty=easy', 'delta_source=0.2', 'delta_target=-0.25', 'apply_aug=CL-Q', 'aug_type=brightness', 'CL_data_type=agent', 'depth_flag=True', 'batch_size=64']
-Traceback (most recent call last):
-  File "/home/michaelbezick/Repos/C-LAIfO/train_LAIL_MI.py", line 393, in <module>
-    main()
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/main.py", line 49, in decorated_main
-    _run_hydra(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 375, in _run_hydra
-    run_and_report(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 214, in run_and_report
-    raise ex
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 211, in run_and_report
-    return func()
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/utils.py", line 376, in <lambda>
-    lambda: hydra.multirun(
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/hydra.py", line 139, in multirun
-    ret = sweeper.sweep(arguments=task_overrides)
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/_internal/core_plugins/basic_sweeper.py", line 161, in sweep
-    _ = r.return_value
-  File "/home/michaelbezick/.conda/envs/combined/lib/python3.9/site-packages/hydra/core/utils.py", line 233, in return_value
-    raise self._return_value
-RuntimeError: Error instantiating 'agents.ddpg.DDPG_Agent' : CUDA error: invalid device ordinal
-CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
-For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
-Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
-
+workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.24/1102_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=256,delta_source=0.2,delta_target=-0.25,depth_flag=True,device=cuda:1,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk
+loading expert target: /home/michaelbezick/Repos/C-LAIfO/expert_policies/snapshot_walker_walk_frame_skip_1.pt
+Average expert reward: 982.9047563579347, Total number of samples: 1000
+Average random expert reward: 28.733734540032145, Total number of samples: 1000
+1
+| [32meval[0m  | F: 0 | S: 0 | E: 0 | L: 1000 | R: 37.3496 | T: 0:00:07
+| [33mtrain[0m | F: 5000 | S: 5000 | E: 5 | L: 1000 | R: 23.2548 | BS: 5015 | FPS: 3.8743 | T: 0:04:18
+| [33mtrain[0m | F: 6000 | S: 6000 | E: 6 | L: 1000 | R: 19.0179 | BS: 6018 | FPS: 6.1616 | T: 0:07:00
+| [33mtrain[0m | F: 7000 | S: 7000 | E: 7 | L: 1000 | R: 26.0597 | BS: 7021 | FPS: 5.4874 | T: 0:10:02
+| [33mtrain[0m | F: 8000 | S: 8000 | E: 8 | L: 1000 | R: 18.8299 | BS: 8024 | FPS: 6.3736 | T: 0:12:39
+| [33mtrain[0m | F: 9000 | S: 9000 | E: 9 | L: 1000 | R: 15.5091 | BS: 9027 | FPS: 5.6740 | T: 0:15:35
+| [33mtrain[0m | F: 10000 | S: 10000 | E: 10 | L: 1000 | R: 60.4639 | BS: 10030 | FPS: 6.2429 | T: 0:18:15
+1
+| [32meval[0m  | F: 10000 | S: 10000 | E: 10 | L: 1000 | R: 60.3665 | T: 0:18:15
+| [33mtrain[0m | F: 11000 | S: 11000 | E: 11 | L: 1000 | R: 33.1710 | BS: 11033 | FPS: 5.7808 | T: 0:21:08
+| [33mtrain[0m | F: 12000 | S: 12000 | E: 12 | L: 1000 | R: 25.8153 | BS: 12036 | FPS: 5.6859 | T: 0:24:04
+| [33mtrain[0m | F: 13000 | S: 13000 | E: 13 | L: 1000 | R: 94.5678 | BS: 13039 | FPS: 6.3704 | T: 0:26:41
+| [33mtrain[0m | F: 14000 | S: 14000 | E: 14 | L: 1000 | R: 30.0596 | BS: 14042 | FPS: 6.3283 | T: 0:29:19

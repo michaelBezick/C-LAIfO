@@ -137,18 +137,21 @@ class OneHotPointNetEncoder(nn.Module):
             nn.ReLU(),
             nn.Conv1d(128, 256, kernel_size=1),
             nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Conv1d(256, 256, kernel_size=1),
+            nn.BatchNorm1d(256),
         )
 
         self.mlp3 = nn.Sequential(
+            nn.Conv1d(256, 256, kernel_size=1),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
             nn.Conv1d(256, 128, kernel_size=1),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(128, 64, kernel_size=1),
-            nn.BatchNorm1d(64),
-            nn.ReLU(),
-            nn.Conv1d(64, latent_dim, kernel_size=1),
+            nn.Conv1d(128, latent_dim, kernel_size=1),
             nn.BatchNorm1d(latent_dim),
-            nn.ReLU(),
+            nn.Tanh(),
         )
 
     def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
@@ -1250,109 +1253,7 @@ class LailClAgent:
             batch, self.device
         )  # reward_a unused
 
-        """
-        sample_cloud = obs[42, 0, :, :].detach().cpu().numpy()
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(sample_cloud)
-        o3d.io.write_point_cloud("point_cloud.ply", pcd)
-        """
-
-        # [b, cx3, h,w]
-        # [b, 3, d, 3]
-
-        # batch_expert = next(replay_iter_expert)
-        # obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(
-        #     batch_expert, self.device
-        # )
-
-        # sample random data
-        """
-        batch_agent_random = next(replay_iter_random)
-        obs_random, _, _, _, next_obs_random = utils.to_torch(
-            batch_agent_random, self.device
-        )
-
-        batch_expert_random = next(replay_iter_expert_random)
-        obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(
-            batch_expert_random, self.device
-        )
-        """
-
-        # usually off, but would shift all to gray
-        # if self.grayscale:
-        #     obs = self.grayscale_aug(obs)
-        #     next_obs = self.grayscale_aug(next_obs)
-        #     obs_e_raw = self.grayscale_aug(obs_e_raw)
-        #     next_obs_e_raw = self.grayscale_aug(next_obs_e_raw)
-        #     obs_random = self.grayscale_aug(obs_random)
-        #     next_obs_random = self.grayscale_aug(next_obs_random)
-        #     obs_e_raw_random = self.grayscale_aug(obs_e_raw_random)
-        #     next_obs_e_raw_random = self.grayscale_aug(next_obs_e_raw_random)
-
-        # if step % self.check_every_steps == 0 and False:
-        #     self.check_aug(
-        #         obs_random.float(),
-        #         next_obs_random.float(),
-        #         obs_e_raw_random.float(),
-        #         next_obs_e_raw_random.float(),
-        #         "random_buffer",
-        #         step,
-        #     )
-
-        """
-        metrics.update(
-            self.update_CL(
-                obs,
-                obs_e_raw,
-                obs_random,
-                obs_e_raw_random,
-                self.check_every_steps,
-                step,
-            )
-        )
-        """
-
-        # CHANGE THIS TO BE RANDOM ROTATION
-        """
-        obs_e = self.aug_D(obs_e_raw)
-        next_obs_e = self.aug_D(next_obs_e_raw)
-        obs_a = self.aug_D(obs)
-        next_obs_a = self.aug_D(next_obs)
-        """
-
-        # ADDED THIS
-        # obs_e = obs_e_raw
-        # next_obs_e = next_obs_e_raw
-
-        # if step % self.check_every_steps == 0 and False:
-        #     self.check_aug(
-        #         obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step
-        #     )
-
-        """
-        with torch.no_grad():
-            # z_e = self.encoder(obs_e.float())
-            # next_z_e = self.encoder(next_obs_e.float())
-            z_a = self.encoder(obs_a.float())
-            next_z_a = self.encoder(next_obs_a.float())
-        """
-
-        """
-        # update critic
-        if self.from_dem:
-            metrics.update(self.update_discriminator(z_a, action, z_e, action_e))
-            reward, metrics_r = self.compute_reward(obs, action) #this function uses disc to compute reward
-        else:
-            metrics.update(self.update_discriminator(z_a, next_z_a, z_e, next_z_e))
-            reward, metrics_r = self.compute_reward(obs, next_obs)
-        """
-
-        # metrics.update(metrics_r)
-
-        # augment
-        # obs = self.aug_Q(obs)
-        # next_obs = self.aug_Q(next_obs)
-
+        
         # encode
         obs_a = self.rotate_aug(obs)
         next_obs_a = self.rotate_aug(next_obs)
