@@ -1,11 +1,21 @@
 import numpy as np
-from buffers.replay_buffer import AbstractReplayBuffer
-from point_cloud_generator import PointCloudGenerator
 import torch
 
+from buffers.replay_buffer import AbstractReplayBuffer
+from point_cloud_generator import PointCloudGenerator
+
+
 class EfficientReplayBuffer(AbstractReplayBuffer):
-    def __init__(self, buffer_size, batch_size, nstep, discount, frame_stack, physics,
-                 data_specs=None):
+    def __init__(
+        self,
+        buffer_size,
+        batch_size,
+        nstep,
+        discount,
+        frame_stack,
+        physics,
+        data_specs=None,
+    ):
         self.buffer_size = buffer_size
         self.data_dict = {}
         self.index = -1
@@ -19,8 +29,9 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.point_cloud_generator = PointCloudGenerator(physics)
         # fixed since we can only sample transitions that occur nstep earlier
         # than the end of each episode or the last recorded observation
-        self.discount_vec = np.power(discount, np.arange(nstep)).astype('float32')
+        self.discount_vec = np.power(discount, np.arange(nstep)).astype("float32")
         self.next_dis = discount**nstep
+        self.max_length_point_cloud = 3000
 
         """
         IMPORTANT CHANGES: POINT CLOUD IS GOING TO BE VARIABLE IN LENGTH, NEED TO HAVE REPLAY BUFFER HANDLE THAT
@@ -34,8 +45,12 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.act_shape = time_step.action.shape
 
         # self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
+        # self.obs = [None] * self.buffer_size
         """THIS IS GOING TO STORE NUMPY ARRAYS FOR POINT CLOUDS"""
-        self.obs = [None] * self.buffer_size
+        self.obs = np.zeros(
+            [self.buffer_size, self.max_length_point_cloud, 3], dtype=np.float32
+        )
+        self.obs = np.ascontiguousarray(self.obs)
 
         self.act = np.zeros([self.buffer_size, *self.act_shape], dtype=np.float32)
         self.rew = np.zeros([self.buffer_size], dtype=np.float32)
@@ -46,11 +61,15 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
 
     def add_data_point(self, time_step, point_cloud):
         """
+        BIG CHANGE, HAVING THE REPLAY BUFFER A NP ARRAY AND WILL 0 PAD / TRUNCATE TO
+        MAKE EACH POINT CLOUD A FIXED SIZE
+        """
+        """
         Expecting each time step to have depth information
         """
 
         first = time_step.first()
-        latest_obs = time_step.observation[-self.ims_channels:]
+        latest_obs = time_step.observation[-self.ims_channels :]
 
         if point_cloud == False:
             # need to convert depth image to point cloud
@@ -61,9 +80,17 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
                     print(np.shape(latest_obs))
                     exit()
             latest_obs = np.float32(latest_obs)
-            latest_obs = self.point_cloud_generator.depthImageToPointCloud(latest_obs, cam_id=0)
-            
+            latest_obs = self.point_cloud_generator.depthImageToPointCloud(
+                latest_obs, cam_id=0
+            )
 
+        num_points = latest_obs.shape[0]
+
+        if num_points > self.max_length_point_cloud:
+            latest_obs = latest_obs[: self.max_length_point_cloud]
+        elif num_points < self.max_length_point_cloud:
+            pad_width = self.max_length_point_cloud - num_points
+            latest_obs = np.pad(latest_obs, ((0, pad_width), (0, 0)), mode="constant")
 
         """LATEST OBS IS ALWAYS POINT CLOUD NO MATTER WHAT"""
         if first:
@@ -75,21 +102,29 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
                     end_index = end_index % self.buffer_size
                     # self.obs[self.index:self.buffer_size] = latest_obs
                     # self.obs[0:end_index] = latest_obs
-                    self.obs[self.index:self.buffer_size] = [latest_obs.copy() for _ in range(self.buffer_size - self.index)] 
-                    self.obs[0:end_index] = [latest_obs.copy() for _ in range(end_index)]
+                    self.obs[self.index : self.buffer_size] = [
+                        latest_obs.copy() for _ in range(self.buffer_size - self.index)
+                    ]
+                    self.obs[0:end_index] = [
+                        latest_obs.copy() for _ in range(end_index)
+                    ]
                     self.full = True
                 else:
-                    self.obs[self.index:end_index] = [latest_obs.copy() for _ in range(end_index - self.index)]
+                    self.obs[self.index : end_index] = [
+                        latest_obs.copy() for _ in range(end_index - self.index)
+                    ]
                 end_invalid = end_invalid % self.buffer_size
-                self.valid[self.index:self.buffer_size] = False
+                self.valid[self.index : self.buffer_size] = False
                 self.valid[0:end_invalid] = False
             else:
-                self.obs[self.index:end_index] = [latest_obs.copy() for _ in range(end_index - self.index)]
-                self.valid[self.index:end_invalid] = False
+                self.obs[self.index : end_index] = [
+                    latest_obs.copy() for _ in range(end_index - self.index)
+                ]
+                self.valid[self.index : end_invalid] = False
             self.index = end_index
             self.traj_index = 1
         else:
-            #np.copyto(self.obs[self.index], latest_obs)
+            # np.copyto(self.obs[self.index], latest_obs)
             self.obs[self.index] = latest_obs.copy()
             np.copyto(self.act[self.index], time_step.action)
             self.rew[self.index] = time_step.reward
@@ -108,7 +143,9 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
             self._initial_setup(time_step)
         self.add_data_point(time_step, point_cloud)
 
-    def __next__(self, ):
+    def __next__(
+        self,
+    ):
         # sample only valid indices
         indices = np.random.choice(self.valid.nonzero()[0], size=self.batch_size)
         return self.gather_nstep_indices(indices)
@@ -116,15 +153,79 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
     def gather_nstep_indices(self, indices):
         n_samples = indices.shape[0]
 
-        # Compute gather indices
-        all_gather_ranges = np.stack([
-            np.arange(indices[i] - self.frame_stack, indices[i] + self.nstep)
-            for i in range(n_samples)
-        ], axis=0) % self.buffer_size
+        # Compute gather indices in a vectorized way
+        all_gather_ranges = (
+            np.arange(-self.frame_stack, self.nstep) + indices[:, None]
+        ) % self.buffer_size
 
-        gather_ranges = all_gather_ranges[:, self.frame_stack:]  # bs x nstep
-        obs_gather_ranges = all_gather_ranges[:, :self.frame_stack]
-        nobs_gather_ranges = all_gather_ranges[:, -self.frame_stack:]
+        gather_ranges = all_gather_ranges[:, self.frame_stack :]  # bs x nstep
+        obs_gather_ranges = all_gather_ranges[:, : self.frame_stack]
+        nobs_gather_ranges = all_gather_ranges[:, -self.frame_stack :]
+
+        # Collect rewards efficiently
+        rew = np.sum(self.rew[gather_ranges] * self.discount_vec, axis=1, keepdims=True)
+
+        # Convert `self.obs` to a NumPy array for fast slicing
+        obs_array = np.array(
+            self.obs, dtype=object
+        )  # Assumes self.obs is a list of NumPy arrays
+        nobs_array = np.array(self.obs, dtype=object)
+
+        # Vectorized fetching of observations
+        obs = obs_array[obs_gather_ranges]
+        nobs = nobs_array[nobs_gather_ranges]
+
+        # Determine max number of points in a vectorized manner
+        max_points = max(
+            max(np.max([frame.shape[0] for sample in obs for frame in sample])),
+            max(np.max([frame.shape[0] for sample in nobs for frame in sample])),
+        )
+
+        # Fast vectorized padding function
+        def pad_point_clouds(data, max_points):
+            batch_size, frame_stack = data.shape[:2]
+            padded_data = np.zeros(
+                (batch_size, frame_stack, max_points, 3), dtype=np.float32
+            )  # Preallocate
+
+            for i in range(batch_size):
+                for j in range(frame_stack):
+                    frame = data[i, j]
+                    N = frame.shape[0]
+                    padded_data[i, j, :N, :] = frame  # Copy only the valid points
+
+            return padded_data
+
+        # Apply vectorized padding
+        obs_padded = pad_point_clouds(obs, max_points)
+        nobs_padded = pad_point_clouds(nobs, max_points)
+
+        # Gather actions and distances
+        act = self.act[indices]
+        dis = np.expand_dims(
+            self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1
+        )
+
+        return obs_padded, act, rew, dis, nobs_padded
+
+    def gather_nstep_indices2(self, indices):
+        n_samples = indices.shape[0]
+
+        # Compute gather indices
+        all_gather_ranges = (
+            np.stack(
+                [
+                    np.arange(indices[i] - self.frame_stack, indices[i] + self.nstep)
+                    for i in range(n_samples)
+                ],
+                axis=0,
+            )
+            % self.buffer_size
+        )
+
+        gather_ranges = all_gather_ranges[:, self.frame_stack :]  # bs x nstep
+        obs_gather_ranges = all_gather_ranges[:, : self.frame_stack]
+        nobs_gather_ranges = all_gather_ranges[:, -self.frame_stack :]
 
         # Collect rewards
         all_rewards = self.rew[gather_ranges]
@@ -135,8 +236,10 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         nobs = [[self.obs[i] for i in idx_row] for idx_row in nobs_gather_ranges]
 
         # Determine max number of points across batch
-        max_points = max(max(frame.shape[0] for sample in obs for frame in sample), 
-                         max(frame.shape[0] for sample in nobs for frame in sample))
+        max_points = max(
+            max(frame.shape[0] for sample in obs for frame in sample),
+            max(frame.shape[0] for sample in nobs for frame in sample),
+        )
 
         # Pad and convert to NumPy arrays
         def pad_point_clouds(data):
@@ -144,23 +247,35 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
             for sample in data:
                 padded_sample = []
                 for frame in sample:
-                    N, D = frame.shape  # Get the number of points and dimensions (should be 3)
+                    N, D = (
+                        frame.shape
+                    )  # Get the number of points and dimensions (should be 3)
                     pad_width = max_points - N
                     if pad_width > 0:
-                        padded_frame = np.pad(frame, ((0, pad_width), (0, 0)), mode='constant')
+                        padded_frame = np.pad(
+                            frame, ((0, pad_width), (0, 0)), mode="constant"
+                        )
                     else:
-                        padded_frame = frame  # No padding needed if it's already max_points
+                        padded_frame = (
+                            frame  # No padding needed if it's already max_points
+                        )
                     padded_sample.append(padded_frame)
                 padded_data.append(padded_sample)
             return np.array(padded_data)
 
-        obs_padded = pad_point_clouds(obs)  # Shape: (batch_size, frame_stack, max_points, 3)
-        nobs_padded = pad_point_clouds(nobs)  # Shape: (batch_size, frame_stack, max_points, 3)
+        obs_padded = pad_point_clouds(
+            obs
+        )  # Shape: (batch_size, frame_stack, max_points, 3)
+        nobs_padded = pad_point_clouds(
+            nobs
+        )  # Shape: (batch_size, frame_stack, max_points, 3)
 
         act = self.act[indices]
-        dis = np.expand_dims(self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1)
+        dis = np.expand_dims(
+            self.next_dis * self.dis[nobs_gather_ranges[:, -1]], axis=-1
+        )
 
-        return obs_padded, act, rew, dis, nobs_padded 
+        return obs_padded, act, rew, dis, nobs_padded
 
     """
     def gather_nstep_indices(self, indices):
@@ -230,7 +345,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         ret = (obs_tensor, act, rew, dis, nobs_tensor)
         return ret
         """
-    
+
     def gather_images(self):
         indices = np.random.choice(self.valid.nonzero()[0], size=self.batch_size)
         return self.obs[indices, :, :, :]
