@@ -120,6 +120,72 @@ class PointNetEncoder(nn.Module):
 
         return x
 
+class OneHotPointNetEncoderLikePaper(nn.Module):
+    def __init__(self, latent_dim):
+        super().__init__()
+
+        h_dim = 128
+
+        self.mlp1 = nn.Sequential(
+            nn.Conv1d(6, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
+            nn.LayerNorm(64)
+            nn.Conv1d(64, 128, kernel_size=1),
+            nn.LayerNorm(),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, 256, kernel_size=1),
+            nn.BatchNorm1d(256),
+        )
+
+        self.mlp2 = nn.Sequential(
+            nn.Conv1d(256, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, latent_dim, kernel_size=1),
+            nn.BatchNorm1d(latent_dim),
+            nn.Tanh(),
+        )
+
+    def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
+        batch_size, num_points, xyz = points.size()
+        one_hot = F.one_hot(torch.tensor([frame_id]), total_frames).to(points.device).to(points.dtype)
+        one_hot_expanded = one_hot.view(1,1,3).expand(batch_size, num_points, -1)
+        points_concat = torch.cat([points, one_hot_expanded], dim=-1)
+
+        return points_concat
+
+    def forward(self, point_cloud):
+
+        """Input size: [b, 3, n, 3]"""
+
+        points1 = self.add_one_hot_info(point_cloud[:,0,:,:],frame_id=0,total_frames=3)
+        points2 = self.add_one_hot_info(point_cloud[:,1,:,:],frame_id=1,total_frames=3)
+        points3 = self.add_one_hot_info(point_cloud[:,2,:,:],frame_id=2,total_frames=3)
+
+        all_points = torch.cat([points1,points2,points3], dim=1)
+
+        """Size now: [b, n', 6]"""
+
+        x = all_points
+
+
+        x = torch.permute(x, (0, 2, 1))  # [b,6,n']
+
+        x = self.mlp1(x)  # x -> [b,128,n]
+
+        x = torch.max(x, dim=2, keepdim=True).values  # x -> [b, 128]
+
+        x = self.mlp2(x)
+
+        if x.dim() == 3 and x.shape[2] == 1:
+            x = x.squeeze(2)
+
+        return x
 
 class OneHotPointNetEncoder(nn.Module):
     def __init__(self, latent_dim):
@@ -132,10 +198,10 @@ class OneHotPointNetEncoder(nn.Module):
         )
 
         self.mlp2 = nn.Sequential(
-            nn.Conv1d(64, 64, kernel_size=1),
-            nn.BatchNorm1d(64),
-            nn.ReLU(),
             nn.Conv1d(64, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=1),
             nn.BatchNorm1d(128),
             nn.ReLU(),
             nn.Conv1d(128, 256, kernel_size=1),
@@ -146,10 +212,10 @@ class OneHotPointNetEncoder(nn.Module):
             nn.Conv1d(256, 128, kernel_size=1),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(128, 64, kernel_size=1),
-            nn.BatchNorm1d(64),
+            nn.Conv1d(128, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(64, latent_dim, kernel_size=1),
+            nn.Conv1d(128, latent_dim, kernel_size=1),
             nn.BatchNorm1d(latent_dim),
             nn.Tanh(),
         )
@@ -708,7 +774,7 @@ class LailClAgent:
         """
 
         # self.encoder = PointNetEncoder(feature_dim).to(device)
-        self.encoder = OneHotPointNetEncoder(feature_dim).to(device)
+        self.encoder = OneHotPointNetEncoderLikePaper(feature_dim).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
