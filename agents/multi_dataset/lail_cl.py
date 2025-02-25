@@ -7,6 +7,7 @@ import open3d as o3d
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules import LayerNorm
 import torchvision.transforms.functional as FT
 from torch import autograd
 from torch import distributions as torchd
@@ -124,31 +125,19 @@ class OneHotPointNetEncoderLikePaper(nn.Module):
     def __init__(self, latent_dim):
         super().__init__()
 
-        h_dim = 128
-
         self.mlp1 = nn.Sequential(
-            nn.Conv1d(6, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
-            nn.LayerNorm(64)
-            nn.Conv1d(64, 128, kernel_size=1),
-            nn.LayerNorm(),
+            nn.Conv1d(6, 64, kernel_size=1),
+            nn.LayerNorm([64,1]),
             nn.ReLU(),
-            nn.Conv1d(128, 128, kernel_size=1),
-            nn.BatchNorm1d(128),
+            nn.Conv1d(64, 128, kernel_size=1),
+            nn.LayerNorm([128,1]),
             nn.ReLU(),
             nn.Conv1d(128, 256, kernel_size=1),
-            nn.BatchNorm1d(256),
         )
 
         self.mlp2 = nn.Sequential(
-            nn.Conv1d(256, 128, kernel_size=1),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Conv1d(128, 128, kernel_size=1),
-            nn.BatchNorm1d(128),
-            nn.ReLU(),
-            nn.Conv1d(128, latent_dim, kernel_size=1),
-            nn.BatchNorm1d(latent_dim),
-            nn.Tanh(),
+            nn.Conv1d(256, latent_dim, kernel_size=1),
+            nn.LayerNorm([latent_dim,1]),
         )
 
     def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
@@ -172,7 +161,6 @@ class OneHotPointNetEncoderLikePaper(nn.Module):
         """Size now: [b, n', 6]"""
 
         x = all_points
-
 
         x = torch.permute(x, (0, 2, 1))  # [b,6,n']
 
