@@ -154,7 +154,7 @@ class PointCloudGenerator(object):
         self.sim = sim
 
         self.img_width = 64
-        self.img_height = 48
+        self.img_height = 64
 
         self.cam_names = [i for i in range(len(self.sim.model.cam_bodyid))]
 
@@ -410,14 +410,14 @@ if __name__ == "__main__":
     point_cloud_generator = PointCloudGenerator(physics)
     depth1 = physics.render(
         width=64,
-        height=48,
+        height=64,
         camera_id=0,
         depth=True,
     )
 
     depth2 = physics.render(
         width=64,
-        height=48,
+        height=64,
         camera_id=1,
         depth=True,
     )
