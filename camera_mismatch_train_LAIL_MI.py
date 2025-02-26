@@ -135,7 +135,6 @@ class Workspace:
     
         
     def eval(self):
-        breakpoint()
         step, episode, total_reward = 0, 0, 0
         eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
 
@@ -163,7 +162,6 @@ class Workspace:
             log('step', self.global_step)
 
     def train(self):
-        breakpoint()
         """
         OKAY I believe that the replay buffer adding point cloud thing is always going to be from depth image
         This means that I can keep the dequeue, and use it as such to only extract the final point cloud

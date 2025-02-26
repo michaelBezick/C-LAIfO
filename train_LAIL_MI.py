@@ -248,7 +248,6 @@ class Workspace:
         episode_step, episode_reward = 0, 0
         time_step = self.train_env.reset()
 
-        breakpoint()
         self.replay_buffer.add(time_step, point_cloud=False)
         # self.replay_buffer_random.add(time_step, point_cloud=False)
 
