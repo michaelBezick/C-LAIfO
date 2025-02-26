@@ -408,6 +408,7 @@ if __name__ == "__main__":
     env = suite.load(domain_name="walker", task_name="walk")
     physics = env.physics
     point_cloud_generator = PointCloudGenerator(physics)
+
     depth1 = physics.render(
         width=64,
         height=64,
@@ -425,10 +426,12 @@ if __name__ == "__main__":
     combined_cloud = o3d.geometry.PointCloud()
 
     point_cloud1 = point_cloud_generator.depthImageToPointCloud(depth1,cam_id=0)
+    print("point cloud 1 points: ", point_cloud1.shape)
     pcd1 = o3d.geometry.PointCloud()
     pcd1.points = o3d.utility.Vector3dVector(point_cloud1)
 
     point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=1)
+    print("point cloud 2 points: ", point_cloud2.shape)
     pcd2 = o3d.geometry.PointCloud()
     pcd2.points = o3d.utility.Vector3dVector(point_cloud2)
 
