@@ -406,12 +406,22 @@ if __name__ == "__main__":
     env = suite.load(domain_name="walker", task_name="walk")
     physics = env.physics
     point_cloud_generator = PointCloudGenerator(physics)
-    depth = physics.render(
+    depth1 = physics.render(
         width=64,
         height=64,
         camera_id=0,
         depth=True,
     )
 
-    point_cloud = point_cloud_generator.depthImageToPointCloud(depth, 0)
-    point_cloud_generator.save_point_cloud(point_cloud)
+    depth2 = physics.render(
+        width=64,
+        height=64,
+        camera_id=1,
+        depth=True,
+    )
+
+    point_cloud1 = point_cloud_generator.depthImageToPointCloud(depth1,cam_id=0)
+    point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=0)
+    point_cloud1 += point_cloud2
+
+    point_cloud_generator.save_point_cloud(point_cloud1)
