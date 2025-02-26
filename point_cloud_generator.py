@@ -427,7 +427,7 @@ if __name__ == "__main__":
     pcd1 = o3d.geometry.PointCloud()
     pcd1.points = o3d.utility.Vector3dVector(point_cloud1)
 
-    point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=0)
+    point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=1)
     pcd2 = o3d.geometry.PointCloud()
     pcd2.points = o3d.utility.Vector3dVector(point_cloud2)
 
