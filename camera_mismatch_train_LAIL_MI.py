@@ -133,75 +133,11 @@ class Workspace:
     def global_frame(self):
         return self.global_step * self.cfg.action_repeat
     
-    # def store_expert_transitions(self):
-    #     step, episode, total_reward = 0, 0, 0
-    #     eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
-    #     #eval_until_episode = utils.Until(1)
-    #     
-    #     while eval_until_episode(episode):
-    #         obs, time_step = self.expert_env.reset()
-    #         self.expert.reset()
-    #         self.video_recorder.init(self.expert_env, enabled=(episode == 0))
-    #         
-    #         extended_time_step = self.expert_env.step_learn_from_pixels(time_step)
-    #         self.replay_buffer_expert.add(extended_time_step)
-    #         
-    #         done = False
-    #         
-    #         while not done:
-    #             with torch.no_grad(), utils.eval_mode(self.expert):
-    #                 action = self.expert.act(obs, self.global_step, eval_mode=True)
-    #             obs, reward, done, _, time_step = self.expert_env.step(action)    
-    #             
-    #             extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
-    #             self.replay_buffer_expert.add(extended_time_step)
-    #             self.video_recorder.record(self.expert_env)
-    #             
-    #             total_reward += extended_time_step.reward
-    #             step += 1
-    #
-    #         episode += 1
-    #         self.video_recorder.save('expert.mp4')
-    #
-    #     print(f'Average expert reward: {total_reward / episode}, Total number of samples: {step}')
-
-    # def store_random_expert_transitions(self):
-    #     step, episode, total_reward = 0, 0, 0
-    #     eval_until_episode = utils.Until(self.cfg.num_expert_episodes)
-    #     # eval_until_episode = utils.Until(1)
-    #     self.expert.num_expl_steps = 1.0
-    #     
-    #     while eval_until_episode(episode):
-    #         obs, time_step = self.expert_env.reset()
-    #         self.expert.reset()
-    #         self.video_recorder.init(self.expert_env, enabled=(episode == 0))
-    #         
-    #         extended_time_step = self.expert_env.step_learn_from_pixels(time_step)
-    #         self.replay_buffer_random_expert.add(extended_time_step)
-    #         
-    #         done = False
-    #         
-    #         while not done:
-    #             with torch.no_grad(), utils.eval_mode(self.expert):
-    #                 action = self.expert.act(obs, self.global_step, eval_mode=False)
-    #             obs, reward, done, _, time_step = self.expert_env.step(action)    
-    #             
-    #             extended_time_step = self.expert_env.step_learn_from_pixels(time_step, action)
-    #             self.replay_buffer_random_expert.add(extended_time_step)
-    #             self.video_recorder.record(self.expert_env)
-    #             
-    #             total_reward += extended_time_step.reward
-    #             step += 1
-    #
-    #         episode += 1
-    #         self.video_recorder.save('random_expert.mp4')
-    #
-    #     print(f'Average random expert reward: {total_reward / episode}, Total number of samples: {step}')
         
     def eval(self):
+        breakpoint()
         step, episode, total_reward = 0, 0, 0
         eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
-        # eval_until_episode = utils.Until(1)
 
         while eval_until_episode(episode):
             time_step = self.eval_env.reset()
@@ -218,7 +154,6 @@ class Workspace:
                 step += 1
 
             episode += 1
-            print(episode)
             self.video_recorder.save(f'{self.global_frame}.mp4')
 
         with self.logger.log_and_dump_ctx(self.global_frame, ty='eval') as log:
@@ -228,6 +163,7 @@ class Workspace:
             log('step', self.global_step)
 
     def train(self):
+        breakpoint()
         """
         OKAY I believe that the replay buffer adding point cloud thing is always going to be from depth image
         This means that I can keep the dequeue, and use it as such to only extract the final point cloud
@@ -248,9 +184,7 @@ class Workspace:
         episode_step, episode_reward = 0, 0
         time_step = self.train_env.reset()
 
-        breakpoint()
         self.replay_buffer.add(time_step, point_cloud=False)
-        # self.replay_buffer_random.add(time_step, point_cloud=False)
 
         self.train_video_recorder.init(time_step.observation)
         metrics = None
@@ -377,7 +311,7 @@ class Workspace:
 
 @hydra.main(config_path='config_folder/POMDP', config_name='debug_config_lail_MI')
 def main(cfg):
-    from train_LAIL_MI import Workspace as W
+    from camera_mismatch_train_LAIL_MI import Workspace as W
     root_dir = Path.cwd()
     workspace = W(cfg)
     parent_dir = root_dir.parents[3]

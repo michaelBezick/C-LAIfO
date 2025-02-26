@@ -200,7 +200,6 @@ class PointCloudGenerator(object):
 
         points = np.asarray(transformed_cloud.points)
 
-        np.random.shuffle(points) #so truncation isn't biased
 
         #not centroid shifting and unit sphere scaling anymore
 
@@ -225,6 +224,8 @@ class PointCloudGenerator(object):
         transformed_cloud =  transformed_cloud.voxel_down_sample(voxel_size=down_sample_voxel_size)
 
         points = np.asarray(transformed_cloud.points)
+
+        np.random.shuffle(points) #so truncation isn't biased
 
         return points.astype(np.float32)
 
