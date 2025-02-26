@@ -17,7 +17,7 @@ import numpy as np
 import torch
 from dm_env import specs
 
-from DeepMind_control import dmc, dmc_expert
+from DeepMind_control import dmc, dmc_expert, dmc_camera_mismatch
 from utils_folder import utils
 from logger_folder.logger import Logger
 from video import TrainVideoRecorder, VideoRecorder, VideoRecorder_bio_expert
@@ -82,15 +82,16 @@ class Workspace:
         self.logger = Logger(self.work_dir, use_tb=self.cfg.use_tb)
         # create target envs and agent
         """By changing visual seed targets, will change """
-        self.train_env = dmc.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
+        self.train_env = dmc_camera_mismatch.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
-                                            self.cfg.depth_flag, self.cfg.segm_flag)
+                                            self.cfg.depth_flag, self.cfg.segm_flag, camera_id=0)
                                                 
-        self.eval_env = dmc.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
+        breakpoint()
+        self.eval_env = dmc_camera_mismatch.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
-                                            self.cfg.depth_flag, self.cfg.segm_flag)
+                                            self.cfg.depth_flag, self.cfg.segm_flag, camera_id=1)
 
         """ACTUALLY PHYSICS ARE THE SAME, WHAT CHANGES IS CAMERA ID"""
         """ONLY THE ENVIRONMENTS NEED POINT CLOUD GENERATOR NOT REPLAY BUFFER"""

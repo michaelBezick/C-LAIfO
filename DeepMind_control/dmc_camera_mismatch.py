@@ -306,10 +306,10 @@ def make_remastered(name, frame_stack, action_repeat, seed, visual_seed, vary, d
     env = action_scale.Wrapper(env, minimum=-1.0, maximum=+1.0)
     
     try:
-        if domain == 'quadruped':
-            camera_id = 2
-        else:
-            camera_id = 0
+        # if domain == 'quadruped':
+        #     camera_id = 2
+        # else:
+        #     camera_id = 0
 
         if depth_flag:
             segm_flag=False
