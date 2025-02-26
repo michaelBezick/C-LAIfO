@@ -122,22 +122,24 @@ class PointNetEncoder(nn.Module):
         return x
 
 class OneHotPointNetEncoderLikePaper(nn.Module):
-    def __init__(self, latent_dim):
+    def __init__(self, latent_dim, max_length_point_cloud):
         super().__init__()
+
+        self.max_len = max_length_point_cloud * 3 #times frame stack
 
         self.mlp1 = nn.Sequential(
             nn.Conv1d(6, 64, kernel_size=1),
-            nn.LayerNorm([64,1]),
+            nn.LayerNorm([64, self.max_len]),
             nn.ReLU(),
             nn.Conv1d(64, 128, kernel_size=1),
-            nn.LayerNorm([128,1]),
+            nn.LayerNorm([128, self.max_len]),
             nn.ReLU(),
             nn.Conv1d(128, 256, kernel_size=1),
         )
 
         self.mlp2 = nn.Sequential(
             nn.Conv1d(256, latent_dim, kernel_size=1),
-            nn.LayerNorm([latent_dim,1]),
+            nn.LayerNorm([latent_dim, 1]), #because max pool
         )
 
     def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
@@ -717,6 +719,7 @@ class LailClAgent:
         spectral_norm_bool,
         check_every_steps,
         log_std_bounds,
+        max_length_point_cloud,
         GAN_loss="bce",
         stochastic_encoder=False,
         train_encoder_w_critic=True,
@@ -731,6 +734,7 @@ class LailClAgent:
         physics=None,
     ):
 
+        self.max_length_point_cloud=max_length_point_cloud
         self.device = device
         self.critic_target_tau = critic_target_tau
         self.update_every_steps = update_every_steps
@@ -762,7 +766,7 @@ class LailClAgent:
         """
 
         # self.encoder = PointNetEncoder(feature_dim).to(device)
-        self.encoder = OneHotPointNetEncoderLikePaper(feature_dim).to(device)
+        self.encoder = OneHotPointNetEncoderLikePaper(feature_dim, max_length_point_cloud).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
@@ -939,18 +943,25 @@ class LailClAgent:
             max_obs_length = -1
             for i in range(3):
                 obs = obs_reshaped[i, :, :]
-                obs = self.point_cloud_generator.depthImageToPointCloud(obs, 0)
-                max_obs_length = max(obs.shape[0], max_obs_length)
-                # obs = torch.as_tensor(obs, device=self.device).float()
+                obs = self.point_cloud_generator.depthImageToPointCloud(obs, cam_id=0)
+                num_points = obs.shape[0]
+
+                if num_points > self.max_length_point_cloud:
+                    obs = obs[: self.max_length_point_cloud]
+                elif num_points < self.max_length_point_cloud:
+                    pad_width = self.max_length_point_cloud - num_points
+                    obs = np.pad(obs, ((0, pad_width), (0, 0)), mode="constant")
+                
                 point_clouds.append(obs)
 
             tensors = [
                 torch.tensor(arr, dtype=torch.float32, device=self.device)
                 for arr in point_clouds
             ]
-            padded_tensors = pad_sequence(tensors, batch_first=True, padding_value=0)
 
-            point_clouds = padded_tensors.unsqueeze(0)
+            tensors = torch.stack(tensors,dim=0)
+            
+            point_clouds = tensors.unsqueeze(0)
 
         if self.grayscale:
             obs = self.grayscale_aug(obs.unsqueeze(0))

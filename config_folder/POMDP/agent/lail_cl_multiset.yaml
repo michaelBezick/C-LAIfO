@@ -20,6 +20,7 @@ agent:
   spectral_norm_bool: ${spectral_norm_bool}
   check_every_steps: ${check_every_steps}
   log_std_bounds: [-5, 2]
+  max_length_point_cloud: ${max_length_point_cloud}
   GAN_loss: ${GAN_loss}
   stochastic_encoder: ${stochastic_encoder}
   train_encoder_w_critic: ${train_encoder_w_critic}
