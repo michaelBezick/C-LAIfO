@@ -174,7 +174,7 @@ class PointCloudGenerator(object):
             )
             self.cam_mats.append(cam_mat)
 
-    def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6) -> np.ndarray:
+    def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6, down_sample_voxel_size=0.06) -> np.ndarray:
 
         od_cammat = cammat2o3d(
             self.cam_mats[cam_id], self.img_width, self.img_height
@@ -198,6 +198,9 @@ class PointCloudGenerator(object):
             transformed_cloud = transformed_cloud.crop(self.target_bounds)
 
         points = np.asarray(transformed_cloud.points)
+
+        np.random.shuffle(points) #so truncation isn't biased
+
         #not centroid shifting and unit sphere scaling anymore
 
         """
@@ -217,6 +220,8 @@ class PointCloudGenerator(object):
             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
         """
         transformed_cloud.points = o3d.utility.Vector3dVector(points)
+
+        transformed_cloud =  transformed_cloud.voxel_down_sample(voxel_size=down_sample_voxel_size)
 
         points = np.asarray(transformed_cloud.points)
 
@@ -385,6 +390,13 @@ class PointCloudGenerator(object):
 
     def save_point_cloud(self, point_cloud, output_file="point_cloud.ply"):
 
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(point_cloud)
+
+        point_cloud = pcd
+
+        
+
         # Save the point cloud
         o3d.io.write_point_cloud("./point_cloud_images/" + output_file, point_cloud)
         print(f"Point cloud saved to {output_file}")
@@ -402,4 +414,4 @@ if __name__ == "__main__":
     )
 
     point_cloud = point_cloud_generator.depthImageToPointCloud(depth, 0)
-    print(point_cloud)
+    point_cloud_generator.save_point_cloud(point_cloud)
