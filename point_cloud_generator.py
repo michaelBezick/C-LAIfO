@@ -393,35 +393,13 @@ class PointCloudGenerator(object):
 if __name__ == "__main__":
     env = suite.load(domain_name="walker", task_name="walk")
     physics = env.physics
-
-    # print("physics.model.cam:", physics.model.cam)
-    # print("physics.model.cam_bodyid:", physics.model.cam_bodyid)
-    # print("physics.model.cam_fovy:", physics.model.cam_fovy)
-    # print("physics.model.cam_intrinsic:", physics.model.cam_intrinsic)
-    # print("physics.model.cam_ipd:", physics.model.cam_ipd)
-    # print("physics.model.cam_mat0:", physics.model.cam_mat0)
-    # print("physics.model.cam_mode:", physics.model.cam_mode)
-    # print("physics.model.cam_orthographic:", physics.model.cam_orthographic)
-    # print("physics.model.cam_pos:", physics.model.cam_pos)
-    # print("physics.model.cam_pos0:", physics.model.cam_pos0)
-    # print("physics.model.cam_poscom0:", physics.model.cam_poscom0)
-    # print("physics.model.cam_quat:", physics.model.cam_quat)
-    # print("physics.model.cam_resolution:", physics.model.cam_resolution)
-    # print("physics.model.cam_targetbodyid:", physics.model.cam_targetbodyid)
-    # print("physics.model.cam_user:", physics.model.cam_user)
-    # print("physics.model.camera:", physics.model.camera)
-    # print("physics.model.ncam:", physics.model.ncam)
-    # print("physics.model.body_pos:", physics.model.body_pos)
-    # print("physics.model.body_pos.shape:", physics.model.body_pos.shape)
-    # print(physics.model.body_pos[1])
-    # exit()
-
-
-
     point_cloud_generator = PointCloudGenerator(physics)
-    time1 = time.time()
-    point_cloud = point_cloud_generator.generateCroppedPointCloud(save_img_dir="./depth_test/")
-    time2 = time.time()
-    print(time2 - time1)
-    point_cloud_generator.save_point_cloud(point_cloud)
-    #point_cloud_generator.save_point_cloud_as_image(point_cloud)
+    depth = physics.render(
+        width=64,
+        height=64,
+        camera_id=0,
+        depth=True,
+    )
+
+    point_cloud = point_cloud_generator.depthImageToPointCloud(depth, 0)
+    print(point_cloud)
