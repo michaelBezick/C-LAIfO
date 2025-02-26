@@ -388,12 +388,13 @@ class PointCloudGenerator(object):
         # Clean up
         print(f"Point cloud projection saved to {output_image}")
 
-    def save_point_cloud(self, point_cloud, output_file="point_cloud.ply"):
+    def save_point_cloud(self, point_cloud, is_point_cloud=True,output_file="point_cloud.ply"):
 
-        pcd = o3d.geometry.PointCloud()
-        pcd.points = o3d.utility.Vector3dVector(point_cloud)
+        if not is_point_cloud:
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(point_cloud)
 
-        point_cloud = pcd
+            point_cloud = pcd
 
         
 
@@ -420,8 +421,17 @@ if __name__ == "__main__":
         depth=True,
     )
 
-    point_cloud1 = point_cloud_generator.depthImageToPointCloud(depth1,cam_id=0)
-    point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=0)
-    point_cloud1 += point_cloud2
+    combined_cloud = o3d.geometry.PointCloud()
 
-    point_cloud_generator.save_point_cloud(point_cloud1)
+    point_cloud1 = point_cloud_generator.depthImageToPointCloud(depth1,cam_id=0)
+    pcd1 = o3d.geometry.PointCloud()
+    pcd1.points = o3d.utility.Vector3dVector(point_cloud1)
+
+    point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=0)
+    pcd2 = o3d.geometry.PointCloud()
+    pcd2.points = o3d.utility.Vector3dVector(point_cloud2)
+
+    combined_cloud += pcd1
+    combined_cloud += pcd2
+
+    point_cloud_generator.save_point_cloud(combined_cloud)
