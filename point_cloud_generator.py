@@ -194,6 +194,7 @@ class PointCloudGenerator(object):
         c2w_r = np.matmul(c2b_r, b2w_r)
         c2w = posRotMat2Mat(cam_pos, c2w_r)
         transformed_cloud = o3d_cloud.transform(c2w)
+
         if self.target_bounds != None:
             transformed_cloud = transformed_cloud.crop(self.target_bounds)
 
@@ -409,14 +410,14 @@ if __name__ == "__main__":
     point_cloud_generator = PointCloudGenerator(physics)
     depth1 = physics.render(
         width=64,
-        height=64,
+        height=48,
         camera_id=0,
         depth=True,
     )
 
     depth2 = physics.render(
         width=64,
-        height=64,
+        height=48,
         camera_id=1,
         depth=True,
     )
