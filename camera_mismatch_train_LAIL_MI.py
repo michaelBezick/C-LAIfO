@@ -87,7 +87,6 @@ class Workspace:
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
                                             self.cfg.depth_flag, self.cfg.segm_flag, camera_id=0)
                                                 
-        breakpoint()
         self.eval_env = dmc_camera_mismatch.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
