@@ -131,10 +131,10 @@ class OneHotPointNetEncoderLikePaper(nn.Module):
             nn.Conv1d(6, 64, kernel_size=1),
             nn.LayerNorm([64, self.max_len]),
             nn.ReLU(),
-            nn.Conv1d(64, 256, kernel_size=1),
-            nn.LayerNorm([256, self.max_len]),
+            nn.Conv1d(64, 128, kernel_size=1),
+            nn.LayerNorm([128, self.max_len]),
             nn.ReLU(),
-            nn.Conv1d(256, 256, kernel_size=1),
+            nn.Conv1d(128, 256, kernel_size=1),
         )
 
         self.mlp2 = nn.Sequential(
