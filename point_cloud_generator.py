@@ -430,13 +430,15 @@ if __name__ == "__main__":
     print("point cloud 1 points: ", point_cloud1.shape)
     pcd1 = o3d.geometry.PointCloud()
     pcd1.points = o3d.utility.Vector3dVector(point_cloud1)
+    point_cloud_generator.save_point_cloud(pcd1, is_point_cloud=True, output_file="view1.ply")
 
     point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=1, down_sample_voxel_size=0.07)
     print("point cloud 2 points: ", point_cloud2.shape)
     pcd2 = o3d.geometry.PointCloud()
     pcd2.points = o3d.utility.Vector3dVector(point_cloud2)
+    point_cloud_generator.save_point_cloud(pcd2, is_point_cloud=True, output_file="view2.ply")
 
     combined_cloud += pcd1
     combined_cloud += pcd2
 
-    point_cloud_generator.save_point_cloud(combined_cloud)
+    point_cloud_generator.save_point_cloud(combined_cloud, is_point_cloud=True, output_file="combined.ply")
