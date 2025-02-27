@@ -25,7 +25,7 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         self.ims_channels = self.obs_shape[0] // self.frame_stack
         self.act_shape = time_step.action.shape
 
-        self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
+        self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.float32)
         self.act = np.zeros([self.buffer_size, *self.act_shape], dtype=np.float32)
         self.rew = np.zeros([self.buffer_size], dtype=np.float32)
         self.dis = np.zeros([self.buffer_size], dtype=np.float32)

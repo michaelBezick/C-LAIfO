@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from dm_env import specs
 
-from DeepMind_control import dmc, dmc_expert
+from DeepMind_control import dmc, dmc_expert, dmc_camera_mismatch
 from utils_folder import utils
 from logger_folder.logger import Logger
 from video import TrainVideoRecorder, VideoRecorder, VideoRecorder_bio_expert
@@ -72,15 +72,15 @@ class Workspace:
         # create logger
         self.logger = Logger(self.work_dir, use_tb=self.cfg.use_tb)
         # create target envs and agent
-        self.train_env = dmc.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
+        self.train_env = dmc_camera_mismatch.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
-                                            self.cfg.depth_flag, self.cfg.segm_flag)
+                                            self.cfg.depth_flag, self.cfg.segm_flag, camera_id=0)
                                                 
-        self.eval_env = dmc.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
+        self.eval_env = dmc_camera_mismatch.make_remastered(self.cfg.task_name_agent, self.cfg.frame_stack,
                                             self.cfg.action_repeat, self.cfg.seed, self.cfg.visual_seed_target,
                                             self.cfg.vary, self.cfg.delta_target, self.cfg.image_height, self.cfg.image_width,
-                                            self.cfg.depth_flag, self.cfg.segm_flag)
+                                            self.cfg.depth_flag, self.cfg.segm_flag, camera_id=1)
 
         # create replay buffer
         data_specs = (self.train_env.observation_spec(),
@@ -225,7 +225,6 @@ class Workspace:
         time_step = self.train_env.reset()
 
         self.replay_buffer.add(time_step)
-        self.replay_buffer_random.add(time_step)
 
         self.train_video_recorder.init(time_step.observation)
         metrics = None
@@ -252,8 +251,6 @@ class Workspace:
                 time_step = self.train_env.reset()
                 self.replay_buffer.add(time_step)
 
-                if random_until_step(self.global_step):
-                    self.replay_buffer_random.add(time_step)
 
                 self.train_video_recorder.init(time_step.observation)
                 episode_step = 0
@@ -269,7 +266,6 @@ class Workspace:
                     self.save_snapshot()
 
                 if self.cfg.save_replay_buffers:
-                    self.save_buffer_random()
                     self.save_buffer()
 
             # sample action
@@ -281,9 +277,9 @@ class Workspace:
             # try to update the agent
             if not seed_until_step(self.global_step):
                 metrics = self.agent.update(self.replay_buffer, 
-                                            self.replay_buffer_expert, 
-                                            self.replay_buffer_random, 
-                                            self.replay_buffer_random_expert, 
+                                            None, 
+                                            None, 
+                                            None, 
                                             self.global_step)
                 
                 self.logger.log_metrics(metrics, self.global_frame, ty='train')
@@ -293,8 +289,6 @@ class Workspace:
             episode_reward += time_step.reward
             self.replay_buffer.add(time_step)
 
-            if random_until_step(self.global_step):
-                self.replay_buffer_random.add(time_step)
 
             self.train_video_recorder.record(time_step.observation)
             episode_step += 1
@@ -353,16 +347,6 @@ def main(cfg):
     root_dir = Path.cwd()
     workspace = W(cfg)
     parent_dir = root_dir.parents[3]
-    snapshot = parent_dir / f'expert_policies/snapshot_{cfg.task_name_expert}_frame_skip_{cfg.frame_skip}.pt'
-    assert snapshot.exists()
-    print(f'loading expert target: {snapshot}')
-    workspace.load_expert(snapshot)
-    workspace.store_expert_transitions()
-    workspace.store_random_expert_transitions()
-
-    if cfg.save_replay_buffers:
-        workspace.save_expert_buffer()
-        workspace.save_expert_buffer_random()
 
     workspace.train()
 

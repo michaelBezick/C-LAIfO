@@ -123,6 +123,7 @@ class Encoder(nn.Module):
         elif obs_shape[-1]==64:
             self.repr_dim = 32 * 25 * 25
 
+        
         self.convnet = nn.Sequential(nn.Conv2d(obs_shape[0], 32, 3, stride=2),
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
                                      nn.ReLU(), nn.Conv2d(32, 32, 3, stride=1),
@@ -138,9 +139,22 @@ class Encoder(nn.Module):
 
         self.apply(utils.weight_init)
 
+    def min_max_norm(self, tensor):
+        return (tensor - torch.min(tensor)) / (torch.max(tensor) - torch.min(tensor) + 1e-8)
+
     def forward(self, obs):
+
+        if obs.shape[0] == 1:
+            obs = obs.unsqueeze(0)
+        else:
+            obs = obs.unsqueeze(1)
+
+        obs = obs.view(obs.shape[0], 3, obs.shape[-1], obs.shape[-1])
+
+        obs = self.min_max_norm(obs)
+
+        obs = obs / 80
             
-        obs = obs / 255.0 - 0.5
         h = self.convnet(obs)
         h = h.reshape(h.shape[0], -1)
         z = self.trunk(h)
@@ -689,66 +703,7 @@ class LailClAgent:
         
         batch = next(replay_iter)
         obs, action, reward_a, discount, next_obs = utils.to_torch(batch, self.device)
-        
-        batch_expert = next(replay_iter_expert)
-        obs_e_raw, action_e, _, _, next_obs_e_raw = utils.to_torch(batch_expert, self.device)
 
-        # sample random data
-        batch_agent_random = next(replay_iter_random)
-        obs_random, _, _, _, next_obs_random = utils.to_torch(batch_agent_random, self.device)
-
-        batch_expert_random = next(replay_iter_expert_random)
-        obs_e_raw_random, _, _, _, next_obs_e_raw_random = utils.to_torch(batch_expert_random, self.device)
-
-        if self.grayscale:
-            obs = self.grayscale_aug(obs)
-            next_obs = self.grayscale_aug(next_obs)
-            obs_e_raw = self.grayscale_aug(obs_e_raw)
-            next_obs_e_raw = self.grayscale_aug(next_obs_e_raw)
-            obs_random = self.grayscale_aug(obs_random)
-            next_obs_random = self.grayscale_aug(next_obs_random)
-            obs_e_raw_random = self.grayscale_aug(obs_e_raw_random)
-            next_obs_e_raw_random = self.grayscale_aug(next_obs_e_raw_random)
-
-        if step % self.check_every_steps == 0:
-            self.check_aug(obs_random.float(), next_obs_random.float(), 
-                           obs_e_raw_random.float(), next_obs_e_raw_random.float(), "random_buffer", step)
-        
-        metrics.update(self.update_CL(obs,
-                                      obs_e_raw,
-                                      obs_random,
-                                      obs_e_raw_random, 
-                                      self.check_every_steps, 
-                                      step))
-        
-        obs_e = self.aug_D(obs_e_raw)
-        next_obs_e = self.aug_D(next_obs_e_raw)
-        obs_a = self.aug_D(obs)
-        next_obs_a = self.aug_D(next_obs)
-
-        if step % self.check_every_steps == 0:
-            self.check_aug(obs_a, next_obs_a, obs_e, next_obs_e, "learning_buffer", step)
-
-        with torch.no_grad():
-            z_e = self.encoder(obs_e)
-            next_z_e = self.encoder(next_obs_e)
-            z_a = self.encoder(obs_a)
-            next_z_a = self.encoder(next_obs_a)
-
-        # update critic
-        if self.from_dem:
-            metrics.update(self.update_discriminator(z_a, action, z_e, action_e))
-            reward, metrics_r = self.compute_reward(obs, action)
-        else:
-            metrics.update(self.update_discriminator(z_a, next_z_a, z_e, next_z_e))
-            reward, metrics_r = self.compute_reward(obs, next_obs)
-
-        metrics.update(metrics_r)
-
-        # augment
-        obs = self.aug_Q(obs)
-        next_obs = self.aug_Q(next_obs)
-        # encode
         obs = self.encoder(obs)
         with torch.no_grad():
             next_obs = self.encoder(next_obs)
@@ -757,7 +712,7 @@ class LailClAgent:
             metrics['batch_reward'] = reward_a.mean().item()
 
         # update critic
-        metrics.update(self.update_critic(obs, action, reward, discount, next_obs, step))
+        metrics.update(self.update_critic(obs, action, reward_a, discount, next_obs, step))
 
         # update actor
         metrics.update(self.update_actor(obs.detach(), step))
