@@ -1,0 +1,3 @@
+[submodule "masbpy"]
+	path = masbpy
+	url = https://github.com/tudelft3d/masbpy.git
