@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
-eval_path = "./experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.26/1825_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=256,delta_source=0.2,delta_target=-0.25,depth_flag=True,device=cuda:2,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk/eval.csv"
-train_path = "./experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.26/1825_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=256,delta_source=0.2,delta_target=-0.25,depth_flag=True,device=cuda:2,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk/train.csv"
+eval_path = "./experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.24/1102_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=256,delta_source=0.2,delta_target=-0.25,depth_flag=True,device=cuda:1,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk/eval.csv"
+train_path = "./experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.02.24/1102_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=256,delta_source=0.2,delta_target=-0.25,depth_flag=True,device=cuda:1,difficulty=easy,task_agent=walker_walk,task_expert=walker_walk/train.csv"
 
 
 eval_reward = []
@@ -32,10 +32,10 @@ with open(train_path, "r") as file:
         train_step.append(float(step))
 
 plt.figure()
-plt.title("Depth Image Train vs. Eval on Walker Walk")
+plt.title("Point Cloud Train vs. Eval on Walker Walk")
 plt.xlabel("Steps")
 plt.ylabel("Reward")
 plt.plot(train_step, train_reward, label="Train")
 plt.plot(eval_step, eval_reward, label="Eval")
 plt.legend()
-plt.savefig("train_vs_eval.jpg")
+plt.savefig("./results_plot/point_cloud_large_no_mismatch.jpg")
