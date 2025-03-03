@@ -176,6 +176,12 @@ class PointCloudGenerator(object):
 
     def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6, down_sample_voxel_size=0.06) -> np.ndarray:
 
+        """
+        @param down_sample_voxel_size: put to -1 to disable downsampling
+
+        """
+
+
         od_cammat = cammat2o3d(
             self.cam_mats[cam_id], self.img_width, self.img_height
         )
@@ -221,7 +227,9 @@ class PointCloudGenerator(object):
         """
         transformed_cloud.points = o3d.utility.Vector3dVector(points)
 
-        transformed_cloud =  transformed_cloud.voxel_down_sample(voxel_size=down_sample_voxel_size)
+        if down_sample_voxel_size != -1:
+
+            transformed_cloud =  transformed_cloud.voxel_down_sample(voxel_size=down_sample_voxel_size)
 
         points = np.asarray(transformed_cloud.points)
 
