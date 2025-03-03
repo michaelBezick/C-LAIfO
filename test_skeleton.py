@@ -42,7 +42,6 @@ point_cloud = pcg.depthImageToPointCloud(depth, 0)
 new_point_cloud = o3d.geometry.PointCloud()
 new_point_cloud.points = o3d.utility.Vector3dVector(point_cloud)
 pcg.save_point_cloud(new_point_cloud, is_point_cloud=True, output_file="random_point_cloud_unfiltered.ply")
-exit()
 point_cloud = new_point_cloud
 
 points = np.asarray(point_cloud.points)
@@ -54,9 +53,6 @@ valid_indices = np.where(points[:, 2] >= -1.2)[0]
 pcd_filtered = point_cloud.select_by_index(valid_indices)
 
 pcg.save_point_cloud(pcd_filtered, is_point_cloud=True, output_file="random_point_cloud_filtered.ply")
-exit()
-
-
 
 point_cloud = pcd_filtered
 
