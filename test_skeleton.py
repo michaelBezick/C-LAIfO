@@ -37,7 +37,7 @@ from point_cloud_generator import PointCloudGenerator
 
 pcg = PointCloudGenerator(sim=physics)
 
-point_cloud = pcg.depthImageToPointCloud(depth, 0, down_sample_voxel_size=0.002)
+point_cloud = pcg.depthImageToPointCloud(depth, 0, down_sample_voxel_size=-1)
 
 new_point_cloud = o3d.geometry.PointCloud()
 new_point_cloud.points = o3d.utility.Vector3dVector(point_cloud)
@@ -57,7 +57,7 @@ pcg.save_point_cloud(pcd_filtered, is_point_cloud=True, output_file="random_poin
 point_cloud = pcd_filtered
 
 time1 = time.time()
-lbc = LBC(point_cloud=point_cloud, down_sample=0.008)
+lbc = LBC(point_cloud=point_cloud, down_sample=-1)
 lbc.extract_skeleton()
 lbc.extract_topology()
 time2 = time.time()
