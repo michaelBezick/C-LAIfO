@@ -1,4 +1,3 @@
-from external.pc_skeletor.pc_skeletor import LBC
 import open3d as o3d
 import time
 import numpy as np
@@ -12,6 +11,7 @@ import matplotlib.pyplot as plt
 from dm_control import suite
 from dm_control.suite.walker import stand
 from dm_control import mujoco
+from pc_skeletor import LBC
 
 # Load the walker environment
 env = suite.load(domain_name="walker", task_name="walk")
@@ -39,6 +39,10 @@ pcg = PointCloudGenerator(sim=physics)
 
 point_cloud = pcg.depthImageToPointCloud(depth, 0)
 
+new_point_cloud = o3d.geometry.PointCloud()
+new_point_cloud.points = o3d.utility.Vector3dVector(point_cloud)
+point_cloud = new_point_cloud
+
 points = np.asarray(point_cloud.points)
 x_min, y_min, z_min = points.min(axis=0)
 x_max, y_max, z_max = points.max(axis=0)
@@ -46,6 +50,11 @@ x_max, y_max, z_max = points.max(axis=0)
 
 valid_indices = np.where(points[:, 2] >= -1.2)[0]
 pcd_filtered = point_cloud.select_by_index(valid_indices)
+
+pcg.save_point_cloud(pcd_filtered, is_point_cloud=True, output_file="./point_cloud_images/random_point_cloud_filtered.ply")
+exit()
+
+
 
 point_cloud = pcd_filtered
 
