@@ -51,7 +51,7 @@ x_max, y_max, z_max = points.max(axis=0)
 valid_indices = np.where(points[:, 2] >= -1.2)[0]
 pcd_filtered = point_cloud.select_by_index(valid_indices)
 
-pcg.save_point_cloud(pcd_filtered, is_point_cloud=True, output_file="./point_cloud_images/random_point_cloud_filtered.ply")
+pcg.save_point_cloud(pcd_filtered, is_point_cloud=True, output_file="random_point_cloud_filtered.ply")
 exit()
 
 
