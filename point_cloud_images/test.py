@@ -2,6 +2,7 @@ import open3d as o3d
 
 # Load the open point cloud
 pcd = o3d.io.read_point_cloud("view1.ply")
+# o3d.visualization.draw_plotly([pcd], window_name="Point Cloud")
 
 # Ensure point cloud is not empty
 if len(pcd.points) == 0:
@@ -9,7 +10,7 @@ if len(pcd.points) == 0:
 
 # Estimate normals (needed for Poisson)
 pcd.estimate_normals(
-    search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30)  # Increase K for better estimation
+    search_param=o3d.geometry.KDTreeSearchParamKNN(knn=50)  # Increase K for better estimation
 )
 
 # Orient normals consistently
