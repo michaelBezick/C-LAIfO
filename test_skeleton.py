@@ -63,8 +63,8 @@ lbc.extract_topology()
 time2 = time.time()
 
 print("TIME TIME TIME TIME: ", time2 - time1)
-lbc.visualize()
+# lbc.visualize()
 lbc.export_results('./output')
-lbc.animate(init_rot=np.asarray([[1, 0, 0], [0, 0, 1], [0, 1, 0]]),
-            steps=300,
-            output='./output')
+# lbc.animate(init_rot=np.asarray([[1, 0, 0], [0, 0, 1], [0, 1, 0]]),
+#             steps=300,
+#             output='./output')
