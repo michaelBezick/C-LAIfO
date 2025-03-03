@@ -27,8 +27,8 @@ for _ in range(10):
 
 # Render a depth image
 depth = physics.render(
-    height=128,
-    width=128,
+    height=64,
+    width=64,
     camera_id=0,  # Default camera
     depth=True
 )
