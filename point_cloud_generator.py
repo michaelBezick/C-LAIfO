@@ -221,7 +221,8 @@ class PointCloudGenerator(object):
         """
         transformed_cloud.points = o3d.utility.Vector3dVector(points)
 
-        transformed_cloud =  transformed_cloud.voxel_down_sample(voxel_size=down_sample_voxel_size)
+        if down_sample_voxel_size != -1:
+            transformed_cloud =  transformed_cloud.voxel_down_sample(voxel_size=down_sample_voxel_size)
 
         points = np.asarray(transformed_cloud.points)
 
