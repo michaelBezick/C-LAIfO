@@ -1,0 +1,1 @@
+This experiment is using a medium sized encoder, voxel down sample of 0.06, with a moderate camera position mismatch
