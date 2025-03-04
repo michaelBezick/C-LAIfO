@@ -1,3 +1,11 @@
+import math as m
+
+import torch
+import time
+import open3d as o3d
+import numpy as np
+import plotly.graph_objects as go
+
 """
 Steps:
 1. sample subset of points randomly
@@ -5,34 +13,94 @@ Steps:
 3. size of neighborhood is gradually increased to handle structures to different levels of details
 """
 
-import math as m
+def visualize_point_clouds(pc1, pc2):
+    """
+    Overlay two Open3D point clouds and visualize with Plotly.
+    
+    Args:
+        pc1 (o3d.geometry.PointCloud): First point cloud (Blue).
+        pc2 (o3d.geometry.PointCloud): Second point cloud (Red).
+    """
+    # Convert Open3D point clouds to NumPy arrays
+    points1 = np.asarray(pc1.points)  # (N1, 3)
+    points2 = np.asarray(pc2.points)  # (N2, 3)
 
-import torch
-import time
+    # Create color arrays
+    color1 = np.tile(np.array([[0, 0, 1]]), (points1.shape[0], 1))  # Blue
+    color2 = np.tile(np.array([[1, 0, 0]]), (points2.shape[0], 1))  # Red
+
+    # Create Plotly scatter plots
+    trace1 = go.Scatter3d(
+        x=points1[:, 0], y=points1[:, 1], z=points1[:, 2],
+        mode='markers',
+        marker=dict(size=3, color=['rgb(0, 0, 255)'] * points1.shape[0])  # Blue
+    )
+
+    trace2 = go.Scatter3d(
+        x=points2[:, 0], y=points2[:, 1], z=points2[:, 2],
+        mode='markers',
+        marker=dict(size=3, color=['rgb(255, 0, 0)'] * points2.shape[0])  # Red
+    )
+
+    # Plot using Plotly
+    fig = go.Figure(data=[trace1, trace2])
+    fig.update_layout(title="Overlayed Point Clouds", scene=dict(
+        xaxis_title="X",
+        yaxis_title="Y",
+        zaxis_title="Z"
+    ))
+    fig.show()
 
 
+def calc_gamma(sigma, Alpha, Beta, mu):
 
-h = 5
-epsilon = 1e-8
+    sigma = sigma.unsqueeze(1)
+    alpha_summed = torch.sum(Alpha, dim=1)
+    alpha_summed = alpha_summed.unsqueeze(1)
+
+    denom = sigma * alpha_summed
+
+    lhs = denom * mu
+
+    beta_summed = torch.sum(Beta, dim=1) #ensure diagonal is 0
+    beta_summed = beta_summed.unsqueeze(1)
+
+    gamma = lhs / beta_summed
+
+    gamma = torch.squeeze(gamma)
+
+    return gamma
+
 
 def compute_next_X(X_k, sigma_k, Q, Alpha, mu, Beta):
     I, D = X_k.shape
     J, D = Q.shape
 
     #first term
-    row_Q = Q.unsqueeze(0) #(1, Q)
-    num = torch.sum(Alpha * row_Q,dim=1) #(X,1)
-    denom = torch.sum(Alpha, dim=1) #(X,1)
-    first_term = num / denom
+    row_Q = Q.unsqueeze(0) #(1, J, 3)
+    row_Q = row_Q.expand(I, J, 3) #(I, J, 3)
+    #Alpha is (I, Q)
+    Alpha_expanded = Alpha.unsqueeze(-1) #(I,J,1)
+
+
+    num = torch.sum(row_Q * Alpha_expanded, dim=1) #(I,3)
+    denom = torch.sum(Alpha, dim=1) #(I)
+    denom = denom.unsqueeze(-1)
+    first_term = num / denom #(I, 3)
 
     #second term
     diff_X_X = X_k.unsqueeze(0) - X_k.unsqueeze(1) #(X,X), diagonal shouldn't matter
+    Beta_expanded = Beta.unsqueeze(-1)
+    diff_X_X = diff_X_X * Beta_expanded
+    num = torch.sum(diff_X_X, dim=1) #ensure diagonal is 0
+    denom = torch.sum(Beta_expanded,dim=1) #ensure diagonal is 0
+    sigma_k = sigma_k.unsqueeze(-1)
+    second_term = mu * sigma_k * (num / denom)
 
+    next_X = first_term + second_term
 
+    return next_X
 
-
-
-    pass
 
 def compute_Alpha_Beta(X:torch.Tensor, Q:torch.Tensor):
     I, D = X.shape
@@ -123,7 +191,7 @@ def compute_covariance_matrix_optimized(points, h):
     I, D = points.shape  # Number of points, Dimensionality (should be 3)
     
     # Initialize covariance matrix for each point
-    C = torch.zeros((I, D, D))
+    C = torch.zeros((I, D, D), device=points.device)
 
     for i in range(I):
         x_i = points[i]  # Select reference point
@@ -133,7 +201,7 @@ def compute_covariance_matrix_optimized(points, h):
         distances = torch.norm(diffs, dim=1)  # (N,)
 
         # Exclude self-distance
-        mask = torch.ones(I, dtype=torch.bool)
+        mask = torch.ones(I, dtype=torch.bool, device=points.device)
         mask[i] = False
         distances = distances[mask]
         diffs = diffs[mask]  # Remove self from the set
@@ -153,68 +221,58 @@ def compute_covariance_matrix_optimized(points, h):
 
     return C
 
-def compute_covariance_matrix(points, h):
-    # each point is a row vector
 
-    I = points.size()[0]
+"""KEEP ON CPU"""
 
-    C = torch.zeros((I, 3, 3), dtype=torch.float64)
+h = 5
+epsilon = 1e-8
+I = 100
+K = 10
 
-    for i in range(I):
-        sum = torch.zeros((3, 3), dtype=torch.float64)
-        for j in range(I):
+point_cloud = o3d.io.read_point_cloud("./random_point_cloud_filtered.ply")
 
-            if i == j:
-                continue
+point_cloud_points = torch.from_numpy(np.asarray(point_cloud.points))
 
-            x_i = points[i]
-            x_i_prime = points[j]
+J = point_cloud_points.shape[0]
 
-            thing3 = x_i - x_i_prime
+Q = point_cloud_points
 
-            thing = theta(l2_norm(thing3), h)
-
-            thing2 = thing3.unsqueeze(1)
-            thing3 = thing3.unsqueeze(0)
-
-            thing2 = thing2 * thing
-
-            all = torch.matmul(thing2, thing3)
-
-            sum += all
-
-        C[i, :] = sum
-
-    return C
-
-J = 10
-I = 5
-Q = torch.randn((J, 3), dtype=torch.float64)
-
-indices = torch.randint(0, 10, (5,))
+indices = torch.randint(0, J, (I,))
 indices = torch.randperm(J)[:I]
 X = Q[indices]
 
-C = compute_covariance_matrix_optimized(Q, h)
-sigma = calc_directionality_degree(C)
-gamma = torch.ones_like(sigma)
-R = compute_repulsion_force_optimized(Q, sigma, gamma, h)
-Alpha, Beta = compute_Alpha_Beta(X, Q)
-
-compute_Alpha_Beta(X, Q)
-
-exit()
-
-python_time = time2 - time1
-
 time1 = time.time()
-C2 = cpp.build.l1MedialSkeleton.computeCovarianceMatrix(points, h)
+
+mu = 0.35
+
+for _ in range(K):
+
+    C = compute_covariance_matrix_optimized(X, h)
+    sigma = calc_directionality_degree(C)
+
+    max_sigma = torch.max(sigma)
+
+    mu = 0.48 / max_sigma #authors use 0.35 as default setting
+    assert (torch.max(mu * sigma) < 0.5) and (torch.min(mu * sigma) > 0)
+
+    Alpha, Beta = compute_Alpha_Beta(X, Q)
+    gamma = calc_gamma(sigma, Alpha, Beta, mu)
+
+    R = compute_repulsion_force_optimized(X, sigma, gamma, h)
+
+    next_X = compute_next_X(X, sigma, Q, Alpha, mu, Beta)
+
+    X = next_X
 
 time2 = time.time()
+print(time2 - time1)
 
-print(C - C2)
+"""
+What depends on k? alpha, beta, sigma, x, covariance
+"""
 
-c_time = time2 - time1
+X = X.numpy()
+final_pcd = o3d.geometry.PointCloud()
+final_pcd.points = o3d.utility.Vector3dVector(X)
 
-print("Python: ", python_time)
-print("C: ", c_time)
+visualize_point_clouds(point_cloud, final_pcd)
