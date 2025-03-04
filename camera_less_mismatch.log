@@ -1,0 +1,18 @@
+workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.03.03/1934_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=256,delta_source=0.2,delta_target=-0.25,depth_flag=True,device=cuda:1,difficulty=easy,lr=1e-4,task_agent=walker_walk,task_expert=walker_walk
+| [32meval[0m  | F: 0 | S: 0 | E: 0 | L: 1000 | R: 37.3228 | T: 0:00:00
+| [33mtrain[0m | F: 5000 | S: 5000 | E: 5 | L: 1000 | R: 26.8586 | BS: 5015 | FPS: 10.9483 | T: 0:01:31
+| [33mtrain[0m | F: 6000 | S: 6000 | E: 6 | L: 1000 | R: 51.7662 | BS: 6018 | FPS: 18.3542 | T: 0:02:25
+| [33mtrain[0m | F: 7000 | S: 7000 | E: 7 | L: 1000 | R: 51.0028 | BS: 7021 | FPS: 18.6762 | T: 0:03:19
+| [33mtrain[0m | F: 8000 | S: 8000 | E: 8 | L: 1000 | R: 63.4590 | BS: 8024 | FPS: 18.7305 | T: 0:04:12
+| [33mtrain[0m | F: 9000 | S: 9000 | E: 9 | L: 1000 | R: 34.2568 | BS: 9027 | FPS: 18.7534 | T: 0:05:06
+| [33mtrain[0m | F: 10000 | S: 10000 | E: 10 | L: 1000 | R: 20.2792 | BS: 10030 | FPS: 18.7379 | T: 0:05:59
+| [32meval[0m  | F: 10000 | S: 10000 | E: 10 | L: 1000 | R: 13.9705 | T: 0:05:59
+| [33mtrain[0m | F: 11000 | S: 11000 | E: 11 | L: 1000 | R: 29.0323 | BS: 11033 | FPS: 16.1974 | T: 0:07:01
+| [33mtrain[0m | F: 12000 | S: 12000 | E: 12 | L: 1000 | R: 28.5351 | BS: 12036 | FPS: 18.6424 | T: 0:07:54
+| [33mtrain[0m | F: 13000 | S: 13000 | E: 13 | L: 1000 | R: 46.7041 | BS: 13039 | FPS: 18.6678 | T: 0:08:48
+| [33mtrain[0m | F: 14000 | S: 14000 | E: 14 | L: 1000 | R: 20.8510 | BS: 14042 | FPS: 18.7025 | T: 0:09:41
+| [33mtrain[0m | F: 15000 | S: 15000 | E: 15 | L: 1000 | R: 31.2752 | BS: 15045 | FPS: 18.7364 | T: 0:10:35
+| [33mtrain[0m | F: 16000 | S: 16000 | E: 16 | L: 1000 | R: 35.5874 | BS: 16048 | FPS: 18.7216 | T: 0:11:28
+| [33mtrain[0m | F: 17000 | S: 17000 | E: 17 | L: 1000 | R: 39.4520 | BS: 17051 | FPS: 18.6929 | T: 0:12:22
+| [33mtrain[0m | F: 18000 | S: 18000 | E: 18 | L: 1000 | R: 53.6577 | BS: 18054 | FPS: 18.6993 | T: 0:13:15
+| [33mtrain[0m | F: 19000 | S: 19000 | E: 19 | L: 1000 | R: 56.4919 | BS: 19057 | FPS: 18.7334 | T: 0:14:09

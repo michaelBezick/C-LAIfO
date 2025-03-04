@@ -128,17 +128,17 @@ class OneHotPointNetEncoderLikePaper(nn.Module):
         self.max_len = max_length_point_cloud * 3 #times frame stack
 
         self.mlp1 = nn.Sequential(
-            nn.Conv1d(6, 64, kernel_size=1),
-            nn.LayerNorm([64, self.max_len]),
-            nn.ReLU(),
-            nn.Conv1d(64, 128, kernel_size=1),
+            nn.Conv1d(6, 128, kernel_size=1),
             nn.LayerNorm([128, self.max_len]),
             nn.ReLU(),
             nn.Conv1d(128, 256, kernel_size=1),
+            nn.LayerNorm([256, self.max_len]),
+            nn.ReLU(),
+            nn.Conv1d(256, 512, kernel_size=1),
         )
 
         self.mlp2 = nn.Sequential(
-            nn.Conv1d(256, latent_dim, kernel_size=1),
+            nn.Conv1d(512, latent_dim, kernel_size=1),
             nn.LayerNorm([latent_dim, 1]), #because max pool
         )
 
