@@ -1318,10 +1318,16 @@ class LailClAgent:
             batch, self.device
         )  # reward_a unused
 
+
+        rotate_aug = False
         
         # encode
-        obs_a = self.rotate_aug(obs)
-        next_obs_a = self.rotate_aug(next_obs)
+        if rotate_aug:
+            obs_a = self.rotate_aug(obs)
+            next_obs_a = self.rotate_aug(next_obs)
+        else:
+            obs_a = obs
+            next_obs_a = next_obs
 
         obs = self.encoder(obs_a)
         with torch.no_grad():
