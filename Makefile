@@ -1,6 +1,6 @@
 # Variables
 REMOTE = origin          # Change to your remote name (default is 'origin')
-BRANCH = main            # Change to your branch name (default is 'main')
+BRANCH = depth            # Change to your branch name (default is 'main')
 MESSAGE = "Auto commit"  # Default commit message
 
 # Rules
