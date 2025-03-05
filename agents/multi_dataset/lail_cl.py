@@ -1319,7 +1319,7 @@ class LailClAgent:
         )  # reward_a unused
 
 
-        rotate_aug = False
+        rotate_aug = True
         
         # encode
         if rotate_aug:

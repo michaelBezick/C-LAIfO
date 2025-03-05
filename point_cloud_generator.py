@@ -12,8 +12,7 @@ from dm_control._render.executor import render_executor
 from dm_control.suite.walker import Physics
 from PIL import Image as PIL_Image
 
-from functions import l1_medial_skeleton
-from L1MedialSkeleton.functions import L1MedialSkeleton
+from L1MedialSkeleton.functions import l1_medial_skeleton
 
 """
 Generates numpy rotation matrix from quaternion
@@ -179,14 +178,13 @@ class PointCloudGenerator(object):
         cam_id,
         max_depth=6,
         down_sample_voxel_size=-1,
-        skeleton=False,
+        skeleton=True,
     ) -> np.ndarray:
         """
         @param down_sample_voxel_size: put to -1 to disable downsampling
 
         """
 
-        breakpoint()
 
         od_cammat = cammat2o3d(self.cam_mats[cam_id], self.img_width, self.img_height)
 
@@ -232,10 +230,16 @@ class PointCloudGenerator(object):
                 points[points[:, 2] >= -1.2]  # filtering points
             )
 
-            pc_skeleton = l1_medial_skeleton(transformed_cloud)
-            np.random.shuffle(pc_skeleton)  # so truncation isn't biased
+            transformed_cloud = transformed_cloud.voxel_down_sample(
+                voxel_size=0.17
+            )
 
-            return pc_skeleton.astype(np.float32)
+            points = np.asarray(transformed_cloud.points)
+
+            #transformed_cloud pc_skeleton = l1_medial_skeleton(transformed_cloud)
+            np.random.shuffle(points)  # so truncation isn't biased
+
+            return points.astype(np.float32)
 
         transformed_cloud.points = o3d.utility.Vector3dVector(points)
 

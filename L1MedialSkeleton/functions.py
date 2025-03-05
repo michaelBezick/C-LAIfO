@@ -37,7 +37,7 @@ def l1_medial_skeleton(point_cloud, down_sample_voxel_size=0.17, mu=0.35):
     # max_sigma = torch.max(sigma)
 
     Alpha, Beta = compute_Alpha_Beta(X, Q, h)
-    gamma = calc_gamma(sigma, Alpha, Beta, mu)
+    # gamma = calc_gamma(sigma, Alpha, Beta, mu)
 
     # R = compute_repulsion_force_optimized(X, sigma, gamma, h)
 
