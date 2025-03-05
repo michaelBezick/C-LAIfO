@@ -186,6 +186,8 @@ class PointCloudGenerator(object):
 
         """
 
+        breakpoint()
+
         od_cammat = cammat2o3d(self.cam_mats[cam_id], self.img_width, self.img_height)
 
         depth_img[depth_img >= max_depth] = 0
