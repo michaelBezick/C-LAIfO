@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
-import torch
 import math
-
-
-from dm_control.suite.walker import Physics
+import pdb
+import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
+import torch
 from dm_control import suite
 from dm_control._render.executor import render_executor
+from dm_control.suite.walker import Physics
 from PIL import Image as PIL_Image
-import pdb
-import time
 
-
+from functions import l1_medial_skeleton
+from L1MedialSkeleton.functions import L1MedialSkeleton
 
 """
 Generates numpy rotation matrix from quaternion
@@ -174,25 +173,26 @@ class PointCloudGenerator(object):
             )
             self.cam_mats.append(cam_mat)
 
-    def depthImageToPointCloud(self, depth_img, cam_id, max_depth = 6, down_sample_voxel_size=0.06) -> np.ndarray:
-
+    def depthImageToPointCloud(
+        self,
+        depth_img,
+        cam_id,
+        max_depth=6,
+        down_sample_voxel_size=-1,
+        skeleton=False,
+    ) -> np.ndarray:
         """
         @param down_sample_voxel_size: put to -1 to disable downsampling
 
         """
 
-
-        od_cammat = cammat2o3d(
-            self.cam_mats[cam_id], self.img_width, self.img_height
-        )
+        od_cammat = cammat2o3d(self.cam_mats[cam_id], self.img_width, self.img_height)
 
         depth_img[depth_img >= max_depth] = 0
 
         od_depth = o3d.geometry.Image(np.ascontiguousarray(depth_img))
 
-        o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(
-            od_depth, od_cammat
-        )
+        o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(od_depth, od_cammat)
 
         cam_pos = self.sim.model.cam_pos[cam_id]
         c2b_r = rotMatList2NPRotMat(self.sim.model.cam_mat0[cam_id])
@@ -206,11 +206,9 @@ class PointCloudGenerator(object):
 
         points = np.asarray(transformed_cloud.points)
 
-
-        #not centroid shifting and unit sphere scaling anymore
+        # not centroid shifting and unit sphere scaling anymore
 
         """
-
         #centroid shift
         center = np.mean(points, axis=0)
         centered_points = points - center
@@ -225,15 +223,29 @@ class PointCloudGenerator(object):
         else:
             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
         """
+
+        if skeleton:
+
+            transformed_cloud.points = o3d.utility.Vector3dVector(
+                points[points[:, 2] >= -1.2]  # filtering points
+            )
+
+            pc_skeleton = l1_medial_skeleton(transformed_cloud)
+            np.random.shuffle(pc_skeleton)  # so truncation isn't biased
+
+            return pc_skeleton.astype(np.float32)
+
         transformed_cloud.points = o3d.utility.Vector3dVector(points)
 
         if down_sample_voxel_size != -1:
 
-            transformed_cloud =  transformed_cloud.voxel_down_sample(voxel_size=down_sample_voxel_size)
+            transformed_cloud = transformed_cloud.voxel_down_sample(
+                voxel_size=down_sample_voxel_size
+            )
 
         points = np.asarray(transformed_cloud.points)
 
-        np.random.shuffle(points) #so truncation isn't biased
+        np.random.shuffle(points)  # so truncation isn't biased
 
         return points.astype(np.float32)
 
@@ -262,7 +274,6 @@ class PointCloudGenerator(object):
             depth_img[depth_img >= max_depth] = 0
 
             od_depth = o3d.geometry.Image(np.ascontiguousarray(depth_img))
-            
 
             o3d_cloud = o3d.geometry.PointCloud.create_from_depth_image(
                 od_depth, od_cammat
@@ -312,13 +323,12 @@ class PointCloudGenerator(object):
         for i, cloud in enumerate(o3d_clouds):
             combined_cloud += cloud
 
-
-        #scale the point cloud to have max magnitude of 1 and shift to have mean 0,0,0
+        # scale the point cloud to have max magnitude of 1 and shift to have mean 0,0,0
         points = np.asarray(combined_cloud.points)
 
         center = np.mean(points, axis=0)
         centered_points = points - center
-        print("centroid: ", np.mean(centered_points,axis=0))
+        print("centroid: ", np.mean(centered_points, axis=0))
 
         magnitudes = np.linalg.norm(centered_points, axis=1)
         max_magnitude = np.max(magnitudes)
@@ -363,7 +373,7 @@ class PointCloudGenerator(object):
 
         if capture_depth:
             depth = self.verticalFlip(depth)
-            #real_depth = self.depthimg2Meters(depth)
+            # real_depth = self.depthimg2Meters(depth)
             real_depth = depth
 
             return real_depth
@@ -379,13 +389,17 @@ class PointCloudGenerator(object):
         im = PIL_Image.fromarray(normalized_image)
         im.save(filepath + "/" + filename + ".jpg")
 
-    def save_point_cloud_as_image(self, point_cloud, output_image="point_cloud_image.png"):
+    def save_point_cloud_as_image(
+        self, point_cloud, output_image="point_cloud_image.png"
+    ):
         """Saves a 2D projection of the point cloud to an image using offscreen rendering."""
         # Offscreen rendering
         renderer = o3d.visualization.rendering.OffscreenRenderer(640, 480)
 
         # Add the point cloud to the scene
-        renderer.scene.add_geometry("point_cloud", point_cloud, o3d.visualization.rendering.MaterialRecord())
+        renderer.scene.add_geometry(
+            "point_cloud", point_cloud, o3d.visualization.rendering.MaterialRecord()
+        )
 
         # Set the camera perspective
         renderer.scene.camera.look_at([0, 0, 0], [0, 0, 1], [0, 1, 0])
@@ -394,19 +408,18 @@ class PointCloudGenerator(object):
         image = renderer.render_to_image()
         o3d.io.write_image(output_image, image)
 
-
         # Clean up
         print(f"Point cloud projection saved to {output_image}")
 
-    def save_point_cloud(self, point_cloud, is_point_cloud=True,output_file="point_cloud.ply"):
+    def save_point_cloud(
+        self, point_cloud, is_point_cloud=True, output_file="point_cloud.ply"
+    ):
 
         if not is_point_cloud:
             pcd = o3d.geometry.PointCloud()
             pcd.points = o3d.utility.Vector3dVector(point_cloud)
 
             point_cloud = pcd
-
-        
 
         # Save the point cloud
         o3d.io.write_point_cloud("./point_cloud_images/" + output_file, point_cloud)
@@ -434,8 +447,9 @@ if __name__ == "__main__":
 
     combined_cloud = o3d.geometry.PointCloud()
 
-
-    point_cloud1 = point_cloud_generator.depthImageToPointCloud(depth1,cam_id=0, down_sample_voxel_size=0.03)
+    point_cloud1 = point_cloud_generator.depthImageToPointCloud(
+        depth1, cam_id=0, down_sample_voxel_size=0.03
+    )
 
     # num_points = point_cloud1.shape[0]
     # truncate = num_points // 2
@@ -444,9 +458,13 @@ if __name__ == "__main__":
     print("point cloud 1 points: ", point_cloud1.shape)
     pcd1 = o3d.geometry.PointCloud()
     pcd1.points = o3d.utility.Vector3dVector(point_cloud1)
-    point_cloud_generator.save_point_cloud(pcd1, is_point_cloud=True, output_file="view1.ply")
+    point_cloud_generator.save_point_cloud(
+        pcd1, is_point_cloud=True, output_file="view1.ply"
+    )
 
-    point_cloud2 = point_cloud_generator.depthImageToPointCloud(depth2,cam_id=1, down_sample_voxel_size=0.03)
+    point_cloud2 = point_cloud_generator.depthImageToPointCloud(
+        depth2, cam_id=1, down_sample_voxel_size=0.03
+    )
 
     # num_points = point_cloud2.shape[0]
     # truncate = num_points // 2
@@ -456,11 +474,15 @@ if __name__ == "__main__":
     print("point cloud 2 points: ", point_cloud2.shape)
     pcd2 = o3d.geometry.PointCloud()
     pcd2.points = o3d.utility.Vector3dVector(point_cloud2)
-    point_cloud_generator.save_point_cloud(pcd2, is_point_cloud=True, output_file="view2.ply")
+    point_cloud_generator.save_point_cloud(
+        pcd2, is_point_cloud=True, output_file="view2.ply"
+    )
 
     exit()
 
     combined_cloud += pcd1
     combined_cloud += pcd2
 
-    point_cloud_generator.save_point_cloud(combined_cloud, is_point_cloud=True, output_file="combined.ply")
+    point_cloud_generator.save_point_cloud(
+        combined_cloud, is_point_cloud=True, output_file="combined.ply"
+    )
