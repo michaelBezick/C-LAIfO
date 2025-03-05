@@ -1,0 +1,6 @@
+workspace: /home/michaelbezick/Repos/C-LAIfO/experiments/exp_walker_walk_walker_walk_difficulty=easy_delta_source=0.2_delta_target=-0.25/lail_cl_multiset_apply_aug=CL-Q_aug_type=brightness_CL_data_type=agent_2025.03.05/1726_CL_data_type=agent,agent=lail_cl_multiset,apply_aug=CL-Q,aug_type=brightness,batch_size=256,delta_source=0.2,delta_target=-0.25,depth_flag=True,device=cuda:2,difficulty=easy,lr=1e-4,task_agent=walker_walk,task_expert=walker_walk
+| [32meval[0m  | F: 0 | S: 0 | E: 0 | L: 1000 | R: 15.8282 | T: 0:00:00
+| [33mtrain[0m | F: 5000 | S: 5000 | E: 5 | L: 1000 | R: 23.1886 | BS: 5015 | FPS: 30.6723 | T: 0:00:32
+| [33mtrain[0m | F: 6000 | S: 6000 | E: 6 | L: 1000 | R: 40.6726 | BS: 6018 | FPS: 81.0859 | T: 0:00:44
+| [33mtrain[0m | F: 7000 | S: 7000 | E: 7 | L: 1000 | R: 52.7385 | BS: 7021 | FPS: 79.6413 | T: 0:00:57
+| [33mtrain[0m | F: 8000 | S: 8000 | E: 8 | L: 1000 | R: 63.4549 | BS: 8024 | FPS: 77.9462 | T: 0:01:10
