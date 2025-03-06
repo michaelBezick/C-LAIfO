@@ -135,11 +135,25 @@ class OneHotPointNetEncoderLikePaper(nn.Module):
             nn.LayerNorm([256, self.max_len]),
             nn.ReLU(),
             nn.Conv1d(256, 512, kernel_size=1),
+            nn.LayerNorm([512, self.max_len]),
+            nn.ReLU(),
+            nn.Conv1d(512, 512, kernel_size=1),
         )
 
+        # self.mlp2 = nn.Sequential(
+        #     nn.Conv1d(512, latent_dim, kernel_size=1),
+        #     nn.LayerNorm([latent_dim, 1]), #because max pool
+        # )
+
         self.mlp2 = nn.Sequential(
-            nn.Conv1d(512, latent_dim, kernel_size=1),
-            nn.LayerNorm([latent_dim, 1]), #because max pool
+            nn.Conv1d(512, 128, kernel_size=1),
+            nn.LayerNorm([128, 1]),
+            nn.ReLU(),
+            nn.Conv1d(128, 64, kernel_size=1),
+            nn.LayerNorm([64, 1]),
+            nn.ReLU(),
+            nn.Conv1d(64, latent_dim, kernel_size=1),
+            nn.LayerNorm([latent_dim, 1]),
         )
 
     def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
