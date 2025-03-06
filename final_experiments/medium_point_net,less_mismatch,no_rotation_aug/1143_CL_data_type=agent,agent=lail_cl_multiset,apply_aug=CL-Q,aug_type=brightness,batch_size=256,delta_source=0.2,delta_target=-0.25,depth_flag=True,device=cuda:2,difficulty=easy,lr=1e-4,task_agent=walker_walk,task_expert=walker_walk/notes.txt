@@ -1,0 +1,1 @@
+This experiment is with medium sized encoder and uses no data augmentation
