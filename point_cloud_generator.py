@@ -11,6 +11,7 @@ from dm_control import suite
 from dm_control._render.executor import render_executor
 from dm_control.suite.walker import Physics
 from PIL import Image as PIL_Image
+from BoundingBoxSkeleton.functions import bounding_box_centers
 
 from L1MedialSkeleton.functions import l1_medial_skeleton
 
@@ -223,6 +224,18 @@ class PointCloudGenerator(object):
         else:
             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
         """
+
+        breakpoint()
+        bounding_box = True
+
+        if bounding_box:
+
+            centers = bounding_box_centers(transformed_cloud)
+
+            np.random.shuffle(centers)
+            return centers.astype(np.float32)
+
+
 
         if skeleton:
 
