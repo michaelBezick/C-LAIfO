@@ -32,7 +32,7 @@ push-message:
 # Rule to run the training command
 
 train-camera-mismatch:
-	nohup python -u train_LAIL_MI.py device=cuda:2 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug='CL-Q' aug_type='brightness' CL_data_type=agent depth_flag=True batch_size=256 > camera_less_mismatch_from_depth.log 2>&1 &
+	nohup python -u train_LAIL_MI.py device=cuda:2 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug='CL-Q' aug_type='brightness' CL_data_type=agent depth_flag=True batch_size=256 > camera_less_mismatch_from_depth_2.log 2>&1 &
 
 debug:
 	python train_LAIL_MI.py device=cuda:2 task_agent=walker_walk task_expert=walker_walk agent=lail_cl_multiset difficulty=easy delta_source=0.2 delta_target=-0.25 apply_aug='CL-Q' aug_type='brightness' CL_data_type=agent depth_flag=True batch_size=64

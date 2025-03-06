@@ -139,9 +139,6 @@ class Encoder(nn.Module):
 
         self.apply(utils.weight_init)
 
-    def min_max_norm(self, tensor):
-        return (tensor - torch.min(tensor)) / (torch.max(tensor) - torch.min(tensor) + 1e-8)
-
     def forward(self, obs):
 
         if obs.shape[0] == 1:
@@ -150,8 +147,6 @@ class Encoder(nn.Module):
             obs = obs.unsqueeze(1)
 
         obs = obs.view(obs.shape[0], 3, obs.shape[-1], obs.shape[-1])
-
-        obs = self.min_max_norm(obs)
 
         obs = obs / 80
             
