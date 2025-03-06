@@ -225,16 +225,23 @@ class PointCloudGenerator(object):
             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
         """
 
-        breakpoint()
         bounding_box = True
+
 
         if bounding_box:
 
             centers = bounding_box_centers(transformed_cloud)
-
             np.random.shuffle(centers)
-            return centers.astype(np.float32)
 
+            if np.isnan(centers).any() or np.isinf(centers).any():
+
+                print(centers)
+                raise ValueError("bounding_box_centers produced NaN or Inf values!")
+
+            if np.abs(centers).max() > 100:  # Adjust threshold based on environment
+                raise ValueError(f"bounding_box_centers output has extreme values: {centers}")
+
+            return centers.astype(np.float32)
 
 
         if skeleton:
