@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-folder = "./depth,less_mismatch,seed2/"
+folder = "./point_cloud_large_model/"
 
 eval_path = folder + "eval.csv"
 train_path = folder + "train.csv"
@@ -46,11 +46,11 @@ eval_reward = moving_average(eval_reward, window_size)
 eval_step = eval_step[:len(eval_reward)]
 
 plt.figure()
-plt.title("Depth Image Small Mismatch - Seed 2")
+plt.title("Point Cloud Train versus Eval - Large Mismatch")
 plt.xlabel("Steps")
 plt.ylabel("Reward")
 plt.plot(train_step, train_reward, label="Train")
 plt.plot(eval_step, eval_reward, label="Eval")
 plt.legend()
-plt.savefig("./plots/depth_image_small_mismatch_seed2.pdf")
-plt.savefig("./plots/depth_image_small_mismatch_seed2.jpg",dpi=600)
+plt.savefig("./plots/point_cloud_large_mismatch.pdf")
+plt.savefig("./plots/point_cloud_large_mismatch.jpg",dpi=600)
