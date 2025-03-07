@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-folder = "./point_cloud_large_model/"
+folder = "./large_mismatch/"
 
 eval_path = folder + "eval.csv"
 train_path = folder + "train.csv"
