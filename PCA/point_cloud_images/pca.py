@@ -54,3 +54,12 @@ print("Principal Components:\n", components)
 print("Explained Variance Ratios:\n", variance)
 
 plot_pca_with_point_cloud(points, components)
+
+file_path = "./pca_point_cloud_1.ply"  # Change to your file path
+points, pcd = load_point_cloud(file_path)
+components, variance = compute_pca(points)
+
+print("Principal Components:\n", components)
+print("Explained Variance Ratios:\n", variance)
+
+plot_pca_with_point_cloud(points, components)

@@ -152,8 +152,8 @@ class PointCloudGenerator(object):
 
         self.sim = sim
 
-        self.img_width = 64
-        self.img_height = 64
+        self.img_width = 128
+        self.img_height = 128
 
         self.cam_names = [i for i in range(len(self.sim.model.cam_bodyid))]
 
