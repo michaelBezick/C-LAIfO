@@ -12,6 +12,7 @@ from dm_control._render.executor import render_executor
 from dm_control.suite.walker import Physics
 from PIL import Image as PIL_Image
 from BoundingBoxSkeleton.functions import bounding_box_centers
+from sklearn.decomposition import PCA
 
 from L1MedialSkeleton.functions import l1_medial_skeleton
 
@@ -22,6 +23,16 @@ Generates numpy rotation matrix from quaternion
 
 @return np_rot_mat: 3x3 rotation matrix as numpy array
 """
+
+def transform_to_pca_basis(points, pca):
+    return pca.transform(points)  # Project points onto PCA basis
+
+def compute_pca(points):
+    pca = PCA(n_components=3)
+    pca.fit(points)
+    components = pca.components_  # Principal components (3x3 matrix)
+    explained_variance = pca.explained_variance_ratio_  # Variance explained by each PC
+    return pca, components, explained_variance
 
 
 def quat2Mat(quat):
@@ -179,7 +190,8 @@ class PointCloudGenerator(object):
         cam_id,
         max_depth=6,
         down_sample_voxel_size=-1,
-        skeleton=True,
+        skeleton=False,
+        PCA=True,
     ) -> np.ndarray:
         """
         @param down_sample_voxel_size: put to -1 to disable downsampling
@@ -225,7 +237,7 @@ class PointCloudGenerator(object):
             transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
         """
 
-        bounding_box = True
+        bounding_box = False
 
 
         if bounding_box:
@@ -270,6 +282,12 @@ class PointCloudGenerator(object):
             )
 
         points = np.asarray(transformed_cloud.points)
+
+        if PCA:
+            pca, components, explained_variance = compute_pca(points)
+            points = transform_to_pca_basis(points, pca)
+            """NEED TO HAVE DATA STRUCTURE ALLOW FOR 4 CANONICAL POSES"""
+            """ALSO NEED TO CALCULATE ALL 4"""
 
         np.random.shuffle(points)  # so truncation isn't biased
 

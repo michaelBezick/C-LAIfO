@@ -1,3 +1,4 @@
+
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
@@ -15,7 +16,11 @@ def compute_pca(points):
     pca.fit(points)
     components = pca.components_  # Principal components (3x3 matrix)
     explained_variance = pca.explained_variance_ratio_  # Variance explained by each PC
-    return components, explained_variance
+    return pca, components, explained_variance
+
+# 🔹 Transform points into PCA basis
+def transform_to_pca_basis(points, pca):
+    return pca.transform(points)  # Project points onto PCA basis
 
 # 🔹 Rotate point cloud 180° about the Z-axis
 def rotate_point_cloud_180_z(points):
@@ -74,30 +79,32 @@ file_path = "./pca_point_cloud_0.ply"  # Change to your file path
 points, pcd = load_point_cloud(file_path)
 
 # Compute PCA for original point cloud
-components, variance = compute_pca(points)
+pca, components, variance = compute_pca(points)
 print("Original Principal Components:\n", components)
 print("Original Explained Variance Ratios:\n", variance)
-
-# dot_products = np.dot(components, components.T)
-# print(dot_products)
-
 
 # 🔹 Rotate the same point cloud 180° around Z-axis
 rotated_points = rotate_point_cloud_180_z(points)
 
 # Compute PCA separately for the rotated point cloud
-rotated_components, rotated_variance = compute_pca(rotated_points)
+rotated_pca, rotated_components, rotated_variance = compute_pca(rotated_points)
 print("Rotated Principal Components:\n", rotated_components)
 print("Rotated Explained Variance Ratios:\n", rotated_variance)
 
-# 🔹 Compute consistent axis limits for both plots
-axis_limits = get_axis_limits(points, rotated_points)
+# 🔹 Transform original points into its PCA basis
+transformed_points = transform_to_pca_basis(points, pca)
+
+# 🔹 Compute consistent axis limits for all plots
+axis_limits = get_axis_limits(points, rotated_points, transformed_points)
 
 # 🔹 Plot original point cloud with its own PCA
 plot_pca_with_point_cloud(points, components, title="Original Point Cloud", axis_limits=axis_limits, scale_factor=0.5)
 
-# 🔹 Plot rotated point cloud with newly computed PCA (ensuring larger PCA axes)
+# 🔹 Plot rotated point cloud with newly computed PCA
 plot_pca_with_point_cloud(rotated_points, rotated_components, title="Rotated 180° Around Z-Axis", axis_limits=axis_limits, scale_factor=0.5)
 
-plt.show()  # Keep both figures open
+# 🔹 Plot transformed point cloud in PCA basis
+plot_pca_with_point_cloud(transformed_points, np.eye(3), title="Transformed to PCA Basis", axis_limits=axis_limits, scale_factor=0.5)
+
+plt.show()  # Keep all figures open
 
