@@ -2,7 +2,8 @@ import numpy as np
 import torch
 
 from buffers.replay_buffer import AbstractReplayBuffer
-from point_cloud_generator import PointCloudGenerator
+# from point_cloud_generator import PointCloudGenerator
+from point_cloud_generator_PCA import PointCloudGenerator
 
 
 class EfficientReplayBuffer(AbstractReplayBuffer):
@@ -48,8 +49,11 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
         # self.obs = np.zeros([self.buffer_size, self.ims_channels, *self.obs_shape[1:]], dtype=np.uint8)
         # self.obs = [None] * self.buffer_size
         """THIS IS GOING TO STORE NUMPY ARRAYS FOR POINT CLOUDS"""
+        # self.obs = np.zeros(
+        #     [self.buffer_size, self.max_length_point_cloud, 3], dtype=np.float32
+        # )
         self.obs = np.zeros(
-            [self.buffer_size, self.max_length_point_cloud, 3], dtype=np.float32
+            [self.buffer_size, 4, self.max_length_point_cloud, 3], dtype=np.float32
         )
         self.obs = np.ascontiguousarray(self.obs)
 
@@ -86,13 +90,16 @@ class EfficientReplayBuffer(AbstractReplayBuffer):
                 latest_obs, cam_id=0
             )
 
-        num_points = latest_obs.shape[0]
+        # num_points = latest_obs.shape[0]
+        num_points = latest_obs.shape[1]
+
 
         if num_points > self.max_length_point_cloud:
-            latest_obs = latest_obs[: self.max_length_point_cloud]
+            latest_obs = latest_obs[:, : self.max_length_point_cloud]
         elif num_points < self.max_length_point_cloud:
             pad_width = self.max_length_point_cloud - num_points
-            latest_obs = np.pad(latest_obs, ((0, pad_width), (0, 0)), mode="constant")
+            # latest_obs = np.pad(latest_obs, ((0, pad_width), (0, 0)), mode="constant")
+            latest_obs = np.pad(latest_obs, ((0,0), (0, pad_width), (0, 0)), mode="constant")
 
         """LATEST OBS IS ALWAYS POINT CLOUD NO MATTER WHAT"""
         if first:

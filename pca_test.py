@@ -40,6 +40,5 @@ def form_canonical_bases(pca: PCA):
 
 points = torch.randn((100, 3)).numpy()
 
-breakpoint()
 pca, _, _ = compute_pca(points)
 bases = form_canonical_bases(pca)

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import warnings
 
-import point_cloud_generator
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 import os
@@ -199,6 +198,7 @@ class Workspace:
     #     print(f'Average random expert reward: {total_reward / episode}, Total number of samples: {step}')
         
     def eval(self):
+        breakpoint()
         step, episode, total_reward = 0, 0, 0
         eval_until_episode = utils.Until(self.cfg.num_eval_episodes)
         # eval_until_episode = utils.Until(1)
