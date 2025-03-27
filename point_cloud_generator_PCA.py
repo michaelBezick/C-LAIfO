@@ -11,9 +11,7 @@ from dm_control import suite
 from dm_control._render.executor import render_executor
 from dm_control.suite.walker import Physics
 from PIL import Image as PIL_Image
-from BoundingBoxSkeleton.functions import bounding_box_centers
 
-from L1MedialSkeleton.functions import l1_medial_skeleton
 from sklearn.decomposition import PCA
 
 """
@@ -23,16 +21,45 @@ Generates numpy rotation matrix from quaternion
 
 @return np_rot_mat: 3x3 rotation matrix as numpy array
 """
+def form_canonical_bases(pca: PCA):
+    components = pca.components_
+    components = torch.tensor(components) #rows are basis vectors
+    bases = torch.zeros((4,3,3))
 
-def transform_to_pca_basis(points, pca):
-    return pca.transform(points)  # Project points onto PCA basis
+    signs = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+
+    for i, sign in enumerate(signs):
+        sign1, sign2 = sign
+        basis = torch.zeros(3, 3)
+        basis[0] = components[0] * sign1
+        basis[1] = components[1] * sign2
+        basis[2] = components[2]
+
+        if torch.det(basis) <= 0:
+            basis[2] = basis[2] * -1
+            bases[i] = basis
+        else:
+            bases[i] = basis
+
+
+    return bases
+
+def transform_to_pca_bases(points:np.ndarray):
+    pca = compute_pca(points)
+    bases = form_canonical_bases(pca) #torch 4x3x3 tensor
+
+    points_tensor = torch.tensor(points, dtype=torch.float32)
+
+    column_vector_bases = bases.transpose(1, 2)
+
+    transformed = torch.einsum("nd,ijd->inj", points_tensor, column_vector_bases).numpy()
+
+    return transformed
 
 def compute_pca(points):
     pca = PCA(n_components=3)
     pca.fit(points)
-    components = pca.components_  # Principal components (3x3 matrix)
-    explained_variance = pca.explained_variance_ratio_  # Variance explained by each PC
-    return pca, components, explained_variance
+    return pca
 
 def quat2Mat(quat):
     if len(quat) != 4:
@@ -189,7 +216,8 @@ class PointCloudGenerator(object):
         cam_id,
         max_depth=6,
         down_sample_voxel_size=-1,
-        skeleton=True,
+        skeleton=False,
+        PCA=False,
     ) -> np.ndarray:
         """
         @param down_sample_voxel_size: put to -1 to disable downsampling
@@ -217,75 +245,8 @@ class PointCloudGenerator(object):
 
         points = np.asarray(transformed_cloud.points)
 
-        # not centroid shifting and unit sphere scaling anymore
-
-        """
-        #centroid shift
-        center = np.mean(points, axis=0)
-        centered_points = points - center
-
-        #unit sphere magnitude
-        magnitudes = np.linalg.norm(centered_points, axis=1)
-        max_magnitude = np.max(magnitudes)
-        
-        if max_magnitude > 0:
-            normalized_points = centered_points / max_magnitude
-            transformed_cloud.points = o3d.utility.Vector3dVector(normalized_points)
-        else:
-            transformed_cloud.points = o3d.utility.Vector3dVector(centered_points)
-        """
-
-        bounding_box = True
-
-
-        if bounding_box:
-
-            centers = bounding_box_centers(transformed_cloud)
-            np.random.shuffle(centers)
-
-            if np.isnan(centers).any() or np.isinf(centers).any():
-
-                print(centers)
-                raise ValueError("bounding_box_centers produced NaN or Inf values!")
-
-            if np.abs(centers).max() > 100:  # Adjust threshold based on environment
-                raise ValueError(f"bounding_box_centers output has extreme values: {centers}")
-
-            return centers.astype(np.float32)
-
-
-        if skeleton:
-
-            transformed_cloud.points = o3d.utility.Vector3dVector(
-                points[points[:, 2] >= -1.2]  # filtering points
-            )
-
-            transformed_cloud = transformed_cloud.voxel_down_sample(
-                voxel_size=0.17
-            )
-
-            points = np.asarray(transformed_cloud.points)
-
-            #transformed_cloud pc_skeleton = l1_medial_skeleton(transformed_cloud)
-            np.random.shuffle(points)  # so truncation isn't biased
-
-            return points.astype(np.float32)
-
-        transformed_cloud.points = o3d.utility.Vector3dVector(points)
-
-        if down_sample_voxel_size != -1:
-
-            transformed_cloud = transformed_cloud.voxel_down_sample(
-                voxel_size=down_sample_voxel_size
-            )
-
-        points = np.asarray(transformed_cloud.points)
-
-        PCA = True
-
         if PCA:
-            pca, _, _ = compute_pca(points)
-            points = transform_to_pca_basis(points, pca)
+            points = transform_to_pca_bases(points)
 
 
         np.random.shuffle(points)  # so truncation isn't biased
