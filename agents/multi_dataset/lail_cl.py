@@ -144,8 +144,6 @@ class OneHotPointNetEncoder(nn.Module):
 
         #get random views
 
-        breakpoint()
-
         views = torch.randint(4, size=(self.batch_size, self.frames), device=point_cloud.device)
 
         batch_size = point_cloud.shape[0]
