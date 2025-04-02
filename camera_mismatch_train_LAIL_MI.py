@@ -26,10 +26,10 @@ from video import TrainVideoRecorder, VideoRecorder, VideoRecorder_bio_expert
 torch.backends.cudnn.benchmark = True
 
 
-def make_agent(obs_spec, action_spec, env, cfg, physics):
+def make_agent(obs_spec, action_spec, env, cfg, physics, batch_size):
     cfg.obs_shape = obs_spec.shape
     cfg.action_shape = action_spec.shape
-    return hydra.utils.instantiate(cfg, physics=physics)
+    return hydra.utils.instantiate(cfg, physics=physics, batch_size=batch_size)
 
 def make_env_expert(cfg, expert_physics):
     """Helper function to create dm_control environment"""
@@ -71,7 +71,8 @@ class Workspace:
                                 self.train_env.action_spec(),
                                 self.train_env,
                                 self.cfg.agent,
-                                self.train_env.physics)
+                                self.train_env.physics,
+                                self.cfg.batch_size)
               
         self.timer = utils.Timer()
         self._global_step = 0

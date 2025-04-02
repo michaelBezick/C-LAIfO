@@ -92,7 +92,7 @@ class NotOneHotPointNetEncoder(nn.Module):
 
 
 class OneHotPointNetEncoder(nn.Module):
-    def __init__(self, hidden_dim, latent_dim):
+    def __init__(self, hidden_dim, latent_dim, batch_size, frames=3):
         super().__init__()
 
         self.hidden_dim = hidden_dim #unused for now
@@ -124,6 +124,12 @@ class OneHotPointNetEncoder(nn.Module):
             nn.Tanh(),
         )
 
+        self.batch_idx = torch.arange(batch_size).view(-1, 1).expand(-1, frames)
+        self.frame_idx = torch.arange(frames).view(1, -1).expand(batch_size, -1)
+
+        self.batch_size = batch_size
+        self.frames = frames
+
     def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
         batch_size, num_points, xyz = points.size()
         one_hot = F.one_hot(torch.tensor([frame_id]), total_frames).to(points.device).to(points.dtype)
@@ -138,7 +144,11 @@ class OneHotPointNetEncoder(nn.Module):
 
         #get random views
 
-        views = torch.randint(low=0, high=5)
+        views = torch.randint(4, size=(self.batch, self.frames))
+
+        selected = point_cloud[self.batch_idx, self.frame_idx, views]
+
+        point_cloud = selected
 
         """Input size: [b, 3, n, 3]"""
 
@@ -851,6 +861,7 @@ class LailClAgent:
         depth_flag=False,
         segm_flag=False,
         physics=None,
+        batch_size=256,
     ):
 
         self.max_length_point_cloud=max_length_point_cloud
@@ -885,7 +896,8 @@ class LailClAgent:
         """
 
         # self.encoder = PointNetEncoder(feature_dim).to(device)
-        self.encoder = OneHotPointNetEncoderLikePaper(feature_dim, max_length_point_cloud).to(device)
+        self.encoder = OneHotPointNetEncoder(feature_dim, max_length_point_cloud, batch_size).to(device)
+        
         # self.encoder = MultiViewPointNet(output_dim=feature_dim).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
