@@ -146,7 +146,7 @@ class OneHotPointNetEncoder(nn.Module):
 
         breakpoint()
 
-        views = torch.randint(4, size=(self.batch_size, self.frames))
+        views = torch.randint(4, size=(self.batch_size, self.frames), device=point_cloud.device)
 
         selected = point_cloud[self.batch_idx, self.frame_idx, views]
 
