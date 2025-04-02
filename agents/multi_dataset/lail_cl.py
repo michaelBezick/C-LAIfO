@@ -144,7 +144,7 @@ class OneHotPointNetEncoder(nn.Module):
 
         #get random views
 
-        views = torch.randint(4, size=(self.batch, self.frames))
+        views = torch.randint(4, size=(self.batch_size, self.frames))
 
         selected = point_cloud[self.batch_idx, self.frame_idx, views]
 
