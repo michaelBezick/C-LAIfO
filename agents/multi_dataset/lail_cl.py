@@ -148,6 +148,12 @@ class OneHotPointNetEncoder(nn.Module):
 
         views = torch.randint(4, size=(self.batch_size, self.frames), device=point_cloud.device)
 
+        batch_size = point_cloud.shape[0]
+        frames = point_cloud.shape[1]
+
+        batch_idx = torch.arange(batch_size, device=point_cloud.device).view(-1, 1).expand(-1, frames)
+        frame_idx = torch.arange(frames, device=point_cloud.device).view(1, -1).expand(batch_size, -1)
+
         selected = point_cloud[self.batch_idx, self.frame_idx, views]
 
         point_cloud = selected
