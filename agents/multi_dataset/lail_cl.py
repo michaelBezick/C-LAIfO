@@ -92,7 +92,7 @@ class NotOneHotPointNetEncoder(nn.Module):
 
 
 class OneHotPointNetEncoder(nn.Module):
-    def __init__(self, hidden_dim, latent_dim, batch_size, frames=3):
+    def __init__(self, hidden_dim, feature_dim, batch_size, frames=3):
         super().__init__()
 
         self.hidden_dim = hidden_dim #unused for now
@@ -119,8 +119,8 @@ class OneHotPointNetEncoder(nn.Module):
             nn.Conv1d(128, 128, kernel_size=1),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Conv1d(128, latent_dim, kernel_size=1),
-            nn.BatchNorm1d(latent_dim),
+            nn.Conv1d(128, feature_dim, kernel_size=1),
+            nn.BatchNorm1d(feature_dim),
             nn.Tanh(),
         )
 
@@ -904,7 +904,8 @@ class LailClAgent:
         """
 
         # self.encoder = PointNetEncoder(feature_dim).to(device)
-        self.encoder = OneHotPointNetEncoder(feature_dim, max_length_point_cloud, batch_size).to(device)
+        self.hidden_dim = 256 #unused
+        self.encoder = OneHotPointNetEncoder(self.hidden_dim, feature_dim, batch_size).to(device)
         
         # self.encoder = MultiViewPointNet(output_dim=feature_dim).to(device)
 
