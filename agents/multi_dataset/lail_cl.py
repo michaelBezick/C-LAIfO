@@ -19,10 +19,77 @@ from torchvision.transforms.functional import rgb_to_grayscale
 from torchvision.utils import save_image
 
 # from agents.multi_dataset.point_cloud_generator import PointCloudGenerator
-from point_cloud_generator import PointCloudGenerator
+from point_cloud_generator_PCA import PointCloudGenerator
 from utils_folder import utils
 from utils_folder.byol_pytorch import RandomApply, default
 from utils_folder.utils_dreamer import Bernoulli
+class SharedEncoder(nn.Module):
+    def __init__(self, input_dim=3, hidden_dim=64):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU()
+        )
+
+    def forward(self, x):  # x: (B, N, D)
+        return self.mlp(x)  # (B, N, hidden_dim)
+
+class NotOneHotPointNetEncoder(nn.Module):
+    def __init__(self, hidden_dim, latent_dim):
+        super().__init__()
+
+        self.hidden_dim = hidden_dim #unused for now
+
+        self.h = nn.Sequential(
+            nn.Conv1d(6, 64, kernel_size=1), nn.BatchNorm1d(64), nn.ReLU()
+        )
+
+        self.mlp2 = nn.Sequential(
+            nn.Conv1d(64, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, 256, kernel_size=1),
+            nn.BatchNorm1d(256),
+        )
+
+        self.mlp3 = nn.Sequential(
+            nn.Conv1d(256, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, 128, kernel_size=1),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Conv1d(128, latent_dim, kernel_size=1),
+            nn.BatchNorm1d(latent_dim),
+            nn.Tanh(),
+        )
+
+    def forward(self, all_points):
+
+        x = all_points
+
+        x = torch.permute(x, (0, 2, 1))  # [b,6,n']
+
+        x = self.h(x)  # x -> [b,64,n]
+
+        x = self.mlp2(x)  # x -> [b,128,n]
+
+        x = torch.max(x, dim=2, keepdim=True).values  # x -> [b, 128]
+
+        x = self.mlp3(x)
+
+        if x.dim() == 3 and x.shape[2] == 1:
+            x = x.squeeze(2)
+
+        return x
+
 
 class OneHotPointNetEncoder(nn.Module):
     def __init__(self, hidden_dim, latent_dim):
@@ -67,6 +134,12 @@ class OneHotPointNetEncoder(nn.Module):
 
     def forward(self, point_cloud):
 
+        #(batch, frame, views, d, 3)
+
+        #get random views
+
+        views = torch.randint(low=0, high=5)
+
         """Input size: [b, 3, n, 3]"""
 
         points1 = self.add_one_hot_info(point_cloud[:,0,:,:],frame_id=0,total_frames=3)
@@ -95,20 +168,38 @@ class OneHotPointNetEncoder(nn.Module):
         return x
 
 class MultiViewPointNet(nn.Module):
-    def __init__(self, input_dim=3, hidden_dim=64, latent_dim=64, num_views=4):
+    def __init__(self, input_dim=3, hidden_dim=128, latent_dim=64, num_views=4, output_dim=64):
         super().__init__()
         self.num_views = num_views
-        self.encoder = OneHotPointNetEncoder(hidden_dim=hidden_dim, latent_dim=latent_dim)
+        # self.encoder = OneHotPointNetEncoder(hidden_dim=hidden_dim, latent_dim=latent_dim)
+        # self.encoder = NotOneHotPointNetEncoder(hidden_dim=hidden_dim, latent_dim=latent_dim)
+        self.encoder = SharedEncoder(input_dim=6, hidden_dim=hidden_dim)
         self.fusion = nn.Sequential(
             nn.Linear(hidden_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, 256)
+            nn.Linear(128, output_dim),
+            nn.Tanh()
         )
 
+    def add_one_hot_info(self, points: torch.Tensor, frame_id, total_frames):
+        batch_size, poses, num_points, xyz = points.size()
+        one_hot = F.one_hot(torch.tensor([frame_id]), total_frames).to(points.device).to(points.dtype)
+        one_hot_expanded = one_hot.view(1,1,1,3).expand(batch_size, poses, num_points, -1)
+        points_concat = torch.cat([points, one_hot_expanded], dim=-1)
+
+        return points_concat
+
     def forward(self, x_views):  
+
+        points1 = self.add_one_hot_info(x_views[:,0,:,:, :],frame_id=0,total_frames=3)
+        points2 = self.add_one_hot_info(x_views[:,1,:,:, :],frame_id=1,total_frames=3)
+        points3 = self.add_one_hot_info(x_views[:,2,:,:, :],frame_id=2,total_frames=3)
+
+        all_points = torch.cat([points1,points2,points3], dim=2)
+
         view_features = []
         for i in range(4):
-            x = x_views[:, i]
+            x = all_points[:, i]
             encoded = self.encoder(x)  # (B, N, hidden_dim)
             pooled = torch.max(encoded, dim=1)[0]  # (B, hidden_dim)
             view_features.append(pooled)
@@ -794,8 +885,8 @@ class LailClAgent:
         """
 
         # self.encoder = PointNetEncoder(feature_dim).to(device)
-        # self.encoder = OneHotPointNetEncoderLikePaper(feature_dim, max_length_point_cloud).to(device)
-        self.encoder = MultiViewPointNet()
+        self.encoder = OneHotPointNetEncoderLikePaper(feature_dim, max_length_point_cloud).to(device)
+        # self.encoder = MultiViewPointNet(output_dim=feature_dim).to(device)
 
         self.actor = Actor(action_shape, feature_dim, hidden_dim).to(device)
         self.critic = Critic(action_shape, feature_dim, hidden_dim).to(device)
@@ -973,13 +1064,13 @@ class LailClAgent:
             for i in range(3):
                 obs = obs_reshaped[i, :, :]
                 obs = self.point_cloud_generator.depthImageToPointCloud(obs, cam_id=0)
-                num_points = obs.shape[0]
+                num_points = obs.shape[1]
 
                 if num_points > self.max_length_point_cloud:
-                    obs = obs[: self.max_length_point_cloud]
+                    obs = obs[:, : self.max_length_point_cloud]
                 elif num_points < self.max_length_point_cloud:
                     pad_width = self.max_length_point_cloud - num_points
-                    obs = np.pad(obs, ((0, pad_width), (0, 0)), mode="constant")
+                    obs = np.pad(obs, ((0,0), (0, pad_width), (0, 0)), mode="constant")
                 
                 point_clouds.append(obs)
 
@@ -988,9 +1079,9 @@ class LailClAgent:
                 for arr in point_clouds
             ]
 
-            tensors = torch.stack(tensors,dim=0)
+            tensors = torch.stack(tensors,dim=0) #dim (3, 4, n, 3)
             
-            point_clouds = tensors.unsqueeze(0)
+            point_clouds = tensors.unsqueeze(0) #dim (1, 3, 4, n ,3)
 
         if self.grayscale:
             obs = self.grayscale_aug(obs.unsqueeze(0))
@@ -1349,8 +1440,10 @@ class LailClAgent:
 
         
         # encode
-        obs_a = self.rotate_aug(obs)
-        next_obs_a = self.rotate_aug(next_obs)
+        # obs_a = self.rotate_aug(obs)
+        obs_a = obs
+        # next_obs_a = self.rotate_aug(next_obs)
+        next_obs_a = next_obs
 
         obs = self.encoder(obs_a)
         with torch.no_grad():
