@@ -252,6 +252,7 @@ class PointCloudGenerator(object):
 
         np.random.shuffle(points)  # so truncation isn't biased
 
+
         return points.astype(np.float32)
 
     def generateCroppedPointCloud(self, save_img_dir=None, fast=True):
